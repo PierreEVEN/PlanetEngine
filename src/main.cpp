@@ -48,6 +48,13 @@ int main()
 	                               }
 	);
 
+	glfwSetScrollCallback(renderer.get_window(), [](GLFWwindow* window, double xoffset, double yoffset)
+		{
+			camera_controller->process_mouse_wheel(xoffset, yoffset);
+			ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+		}
+	);
+
 	std::vector<std::shared_ptr<EZCOGL::Texture2D>> textures;
 	// GBuffer color
 	const auto g_buffer_color = EZCOGL::Texture2D::create();
@@ -79,32 +86,18 @@ int main()
 	mesh_comp_2->set_material(standard_material);
 	mesh_comp_2->set_local_position({ 2, 0, 0 });
 	mesh_comp->add_child(mesh_comp_2);
-
-
-	float x = 0, y = 0, z = 0;
-	float px = 0, py = 0, pz = 0;
-
+	
 	while (!renderer.should_close())
 	{
 		renderer.begin();
 
 		world.tick_world();
+		camera_controller->tick(world.get_delta_seconds());
 
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);
-
-		ImGui::Separator();
-		ImGui::SliderFloat("rot_x", &x, -M_PI, M_PI);
-		ImGui::SliderFloat("rot_y", &y, -M_PI, M_PI);
-		ImGui::SliderFloat("rot_z", &z, -M_PI, M_PI);
-		ImGui::SliderFloat("pos_x", &px, -10, 10);
-		ImGui::SliderFloat("pos_y", &py, -10, 10);
-		ImGui::SliderFloat("pos_z", &pz, -10, 10);
-		ImGui::Separator();
-		mesh_comp->set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY()) * Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
-		mesh_comp->set_local_position({ px, py, pz });
-
+		
 		/**
 		 * GBUFFERS
 		 */

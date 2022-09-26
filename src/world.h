@@ -17,8 +17,14 @@ public:
 
 	[[nodiscard]] const std::shared_ptr<Camera>& get_camera() const { return camera; }
 
-	[[nodiscard]] SceneComponent& get_scene_root() {
+	[[nodiscard]] SceneComponent& get_scene_root()
+	{
 		return *root_component;
+	}
+
+	[[nodiscard]] double get_delta_seconds() const
+	{
+		return delta_seconds;
 	}
 
 private:
@@ -26,4 +32,5 @@ private:
 	std::shared_ptr<Camera> camera;
 	std::unique_ptr<SceneComponent> root_component;
 	double last_time;
+	double delta_seconds;
 };

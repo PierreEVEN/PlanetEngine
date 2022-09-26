@@ -32,7 +32,7 @@ World::~World()
 
 void World::tick_world()
 {
-	const double delta_time = glfwGetTime() - last_time;
+	delta_seconds = glfwGetTime() - last_time;
 	last_time = glfwGetTime();
 
 	// Update world data
@@ -50,7 +50,7 @@ void World::tick_world()
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-	root_component->tick_internal(delta_time);
+	root_component->tick_internal(delta_seconds);
 }
 
 void World::render_world() const
