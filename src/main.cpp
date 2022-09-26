@@ -8,12 +8,10 @@
 #include <imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
 
-#include "camera.h"
 #include "graphics/material.h"
 
 #include "default_camera_controller.h"
 #include "world.h"
-#include "graphics/mesh.h"
 #include "graphics/primitives.h"
 #include "world/mesh_component.h"
 
@@ -84,7 +82,7 @@ int main()
 
 
 	float x = 0, y = 0, z = 0;
-	float px = 8, py = 0, pz = 0;
+	float px = 0, py = 0, pz = 0;
 
 	while (!renderer.should_close())
 	{

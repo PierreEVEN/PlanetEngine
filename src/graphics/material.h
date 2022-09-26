@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../world.h"
+#include "world.h"
 #include <shader_program.h>
 
 class Material final {

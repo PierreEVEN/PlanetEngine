@@ -25,53 +25,15 @@ Eigen::Matrix4d Camera::projection_matrix() const
 	return m;
 }
 
-
-static Eigen::Matrix4d test_look_at_matrix(const Eigen::Vector3d& cameraLocation, const Eigen::Vector3d& viewTarget,
-                                        const Eigen::Vector3d& upVector)
-{
-	Eigen::Vector3d const f((viewTarget - cameraLocation).normalized());
-	Eigen::Vector3d const s(f.cross(upVector).normalized());
-	Eigen::Vector3d const u(s.cross(f));
-	Eigen::Matrix4d Result = Eigen::Matrix4d::Identity();
-	Result(0, 0) = s.x();
-	Result(1, 0) = s.y();
-	Result(2, 0) = s.z();
-	Result(0, 1) = u.x();
-	Result(1, 1) = u.y();
-	Result(2, 1) = u.z();
-	Result(0, 2) = -f.x();
-	Result(1, 2) = -f.y();
-	Result(2, 2) = -f.z();
-	Result(3, 0) = -s.dot(cameraLocation);
-	Result(3, 1) = -u.dot(cameraLocation);
-	Result(3, 2) = f.dot(cameraLocation);
-	return Result;
-}
-
 Eigen::Matrix4d Camera::view_matrix()
 {
-	//return test_look_at_matrix(get_local_position(), get_local_position() + world_forward(), Eigen::Vector3d::UnitZ());
-	
-	const auto f = world_forward();
-	const auto r = world_right();
-	const auto u = world_up();
-
-	const auto wp = get_world_position();
-
-	Eigen::Matrix4d m;
-	m <<
-		r.x(), u.x(), -f.x(), -r.dot(wp),
-		r.y(), u.y(), -f.y(), -u.dot(wp),
-		r.z(), u.z(), -f.z(), f.dot(wp),
-		0, 0, 0, 1;
-	return m;
-
 	const auto corr_z = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
 	const auto corr_y = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY());
-	auto transform = get_world_transform();
-	transform.rotate(Eigen::Quaterniond(corr_z * corr_y));
-
-	return transform.matrix();
+	auto mat_trans = Eigen::Affine3d::Identity();
+	mat_trans.rotate(Eigen::Quaterniond(corr_z * corr_y));
+	mat_trans.rotate(get_world_rotation().inverse());
+	mat_trans.translate(-get_world_position());
+	return mat_trans.matrix();
 }
 
 void Camera::set_pitch(double in_pitch)
@@ -109,9 +71,7 @@ void Camera::tick(double delta_time)
 
 void Camera::update_rotation()
 {
-	const auto r = Eigen::AngleAxisd(c, Eigen::Vector3d::UnitX());
-	const auto p = Eigen::AngleAxisd(a, Eigen::Vector3d::UnitY());
-	const auto y = Eigen::AngleAxisd(b, Eigen::Vector3d::UnitZ());
-
-	set_local_rotation(y * p * r);
+	const auto p = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
+	const auto y = Eigen::AngleAxisd(-yaw, Eigen::Vector3d::UnitZ());
+	set_local_rotation(y * p);
 }

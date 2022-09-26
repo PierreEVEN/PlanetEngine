@@ -1,7 +1,7 @@
 #include "mesh_component.h"
 
-#include "../graphics/mesh.h"
-#include "../graphics/material.h"
+#include "graphics/mesh.h"
+#include "graphics/material.h"
 
 void MeshComponent::render()
 {
