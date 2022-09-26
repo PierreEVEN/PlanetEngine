@@ -36,6 +36,10 @@ function(configure_project PROJECT_NAME SOURCES)
 	source_group(TREE ${PROJECT_ROOT} FILES ${SOURCES})
 endfunction()
 
+# Ensure dependencies are available
+find_package(glfw3 CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 
 # Find or build easycppogl
 find_package(easycppogl QUIET)
