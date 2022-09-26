@@ -12,6 +12,7 @@
 
 #include "default_camera_controller.h"
 #include "world.h"
+#include "geometry/planet.h"
 #include "graphics/primitives.h"
 #include "world/mesh_component.h"
 
@@ -80,12 +81,8 @@ int main()
 	mesh_comp->set_local_position({8, 0, 0});
 	world.get_scene_root().add_child(mesh_comp);
 
-
-	const auto mesh_comp_2 = std::make_shared<MeshComponent>();
-	mesh_comp_2->set_mesh(cube_mesh);
-	mesh_comp_2->set_material(standard_material);
-	mesh_comp_2->set_local_position({ 2, 0, 0 });
-	mesh_comp->add_child(mesh_comp_2);
+	const auto main_planet = std::make_shared<Planet>();
+	world.get_scene_root().add_child(main_planet);
 	
 	while (!renderer.should_close())
 	{
@@ -105,6 +102,7 @@ int main()
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+		// Render world
 		world.render_world();
 		
 		/**
@@ -123,14 +121,7 @@ int main()
 
 		EZCOGL::VAO::none()->bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		/*
-		 * DEMO WINDOW
-		 */
-		if (ImGui::Begin("toto"))
-			ImGui::Text("yay");
-		ImGui::End();
-
+		
 		renderer.end();
 	}
 }

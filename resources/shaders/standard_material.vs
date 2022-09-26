@@ -23,7 +23,7 @@ layout (std140, binding = 0) uniform WorldData
 void main()
 {
     time = world_time;
-    out_norm = colors;
+    out_norm = norm;
     out_tc = tc;
 	gl_Position = pv_matrix * model * vec4(pos, 1);
 }
