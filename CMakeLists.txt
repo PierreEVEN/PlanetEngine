@@ -1,0 +1,76 @@
+cmake_minimum_required(VERSION 3.13)
+
+# Set project constants
+set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}) # Project dir
+set(BINARIES_DIR ${PROJECT_ROOT}/bin) # Binaries dir
+set(INTERMEDIATES_DIR ${CMAKE_BINARY_DIR}) # Intermediates dir
+
+#Global cmake features
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+#Set startup project
+set_property(DIRECTORY ${PROJECT_ROOT} PROPERTY VS_STARTUP_PROJECT Projet)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+project(ProjetProgrammationGraphique)
+
+# Set compiler options
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	# MP build for MSVC
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /EHsc")
+endif()
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${BINARIES_DIR}/Lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BINARIES_DIR}/Bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${BINARIES_DIR}/Bin")
+set(CMAKE_VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_ROOT}")
+
+function(configure_project PROJECT_NAME SOURCES)
+	set_target_properties(${PROJECT_NAME} PROPERTIES 
+		ARCHIVE_OUTPUT_DIRECTORY "${BINARIES_DIR}/Lib"
+		RUNTIME_OUTPUT_DIRECTORY "${BINARIES_DIR}/Bin"
+		LIBRARY_OUTPUT_DIRECTORY "${BINARIES_DIR}/Bin"
+		VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_ROOT}")
+	target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+	set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
+	source_group(TREE ${PROJECT_ROOT} FILES ${SOURCES})
+endfunction()
+
+
+# Find or build easycppogl
+find_package(easycppogl QUIET)
+if (easycppogl_FOUND)
+	message("-- easycppogl is already installed")
+else()
+	message("-- easycppogl was not found on the current device. Using local version instead")
+	set(EASY_CPP_OGL_INSTALL_DIR "${INTERMEDIATES_DIR}/easycppogl/easycppogl_src/easycppogl")
+	get_filename_component(_fullpath ${EASY_CPP_OGL_INSTALL_DIR} REALPATH)
+	if(NOT EXISTS "${_fullpath}")
+		message(WARNING "easycppogl is not built !")
+
+		message("--------------------------building easycppogl : Release")
+		execute_process (COMMAND cmake -S "${PROJECT_ROOT}/third_party/easycppogl" -B "${INTERMEDIATES_DIR}/easycppogl" -DBUILD_TYPE=Release RESULT_VARIABLE output)
+		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --target easycppogl RESULT_VARIABLE output)
+		message("done")
+
+		message("--------------------------building easycppogl : Debug")
+		execute_process (COMMAND cmake -S "${PROJECT_ROOT}/third_party/easycppogl" -B "${INTERMEDIATES_DIR}/easycppogl" -DBUILD_TYPE=Debug RESULT_VARIABLE output)
+		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --target easycppogl RESULT_VARIABLE output)
+		message("done")
+
+		message("--------------------------installing easycppogl")
+		execute_process (COMMAND cmake install "${INTERMEDIATES_DIR}/easycppogl" RESULT_VARIABLE output)
+		message("done")
+	endif()
+endif()
+
+set(easycppogl_DIR ${EASY_CPP_OGL_INSTALL_DIR})
+
+find_package(easycppogl CONFIG REQUIRED)
+
+file(GLOB_RECURSE SOURCES src/*.cpp src/*.h resources/**)
+add_executable(Projet ${SOURCES})
+configure_project(Projet ${SOURCES})
+target_link_libraries(Projet PUBLIC easycppogl)
+SET_SOURCE_FILES_PROPERTIES( src PROPERTIES FOLDER ${SOURCES} )
+source_group(TREE ${PROJECT_ROOT} FILES  ${SOURCES})

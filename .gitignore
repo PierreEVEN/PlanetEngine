@@ -1,0 +1,9 @@
+.idea
+.vs
+/build
+/bin
+/third_party/easycppogl/build
+/third_party/glew/build
+imgui.ini
+cmake-build-debug
+cmake-build-release
