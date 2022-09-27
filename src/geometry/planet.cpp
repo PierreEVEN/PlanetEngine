@@ -1,9 +1,13 @@
+#include <imgui.h>
+#include <ImGuizmo.h>
+
+#include "camera.h"
 #include "Planet.h"
 
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
-Planet::Planet()
+Planet::Planet(const World& in_world) : world(in_world)
 {
 	root = std::make_shared<PlanetRegion>(5, 130, 200, Eigen::Vector3d(0, 0, 0), RegionOrientation::NE);
 }
@@ -15,6 +19,19 @@ Planet::~Planet()
 void Planet::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
+
+	// Draw world gizmo
+	//ImGuizmo::RecomposeMatrixFromComponents(const float* translation, const float* rotation, const float* scale, float* matrix);
+	ImGuizmo::Enable(true);
+	Manipulate(
+		Eigen::Matrix4f(world.get_camera()->view_matrix().cast<float>()).data(),
+		Eigen::Matrix4f(world.get_camera()->projection_matrix().cast<float>()).data(),
+		ImGuizmo::TRANSLATE,
+		ImGuizmo::WORLD,
+		world_target_matrix.data(),
+		nullptr,
+		nullptr);
+	//ImGuizmo::DecomposeMatrixToComponents(const float* matrix, float* translation, float* rotation, float* scale);
 }
 
 void Planet::render()
@@ -51,10 +68,12 @@ PlanetRegion::PlanetRegion(int subdivision_level, double width, double inner_rad
 	// J
 	positions[10] = (position + Eigen::Vector3d(inner_radius - width / 2, -inner_radius, 0)).cast<float>(); // K
 
-	for (int i = 0; i < 11; ++i) {
-		normals[i] = Eigen::Vector3f(fmod(std::abs(sin(subdivision_level * 3678.45678)), 1.0),
-			fmod(std::abs(sin(subdivision_level * 98.0987654)), 1.0),
-			fmod(std::abs(sin(subdivision_level * 567.845496)), 1.0));
+	for (int i = 0; i < 11; ++i)
+	{
+		normals[i] = Eigen::Vector3f(
+			static_cast<float>(fmod(std::abs(sin(subdivision_level * 3678.45678)), 1.0)),
+			static_cast<float>(fmod(std::abs(sin(subdivision_level * 98.0987654)), 1.0)),
+			static_cast<float>(fmod(std::abs(sin(subdivision_level * 567.845496)), 1.0)));
 		tcs[i] = Eigen::Vector2f(0, 0);
 	}
 

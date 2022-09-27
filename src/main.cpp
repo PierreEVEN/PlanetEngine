@@ -5,6 +5,7 @@
 #include <mesh.h>
 #include <shader_program.h>
 #include <imgui.h>
+#include <ImGuizmo.h>
 #include <imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
 
@@ -14,11 +15,12 @@
 #include "world.h"
 #include "geometry/Planet.h"
 #include "graphics/primitives.h"
+#include "ui/ui.h"
 #include "world/mesh_component.h"
 
 std::unique_ptr<DefaultCameraController> camera_controller;
 std::shared_ptr<Camera> world_camera;
-std::shared_ptr<EZCOGL::FBO> g_buffer;
+std::shared_ptr<EZCOGL::FBO_DepthTexture> g_buffer;
 
 int main()
 {
@@ -29,7 +31,7 @@ int main()
 
 	glfwSetKeyCallback(renderer.get_window(), [](GLFWwindow* window, int key, int scan_code, int action, int mode)
 	                   {
-		                   camera_controller->process_key(key, scan_code, action, mode);
+		                   camera_controller->process_key(window, key, scan_code, action, mode);
 		                   ImGui_ImplGlfw_KeyCallback(window, key, scan_code, action, mode);
 	                   }
 	);
@@ -50,10 +52,10 @@ int main()
 	);
 
 	glfwSetScrollCallback(renderer.get_window(), [](GLFWwindow* window, double xoffset, double yoffset)
-		{
-			camera_controller->process_mouse_wheel(xoffset, yoffset);
-			ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
-		}
+	                      {
+		                      camera_controller->process_mouse_wheel(xoffset, yoffset);
+		                      ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+	                      }
 	);
 
 	std::vector<std::shared_ptr<EZCOGL::Texture2D>> textures;
@@ -69,7 +71,7 @@ int main()
 	const auto g_buffer_depth = EZCOGL::Texture2D::create();
 	g_buffer_depth->alloc(800, 600, GL_DEPTH_COMPONENT24, nullptr);
 	//textures.push_back(g_buffer_depth);
-	g_buffer = EZCOGL::FBO::create(textures);
+	g_buffer = EZCOGL::FBO_DepthTexture::create(textures, g_buffer_depth);
 
 	const auto g_buffer_combine = Material::create("g_buffer_combine");
 	g_buffer_combine->load_from_source("resources/shaders/gbuffer_combine.vs", "resources/shaders/gbuffer_combine.fs");
@@ -85,12 +87,14 @@ int main()
 	mesh_comp->set_local_position({8, 0, 0});
 	world.get_scene_root().add_child(mesh_comp);
 
-	const auto main_planet = std::make_shared<Planet>();
+	const auto main_planet = std::make_shared<Planet>(world);
 	world.get_scene_root().add_child(main_planet);
-	
+
 	while (!renderer.should_close())
 	{
 		renderer.begin();
+		const ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 
 		camera_controller->tick(world.get_delta_seconds());
 		world.tick_world();
@@ -98,7 +102,7 @@ int main()
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glFrontFace(GL_CCW);
-		
+
 		/**
 		 * GBUFFERS
 		 */
@@ -108,7 +112,7 @@ int main()
 
 		// Render world
 		world.render_world();
-		
+
 		/**
 		 * GBUFFERS COMBINE
 		 */
@@ -125,7 +129,9 @@ int main()
 
 		EZCOGL::VAO::none()->bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		
+
+		ui::draw(renderer, world, g_buffer);
+
 		renderer.end();
 	}
 }

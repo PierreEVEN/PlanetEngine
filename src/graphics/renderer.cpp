@@ -1,6 +1,7 @@
 #include "renderer.h"
 
 #include <imgui.h>
+#include <ImGuizmo.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <iostream>
@@ -29,6 +30,7 @@ void Renderer::begin() const
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 
 	glfwMakeContextCurrent(main_window);
 
@@ -78,7 +80,7 @@ void Renderer::init_context()
 	IMGUI_CHECKVERSION();
 	imgui_context = ImGui::CreateContext();
 	const ImGuiIO& io = ImGui::GetIO();
-	(void)io;
+	io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto-Medium.ttf", 16.f);
 
 #ifdef _WIN32
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();

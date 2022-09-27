@@ -19,7 +19,7 @@ enum class RegionOrientation
 class Planet : public SceneComponent
 {
 public:
-	Planet();
+	Planet(const World& world);
 	virtual ~Planet() override;
 
 protected:
@@ -28,6 +28,8 @@ protected:
 
 private:
 	std::shared_ptr<PlanetRegion> root;
+	const World& world;
+	Eigen::Matrix4f world_target_matrix  = Eigen::Matrix4f::Identity();
 };
 
 class PlanetRegion

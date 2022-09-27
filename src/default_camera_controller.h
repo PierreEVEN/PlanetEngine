@@ -4,13 +4,14 @@
 #include <Eigen/Eigen>
 
 class Camera;
+struct GLFWwindow;
 
 class DefaultCameraController
 {
 public:
 	DefaultCameraController(const std::shared_ptr<Camera>& camera);
 
-	void process_key(int key, int scan_code, int action, int mode);
+	void process_key(GLFWwindow* window, int key, int scan_code, int action, int mode);
 	void process_mouse_input(double x_pos, double y_pos);
 	void process_mouse_wheel(double x_pos, double y_pos);
 
@@ -28,5 +29,6 @@ private:
 	double input_sub_y = 0;
 	double input_sub_z = 0;
 	Eigen::Vector3d camera_desired_position = Eigen::Vector3d(0, 0, 0);
-	double movement_speed = 0.25;
+	double movement_speed = 100;
+	bool capture_input = false;
 };
