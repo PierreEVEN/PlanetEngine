@@ -9,19 +9,22 @@
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(5, 130, 200, Eigen::Vector3d(0, 0, 0), RegionOrientation::NE);
+	root = std::make_shared<PlanetRegion>(1, 130, 200, Eigen::Vector3d(0, 0, 0), RegionOrientation::NE);
 }
 
 Planet::~Planet()
 {
 }
 
+Eigen::Vector3f world_origin;
+
 void Planet::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
 
 	// Draw world gizmo
-	//ImGuizmo::RecomposeMatrixFromComponents(const float* translation, const float* rotation, const float* scale, float* matrix);
+	ImGuizmo::RecomposeMatrixFromComponents(world_origin.data(), Eigen::Vector3f(0, 0, 0).data(),
+	                                        Eigen::Vector3f(1, 1, 1).data(), world_target_matrix.data());
 	ImGuizmo::Enable(true);
 	Manipulate(
 		Eigen::Matrix4f(world.get_camera()->view_matrix().cast<float>()).data(),
@@ -31,7 +34,10 @@ void Planet::tick(double delta_time)
 		world_target_matrix.data(),
 		nullptr,
 		nullptr);
-	//ImGuizmo::DecomposeMatrixToComponents(const float* matrix, float* translation, float* rotation, float* scale);
+	ImGuizmo::DecomposeMatrixToComponents(world_target_matrix.data(), world_origin.data(),
+	                                      Eigen::Vector3f(0, 0, 0).data(), Eigen::Vector3f(1, 1, 1).data());
+
+	ImGui::DragFloat2("world origin", world_origin.data());
 }
 
 void Planet::render()
@@ -41,12 +47,13 @@ void Planet::render()
 	root->render();
 }
 
-PlanetRegion::PlanetRegion(int subdivision_level, double width, double inner_radius, const Eigen::Vector3d& position,
-                           RegionOrientation orientation)
+PlanetRegion::PlanetRegion(int in_subdivision_level, double width, double inner_radius, const Eigen::Vector3d& in_position,
+                           RegionOrientation orientation) : position(in_position), subdivision_level(in_subdivision_level)
 {
 	if (subdivision_level > 0)
 		child = std::make_shared<PlanetRegion>(subdivision_level - 1, width / 2, inner_radius - width * 0.75,
 		                                       position - Eigen::Vector3d(width / 4, width / 4, 0), orientation);
+
 
 	std::vector<Eigen::Vector3f> positions(11);
 	std::vector<Eigen::Vector3f> normals(11);
@@ -71,9 +78,9 @@ PlanetRegion::PlanetRegion(int subdivision_level, double width, double inner_rad
 	for (int i = 0; i < 11; ++i)
 	{
 		normals[i] = Eigen::Vector3f(
-			static_cast<float>(fmod(std::abs(sin(subdivision_level * 3678.45678)), 1.0)),
-			static_cast<float>(fmod(std::abs(sin(subdivision_level * 98.0987654)), 1.0)),
-			static_cast<float>(fmod(std::abs(sin(subdivision_level * 567.845496)), 1.0)));
+			static_cast<float>(fmod(std::abs(sin((subdivision_level + 1) * 3678.45678)), 1.0)),
+			static_cast<float>(fmod(std::abs(sin((subdivision_level + 1) * 98.0987654)), 1.0)),
+			static_cast<float>(fmod(std::abs(sin((subdivision_level + 1) * 567.845496)), 1.0)));
 		tcs[i] = Eigen::Vector2f(0, 0);
 	}
 
@@ -97,14 +104,27 @@ PlanetRegion::PlanetRegion(int subdivision_level, double width, double inner_rad
 	                           "resources/shaders/standard_material.fs");
 }
 
-void PlanetRegion::render() const
+void PlanetRegion::render()
 {
+	transform = Eigen::Affine3d::Identity();
+	if (world_origin.x() >= position.x() && world_origin.y() < position.y())
+		transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ()));
+	else if (world_origin.x() < position.x() && world_origin.y() >= position.y())
+		transform.rotate(Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ()));
+	else if (world_origin.x() < position.x() && world_origin.y() < position.y())
+		transform.rotate(Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ()));
+	else if (world_origin.x() >= position.x() && world_origin.y() >= position.y())
+		transform.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+
+	std::cout << "begin level " << subdivision_level << std::endl;
+	std::cout << transform.matrix() << std::endl;
+
 	if (child)
 		child->render();
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	material->use();
-	material->set_model_transform(Eigen::Affine3d::Identity());
+	material->set_model_transform(transform);
 	mesh->draw();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glFrontFace(GL_CW);
