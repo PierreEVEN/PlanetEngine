@@ -12,7 +12,7 @@
 
 #include "default_camera_controller.h"
 #include "world.h"
-#include "geometry/planet.h"
+#include "geometry/Planet.h"
 #include "graphics/primitives.h"
 #include "world/mesh_component.h"
 
@@ -65,6 +65,10 @@ int main()
 	const auto g_buffer_normal = EZCOGL::Texture2D::create();
 	g_buffer_normal->alloc(800, 600, GL_RGB8, nullptr);
 	textures.push_back(g_buffer_normal);
+	// GBuffer depth
+	const auto g_buffer_depth = EZCOGL::Texture2D::create();
+	g_buffer_depth->alloc(800, 600, GL_DEPTH_COMPONENT24, nullptr);
+	//textures.push_back(g_buffer_depth);
 	g_buffer = EZCOGL::FBO::create(textures);
 
 	const auto g_buffer_combine = Material::create("g_buffer_combine");
@@ -88,8 +92,8 @@ int main()
 	{
 		renderer.begin();
 
-		world.tick_world();
 		camera_controller->tick(world.get_delta_seconds());
+		world.tick_world();
 
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);

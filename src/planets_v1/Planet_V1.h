@@ -6,21 +6,21 @@
 
 class Mesh;
 class Material;
-class PlanetRegion;
+class PlanetRegionV1;
 
-class Planet : public SceneComponent
+class PlanetV1 : public SceneComponent
 {
 public:
 
-	Planet();
-	virtual ~Planet() override;
+	PlanetV1();
+	virtual ~PlanetV1() override;
 
 protected:
 	void tick(double delta_time) override;
 	void render() override;
 
 private:
-	std::vector<PlanetRegion> initial_regions;
+	std::vector<PlanetRegionV1> initial_regions;
 
 	std::shared_ptr<Mesh> final_mesh;
 	std::shared_ptr<Material> planet_material;
@@ -33,10 +33,10 @@ private:
 	std::thread regeneration_thread;
 };
 
-class PlanetRegion
+class PlanetRegionV1
 {
 public:
-	PlanetRegion(const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c);
+	PlanetRegionV1(const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c);
 
 	[[nodiscard]] std::vector<Eigen::Vector3d> collect_triangles() const;
 
@@ -44,9 +44,9 @@ public:
 
 private:
 
-	PlanetRegion* parent = nullptr;
-	std::vector<PlanetRegion*> neighbors;
-	std::vector<PlanetRegion> children;
+	PlanetRegionV1* parent = nullptr;
+	std::vector<PlanetRegionV1*> neighbors;
+	std::vector<PlanetRegionV1> children;
 
 	Eigen::Vector3d a, b, c;
 };

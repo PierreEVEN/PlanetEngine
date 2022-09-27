@@ -1,11 +1,11 @@
-#include "planet.h"
+#include "Planet_V1.h"
 
 #include <imgui.h>
 
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
-Planet::Planet() : final_mesh(Mesh::create())
+PlanetV1::PlanetV1() : final_mesh(Mesh::create())
 {
 	planet_material = Material::create("standard_material");
 	planet_material->load_from_source("resources/shaders/standard_material.vs",
@@ -29,20 +29,20 @@ Planet::Planet() : final_mesh(Mesh::create())
 	};
 
 	for (const auto& tr : triangles)
-		initial_regions.emplace_back(PlanetRegion(points[tr.x()], points[tr.y()], points[tr.z()]));
+		initial_regions.emplace_back(PlanetRegionV1(points[tr.x()], points[tr.y()], points[tr.z()]));
 
 	regenerate();
 }
 
-Planet::~Planet()
+PlanetV1::~PlanetV1()
 {
 	if (regeneration_thread.joinable())
 		regeneration_thread.join();
 }
 
-std::atomic_uint32_t subdivision_progress;
+static std::atomic_uint32_t subdivision_progress;
 
-void Planet::tick(double delta_time)
+void PlanetV1::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
 
@@ -66,7 +66,7 @@ void Planet::tick(double delta_time)
 	ImGui::End();
 }
 
-void Planet::render()
+void PlanetV1::render()
 {
 	SceneComponent::render();
 
@@ -75,7 +75,7 @@ void Planet::render()
 	final_mesh->draw();
 }
 
-void Planet::regenerate()
+void PlanetV1::regenerate()
 {
 	if (is_waiting_regeneration)
 		return;
@@ -115,14 +115,14 @@ void Planet::regenerate()
 	});
 }
 
-PlanetRegion::PlanetRegion(const Eigen::Vector3d& in_a, const Eigen::Vector3d& in_b, const Eigen::Vector3d& in_c)
+PlanetRegionV1::PlanetRegionV1(const Eigen::Vector3d& in_a, const Eigen::Vector3d& in_b, const Eigen::Vector3d& in_c)
 {
 	a = in_a;
 	b = in_b;
 	c = in_c;
 }
 
-std::vector<Eigen::Vector3d> PlanetRegion::collect_triangles() const
+std::vector<Eigen::Vector3d> PlanetRegionV1::collect_triangles() const
 {
 	if (!children.empty())
 	{
@@ -135,7 +135,7 @@ std::vector<Eigen::Vector3d> PlanetRegion::collect_triangles() const
 	return {a, b, c};
 }
 
-void PlanetRegion::subdivide(int sub_index)
+void PlanetRegionV1::subdivide(int sub_index)
 {
 	subdivision_progress = sub_index;
 	if (sub_index == 0)
@@ -143,10 +143,10 @@ void PlanetRegion::subdivide(int sub_index)
 
 	children.clear();
 
-	children.emplace_back(PlanetRegion(a, (a + b) / 2, (c + a) / 2));
-	children.emplace_back(PlanetRegion((a + b) / 2, b, (c + b) / 2));
-	children.emplace_back(PlanetRegion((c + a) / 2, (c + b) / 2, c));
-	children.emplace_back(PlanetRegion((c + a) / 2, (b + a) / 2, (c + b) / 2));
+	children.emplace_back(PlanetRegionV1(a, (a + b) / 2, (c + a) / 2));
+	children.emplace_back(PlanetRegionV1((a + b) / 2, b, (c + b) / 2));
+	children.emplace_back(PlanetRegionV1((c + a) / 2, (c + b) / 2, c));
+	children.emplace_back(PlanetRegionV1((c + a) / 2, (b + a) / 2, (c + b) / 2));
 
 	for (auto& child : children)
 		child.subdivide(sub_index - 1);

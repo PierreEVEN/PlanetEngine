@@ -8,6 +8,14 @@ class Mesh;
 class Material;
 class PlanetRegion;
 
+enum class RegionOrientation
+{
+	NE,
+	SE,
+	SO,
+	NO
+};
+
 class Planet : public SceneComponent
 {
 public:
@@ -19,12 +27,13 @@ protected:
 	void render() override;
 
 private:
+	std::shared_ptr<PlanetRegion> root;
 };
 
 class PlanetRegion
 {
 public:
-	PlanetRegion(int subdivision_level, double width, double inner_radius);
+	PlanetRegion(int subdivision_level, double width, double inner_radius, const Eigen::Vector3d& position, RegionOrientation orientation);
 
 	void render() const;
 
