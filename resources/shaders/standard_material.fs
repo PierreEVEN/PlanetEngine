@@ -18,8 +18,12 @@ void main()
 
 	gColor = mix(vec3(0.5, 0.5, 0.5), vec3(0.7, 1, 0.6), slope);
 
+	gColor = mix(vec3(0.8,0.7,0.5), gColor, clamp(altitude / 5, 0, 1));
+
+	float depth_scale = clamp(-altitude / 10, 0, 1);
+
 	if (altitude < 1) {
-		gColor = vec3(97, 130, 223) / 256;
+		gColor = mix(vec3(97, 130, 223) / 256, vec3(97, 130, 223) / 350 , depth_scale);
 	}
 
 	gNormal = normal;

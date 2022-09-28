@@ -64,7 +64,7 @@ float pNoise(vec2 p, int res){
 
 
 float get_height_at_location(vec2 pos) {
-	return pNoise(pos, 1) * 100 + pNoise(pos, 4) * 50 + pNoise(pos, 10) * 20;
+	return pNoise(pos, 1) * 100 + pNoise(pos, 4) * 50 + pNoise(pos, 10) * 20 +  pNoise(pos * 0.001, 7) * 400 - 10;
  }
 
 
@@ -84,9 +84,22 @@ void main()
 
 	final_pos.z += h0.z;
 	altitude = final_pos.z;
+
+	float depth_scale = clamp(-final_pos.z / 10, 0, 1);
+
 	if (final_pos.z < 1) {
 		final_pos.z = 1;
+		out_norm = mix(vec3(0,0,1), out_norm, 1 - depth_scale);
 	}
 
-	gl_Position = pv_matrix * final_pos;
+
+	float radius = 8000;
+
+	vec3 sphere_pos = vec3(sin(final_pos.x / radius), sin(final_pos.y / radius), cos(final_pos.x / radius) * cos(final_pos.y / radius)) * radius;
+
+	sphere_pos += normalize(sphere_pos.xyz) * final_pos.z;
+
+	sphere_pos -= vec3(0, 0, radius);
+
+	gl_Position = pv_matrix * vec4(sphere_pos, 1.0);
 }

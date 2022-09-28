@@ -6,13 +6,13 @@
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
-static double width = 0.2;
+static double width = 0.1;
 static std::shared_ptr<Material> planet_material = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
 	root = std::make_shared<PlanetRegion>(in_world, 10);
-	root->regenerate(15, width, 20.00, Eigen::Vector3d(0, 0, 0));
+	root->regenerate(40, width, 20.00, Eigen::Vector3d(0, 0, 0));
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
