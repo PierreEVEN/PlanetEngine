@@ -1,8 +1,10 @@
 #include <fbo.h>
 #include <imgui.h>
+#include <ImGuizmo.h>
 #include <GLFW/glfw3.h>
 #include <ui/ui.h>
 
+#include "camera.h"
 #include "world.h"
 
 static bool show_debug_window = false;
@@ -64,4 +66,67 @@ namespace ui
 			ImGui::End();
 		}
 	}
+
+
+	void EditTransform(Camera& camera, Eigen::Matrix4f& matrix)
+	{
+		static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
+		static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+		if (ImGui::IsKeyPressed(90))
+			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+		if (ImGui::IsKeyPressed(69))
+			mCurrentGizmoOperation = ImGuizmo::ROTATE;
+		if (ImGui::IsKeyPressed(82)) // r Key
+			mCurrentGizmoOperation = ImGuizmo::SCALE;
+		if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+			mCurrentGizmoOperation = ImGuizmo::ROTATE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
+			mCurrentGizmoOperation = ImGuizmo::SCALE;
+		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+		ImGuizmo::DecomposeMatrixToComponents(matrix.data(), matrixTranslation, matrixRotation, matrixScale);
+		ImGui::InputFloat3("Tr", matrixTranslation);
+		ImGui::InputFloat3("Rt", matrixRotation);
+		ImGui::InputFloat3("Sc", matrixScale);
+		ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, matrix.data());
+
+		if (mCurrentGizmoOperation != ImGuizmo::SCALE)
+		{
+			if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+				mCurrentGizmoMode = ImGuizmo::LOCAL;
+			ImGui::SameLine();
+			if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+				mCurrentGizmoMode = ImGuizmo::WORLD;
+		}
+		static bool useSnap(false);
+		if (ImGui::IsKeyPressed(83))
+			useSnap = !useSnap;
+		ImGui::Checkbox("use snap", &useSnap);
+		ImGui::SameLine();
+		Eigen::Vector3f snap;
+		switch (mCurrentGizmoOperation)
+		{
+		case ImGuizmo::TRANSLATE:
+			snap = Eigen::Vector3f(1, 1, 1);
+			ImGui::InputFloat3("Snap", &snap.x());
+			break;
+		case ImGuizmo::ROTATE:
+			snap = Eigen::Vector3f(1, 1, 1);
+			ImGui::InputFloat("Angle Snap", &snap.x());
+			break;
+		case ImGuizmo::SCALE:
+			snap = Eigen::Vector3f(1, 1, 1);
+			ImGui::InputFloat("Scale Snap", &snap.x());
+			break;
+		}
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+		ImGuizmo::Manipulate(Eigen::Matrix4f(camera.view_matrix().cast<float>()).data(), Eigen::Matrix4f(camera.projection_matrix().cast<float>()).data(), mCurrentGizmoOperation, mCurrentGizmoMode, matrix.data(), NULL, useSnap ? &snap.x() : NULL);
+	}
+
+
 }

@@ -7,25 +7,33 @@
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
+double width = 1333;
+
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(1, 130, 200, Eigen::Vector3d(0, 0, 0), RegionOrientation::NE);
+	root = std::make_shared<PlanetRegion>(in_world, 10, width, 2000, Eigen::Vector3d(0, 0, 0), RegionOrientation::NE);
 }
 
 Planet::~Planet()
 {
 }
 
-Eigen::Vector3f world_origin;
+Eigen::Vector3d world_origin;
 
 void Planet::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
 
+	world_origin = world.get_camera()->get_world_position();
+	world_origin.z() = 0;
+
+	ImGuizmo::BeginFrame();
 	// Draw world gizmo
-	ImGuizmo::RecomposeMatrixFromComponents(world_origin.data(), Eigen::Vector3f(0, 0, 0).data(),
+	ImGuizmo::RecomposeMatrixFromComponents(Eigen::Vector3f(world_origin.cast<float>()).data(), Eigen::Vector3f(0, 0, 0).data(),
 	                                        Eigen::Vector3f(1, 1, 1).data(), world_target_matrix.data());
-	ImGuizmo::Enable(true);
+
+	const ImGuiIO& io = ImGui::GetIO();
+	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 	Manipulate(
 		Eigen::Matrix4f(world.get_camera()->view_matrix().cast<float>()).data(),
 		Eigen::Matrix4f(world.get_camera()->projection_matrix().cast<float>()).data(),
@@ -34,10 +42,15 @@ void Planet::tick(double delta_time)
 		world_target_matrix.data(),
 		nullptr,
 		nullptr);
-	ImGuizmo::DecomposeMatrixToComponents(world_target_matrix.data(), world_origin.data(),
-	                                      Eigen::Vector3f(0, 0, 0).data(), Eigen::Vector3f(1, 1, 1).data());
+	if (ImGuizmo::IsOver()) // pk ca marche poaaa :((
+		std::cout << " CA Y EST !!!!" << std::endl;
 
-	ImGui::DragFloat2("world origin", world_origin.data());
+	root->position = Eigen::Vector3d(
+		std::round(world_origin.x() / width),
+		std::round(world_origin.y() / width),
+		std::round(world_origin.z() / width)) * width;
+
+	root->tick(delta_time);
 }
 
 void Planet::render()
@@ -47,11 +60,14 @@ void Planet::render()
 	root->render();
 }
 
-PlanetRegion::PlanetRegion(int in_subdivision_level, double width, double inner_radius, const Eigen::Vector3d& in_position,
-                           RegionOrientation orientation) : position(in_position), subdivision_level(in_subdivision_level)
+PlanetRegion::PlanetRegion(const World& in_world, int in_subdivision_level, double in_width, double inner_radius,
+                           const Eigen::Vector3d& in_position,
+                           RegionOrientation orientation) : position(in_position),
+                                                            subdivision_level(in_subdivision_level), width(in_width),
+                                                            world(in_world)
 {
 	if (subdivision_level > 0)
-		child = std::make_shared<PlanetRegion>(subdivision_level - 1, width / 2, inner_radius - width * 0.75,
+		child = std::make_shared<PlanetRegion>(world, subdivision_level - 1, width / 2, inner_radius - width * 0.75,
 		                                       position - Eigen::Vector3d(width / 4, width / 4, 0), orientation);
 
 
@@ -60,20 +76,20 @@ PlanetRegion::PlanetRegion(int in_subdivision_level, double width, double inner_
 	std::vector<Eigen::Vector2f> tcs(11);
 
 
-	positions[0] = (position + Eigen::Vector3d(-inner_radius - width, inner_radius + width, 0)).cast<float>(); // A
-	positions[1] = (position + Eigen::Vector3d(inner_radius + width, inner_radius + width, 0)).cast<float>(); // B 
-	positions[2] = (position + Eigen::Vector3d(inner_radius + width, -inner_radius - width, 0)).cast<float>(); // C
-	positions[3] = (position + Eigen::Vector3d(-inner_radius - width, -inner_radius - width, 0)).cast<float>(); // D
+	positions[0] = (Eigen::Vector3d(-inner_radius - width, inner_radius + width, 0)).cast<float>(); // A
+	positions[1] = (Eigen::Vector3d(inner_radius + width, inner_radius + width, 0)).cast<float>(); // B 
+	positions[2] = (Eigen::Vector3d(inner_radius + width, -inner_radius - width, 0)).cast<float>(); // C
+	positions[3] = (Eigen::Vector3d(-inner_radius - width, -inner_radius - width, 0)).cast<float>(); // D
 
-	positions[4] = (position + Eigen::Vector3d(-inner_radius, inner_radius, 0)).cast<float>(); // E
-	positions[5] = (position + Eigen::Vector3d(inner_radius, inner_radius, 0)).cast<float>(); // F
-	positions[6] = (position + Eigen::Vector3d(inner_radius, -inner_radius, 0)).cast<float>(); // G
-	positions[7] = (position + Eigen::Vector3d(-inner_radius, -inner_radius, 0)).cast<float>(); // H
+	positions[4] = (Eigen::Vector3d(-inner_radius, inner_radius, 0)).cast<float>(); // E
+	positions[5] = (Eigen::Vector3d(inner_radius, inner_radius, 0)).cast<float>(); // F
+	positions[6] = (Eigen::Vector3d(inner_radius, -inner_radius, 0)).cast<float>(); // G
+	positions[7] = (Eigen::Vector3d(-inner_radius, -inner_radius, 0)).cast<float>(); // H
 
-	positions[8] = (position + Eigen::Vector3d(-inner_radius, inner_radius - width / 2, 0)).cast<float>(); // I
-	positions[9] = (position + Eigen::Vector3d(inner_radius - width / 2, inner_radius - width / 2, 0)).cast<float>();
+	positions[8] = (Eigen::Vector3d(-inner_radius, inner_radius - width / 2, 0)).cast<float>(); // I
+	positions[9] = (Eigen::Vector3d(inner_radius - width / 2, inner_radius - width / 2, 0)).cast<float>();
 	// J
-	positions[10] = (position + Eigen::Vector3d(inner_radius - width / 2, -inner_radius, 0)).cast<float>(); // K
+	positions[10] = (Eigen::Vector3d(inner_radius - width / 2, -inner_radius, 0)).cast<float>(); // K
 
 	for (int i = 0; i < 11; ++i)
 	{
@@ -104,21 +120,35 @@ PlanetRegion::PlanetRegion(int in_subdivision_level, double width, double inner_
 	                           "resources/shaders/standard_material.fs");
 }
 
-void PlanetRegion::render()
+void PlanetRegion::tick(double delta_time)
 {
 	transform = Eigen::Affine3d::Identity();
+	transform.translate(position);
+
+	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
 	if (world_origin.x() >= position.x() && world_origin.y() < position.y())
-		transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ()));
+		rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
 	else if (world_origin.x() < position.x() && world_origin.y() >= position.y())
-		transform.rotate(Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ()));
+		rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
 	else if (world_origin.x() < position.x() && world_origin.y() < position.y())
-		transform.rotate(Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ()));
+		rotation = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
 	else if (world_origin.x() >= position.x() && world_origin.y() >= position.y())
-		transform.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+		rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+	transform.rotate(rotation);
 
-	std::cout << "begin level " << subdivision_level << std::endl;
-	std::cout << transform.matrix() << std::endl;
+	if (child)
+	{
+		Eigen::Affine3d child_transform = Eigen::Affine3d::Identity();
+		child_transform.rotate(rotation);
+		child_transform.translate(Eigen::Vector3d(width / 4, width / 4, 0));
 
+		child->position = position - child_transform.translation();
+		child->tick(delta_time);
+	}
+}
+
+void PlanetRegion::render()
+{
 	if (child)
 		child->render();
 

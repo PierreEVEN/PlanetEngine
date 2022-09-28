@@ -35,13 +35,17 @@ private:
 class PlanetRegion
 {
 public:
-	PlanetRegion(int subdivision_level, double width, double inner_radius, const Eigen::Vector3d& position, RegionOrientation orientation);
+	PlanetRegion(const World& world, int subdivision_level, double width, double inner_radius, const Eigen::Vector3d& position, RegionOrientation orientation);
+
+	void tick(double delta_time);
 
 	void render();
 
+	Eigen::Vector3d position;
 private:
 
-	Eigen::Vector3d position;
+	const World& world;
+	double width;
 	int subdivision_level;
 	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;

@@ -5,7 +5,6 @@
 #include <mesh.h>
 #include <shader_program.h>
 #include <imgui.h>
-#include <ImGuizmo.h>
 #include <imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
 
@@ -35,8 +34,7 @@ int main()
 		                   ImGui_ImplGlfw_KeyCallback(window, key, scan_code, action, mode);
 	                   }
 	);
-
-
+	
 	glfwSetCursorPosCallback(renderer.get_window(), [](GLFWwindow* window, double xpos, double ypos)
 	                         {
 		                         camera_controller->process_mouse_input(xpos, ypos);
@@ -90,11 +88,11 @@ int main()
 	const auto main_planet = std::make_shared<Planet>(world);
 	world.get_scene_root().add_child(main_planet);
 
+	Eigen::Matrix4f test = Eigen::Matrix4f::Identity();
+
 	while (!renderer.should_close())
 	{
 		renderer.begin();
-		const ImGuiIO& io = ImGui::GetIO();
-		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 
 		camera_controller->tick(world.get_delta_seconds());
 		world.tick_world();
@@ -131,7 +129,7 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		ui::draw(renderer, world, g_buffer);
-
+		
 		renderer.end();
 	}
 }

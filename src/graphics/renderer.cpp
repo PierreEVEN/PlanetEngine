@@ -30,7 +30,6 @@ void Renderer::begin() const
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-	ImGuizmo::BeginFrame();
 
 	glfwMakeContextCurrent(main_window);
 
