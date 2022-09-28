@@ -6,12 +6,12 @@
 
 class Mesh;
 class Material;
-class PlanetRegion;
+class PlanetV2Region;
 
-class Planet : public SceneComponent
+class PlanetV2 : public SceneComponent
 {
 public:
-	Planet(const World& world);
+	PlanetV2(const World& world);
 
 	static std::shared_ptr<Material> get_landscape_material();
 
@@ -20,16 +20,16 @@ protected:
 	void render() override;
 
 private:
-	std::shared_ptr<PlanetRegion> root;
+	std::shared_ptr<PlanetV2Region> root;
 	const World& world;
 };
 
-class PlanetRegion
+class PlanetV2Region
 {
 public:
-	PlanetRegion(const World& world, uint32_t lod_level);
+	PlanetV2Region(const World& world, uint32_t lod_level);
 
-	void regenerate(uint32_t cell_number, double width, double inner_radius, const Eigen::Vector3d& position);
+	void regenerate(uint32_t subdivision, double width, double inner_radius, const Eigen::Vector3d& position);
 
 	void tick(double delta_time);
 	void render();
@@ -38,9 +38,9 @@ public:
 private:
 
 	const World& world;
-	double cell_size;
+	double width;
 	int lod_level;
 	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;
-	std::shared_ptr<PlanetRegion> child;
+	std::shared_ptr<PlanetV2Region> child;
 };
