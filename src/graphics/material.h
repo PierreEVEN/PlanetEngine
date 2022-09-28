@@ -18,7 +18,7 @@ public:
 	void load_from_source(const char* vertex_path, const char* fragment_path);
 
 	uint32_t program_id() const {
-		shader_id;
+		return shader_id;
 	}
 
 private:

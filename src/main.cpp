@@ -105,7 +105,7 @@ int main()
 		 * GBUFFERS
 		 */
 		g_buffer->bind();
-		glClearColor(0.0, 0.0, 0.0, 0.0);
+		glClearColor(.55078125, .765625, 0.828125, 0.0);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		// Render world
@@ -123,7 +123,14 @@ int main()
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		g_buffer_combine->use();
-		g_buffer_color->bind();
+
+		const int color_location = glGetUniformLocation(g_buffer_combine->program_id(), "color");
+		const int normal_location = glGetUniformLocation(g_buffer_combine->program_id(), "normal");
+
+		glUniform1i(color_location, color_location);
+		g_buffer_color->bind(color_location);
+		glUniform1i(normal_location, normal_location);
+		g_buffer_normal->bind(normal_location);
 
 		EZCOGL::VAO::none()->bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);
