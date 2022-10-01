@@ -6,12 +6,12 @@
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
-static double width = 10;
+static float width = 5;
 static std::shared_ptr<Material> planet_material = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(in_world, 2);
+	root = std::make_shared<PlanetRegion>(in_world, 0);
 	root->regenerate(3, width, 200.00, Eigen::Vector3d(0, 0, 0));
 }
 
@@ -33,9 +33,9 @@ void Planet::tick(double delta_time)
 	world_origin.z() = 0;
 
 	root->chunk_position = Eigen::Vector3d(
-		std::round(world_origin.x() / width / 4),
-		std::round(world_origin.y() / width / 4),
-		std::round(world_origin.z() / width / 4)) * width * 4;
+		std::round(world_origin.x() / width),
+		std::round(world_origin.y() / width),
+		std::round(world_origin.z() / width)) * width;
 	root->parent_position = world_origin;
 
 	root->tick(delta_time);
@@ -55,7 +55,47 @@ PlanetRegion::PlanetRegion(const World& in_world, uint32_t in_lod_level) :
 		child = std::make_shared<PlanetRegion>(world, lod_level - 1);
 }
 
-void PlanetRegion::regenerate(int32_t cell_number, double in_width, double inner_radius,
+static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
+                                    int32_t x_min, int32_t x_max, int32_t y_min, int32_t y_max, float scale,
+                                    bool flip_direction = false)
+{
+	const uint32_t x_width = std::abs(x_max - x_min);
+	const uint32_t y_width = std::abs(y_max - y_min);
+
+	// RIGHT side (larger)
+	const auto current_index_offset = static_cast<uint32_t>(positions.size());
+	for (int32_t y = y_min; y <= y_max; ++y)
+		for (int32_t x = x_min; x <= x_max; ++x)
+			positions.emplace_back(Eigen::Vector3f(x * scale, y * scale, 0));
+
+	if (flip_direction)
+		for (uint32_t y = 0; y < y_width; ++y)
+			for (uint32_t x = 0; x < x_width; ++x)
+			{
+				uint32_t base_index = x + y * (x_width + 1) + current_index_offset;
+				indices.emplace_back(base_index);
+				indices.emplace_back(base_index + x_width + 2);
+				indices.emplace_back(base_index + x_width + 1);
+				indices.emplace_back(base_index);
+				indices.emplace_back(base_index + 1);
+				indices.emplace_back(base_index + x_width + 2);
+			}
+	else
+		for (uint32_t y = 0; y < y_width; ++y)
+			for (uint32_t x = 0; x < x_width; ++x)
+			{
+				uint32_t base_index = x + y * (x_width + 1) + current_index_offset;
+				indices.emplace_back(base_index);
+				indices.emplace_back(base_index + 1);
+				indices.emplace_back(base_index + x_width + 1);
+				indices.emplace_back(base_index + 1);
+				indices.emplace_back(base_index + x_width + 2);
+				indices.emplace_back(base_index + x_width + 1);
+			}
+}
+
+
+void PlanetRegion::regenerate(int32_t cell_number, float in_width, double inner_radius,
                               const Eigen::Vector3d& in_position)
 {
 	cell_size = in_width;
@@ -65,9 +105,6 @@ void PlanetRegion::regenerate(int32_t cell_number, double in_width, double inner
 	std::vector<Eigen::Vector3f> normals;
 	std::vector<Eigen::Vector2f> texture_coordinates;
 	std::vector<Eigen::Vector3f> colors;
-
-	constexpr int outter_size = 4;
-	constexpr int inner_size = 0;
 
 	positions[0] = Eigen::Vector3d(-inner_radius - cell_size, inner_radius + cell_size, 0).cast<float>(); // A
 	positions[1] = Eigen::Vector3d(inner_radius + cell_size, inner_radius + cell_size, 0).cast<float>(); // B 
@@ -94,112 +131,38 @@ void PlanetRegion::regenerate(int32_t cell_number, double in_width, double inner
 
 	positions.clear();
 	indices.clear();
-	const int32_t big_border_cell_count = cell_number * 3 - inner_size + outter_size;
-	const int32_t small_border_cell_count = cell_number * 3 - inner_size;
 
 	// TOP side (larger)
-	for (int32_t x = cell_number - inner_size; x <= cell_number * 2 - inner_size + outter_size * 2; ++x)
-	{
-		const float pos_x = x * cell_size;
-		for (int32_t y = -cell_number; y <= cell_number * 2 - inner_size; ++y)
-		{
-			const float pos_y = y * cell_size;
-			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
-		}
-	}
-
-	for (int32_t y = 0; y < cell_number + outter_size; ++y)
-	{
-		for (int32_t x = 0; x < small_border_cell_count; ++x)
-		{
-			int32_t base_index = x + y * (small_border_cell_count + 1);
-			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + (small_border_cell_count + 1));
-			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + (small_border_cell_count + 1));
-			indices.emplace_back(base_index + small_border_cell_count + 2);
-			indices.emplace_back(base_index + 1);
-		}
-	}
-
-	// BOTTOM side
-	size_t current_index_offset = positions.size();
-	for (int32_t x = -cell_number * 2; x <= -cell_number; ++x)
-	{
-		const float pos_x = x * cell_size;
-		for (int32_t y = -cell_number * 2 - outter_size; y <= cell_number - inner_size; ++y)
-		{
-			const float pos_y = y * cell_size;
-			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
-		}
-	}
-
-	for (int32_t y = 0; y < cell_number; ++y)
-	{
-		for (int32_t x = 0; x < big_border_cell_count; ++x)
-		{
-			int32_t base_index = x + y * (big_border_cell_count + 1) + current_index_offset;
-			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + big_border_cell_count + 1);
-			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + big_border_cell_count + 1);
-			indices.emplace_back(base_index + big_border_cell_count + 2);
-		}
-	}
+	generate_rectangle_area(indices, positions,
+	                        cell_number,
+	                        cell_number * 2 + 1,
+	                        -cell_number - 1,
+	                        cell_number * 2 + 1,
+	                        cell_size);
 
 	// RIGHT side (larger)
-	current_index_offset = positions.size();
-	for (int32_t y = -cell_number * 2 - outter_size; y <= -cell_number; ++y)
-	{
-		const float pos_y = y * cell_size;
-		for (int32_t x = -cell_number; x <= cell_number * 2 - inner_size + outter_size; ++x)
-		{
-			const float pos_x = x * cell_size;
-			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
-		}
-	}
+	generate_rectangle_area(indices, positions,
+	                        -cell_number * 2 - 1,
+	                        cell_number + 1,
+	                        cell_number,
+	                        cell_number * 2 + 1,
+	                        cell_size, true);
 
-	for (int32_t y = 0; y < cell_number + outter_size; ++y)
-	{
-		for (int32_t x = 0; x < big_border_cell_count; ++x)
-		{
-			int32_t base_index = x + y * (big_border_cell_count + 1) + current_index_offset;
-			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + big_border_cell_count + 2);
-			indices.emplace_back(base_index + big_border_cell_count + 1);
-			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + big_border_cell_count + 2);
-		}
-	}
+	// BOTTOM side (larger)
+	generate_rectangle_area(indices, positions,
+	                        -cell_number * 2 - 1,
+	                        -cell_number - 1,
+	                        -cell_number * 2 - 1,
+	                        cell_number + 1,
+	                        cell_size);
 
-	// LEFT side
-	current_index_offset = positions.size();
-	for (int32_t y = cell_number - inner_size; y <= cell_number * 2 - inner_size; ++y)
-	{
-		const float pos_y = y * cell_size;
-		for (int32_t x = -cell_number * 2; x <= cell_number - inner_size; ++x)
-		{
-			const float pos_x = x * cell_size;
-			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
-		}
-	}
-
-	for (int32_t y = 0; y < cell_number; ++y)
-	{
-		for (int32_t x = 0; x < small_border_cell_count; ++x)
-		{
-			int32_t base_index = x + y * (small_border_cell_count + 1) + current_index_offset;
-			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + small_border_cell_count + 2);
-			indices.emplace_back(base_index + small_border_cell_count + 1);
-			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + small_border_cell_count + 2);
-		}
-	}
-
+	// LEFT side (larger)
+	generate_rectangle_area(indices, positions,
+	                        -cell_number - 1,
+	                        cell_number * 2 + 1,
+	                        -cell_number * 2 - 1,
+	                        -cell_number - 1,
+	                        cell_size, true);
 
 	for (int i = 0; i < positions.size(); ++i)
 	{
@@ -216,7 +179,7 @@ void PlanetRegion::regenerate(int32_t cell_number, double in_width, double inner
 	mesh->set_indices(indices);
 
 	if (child)
-		child->regenerate(cell_number + 1, cell_size * 2, 0,
+		child->regenerate(cell_number, cell_size * 2, 0,
 		                  chunk_position - Eigen::Vector3d(cell_size / 4, cell_size / 4, 0));
 }
 

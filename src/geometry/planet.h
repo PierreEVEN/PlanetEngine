@@ -29,7 +29,7 @@ class PlanetRegion
 public:
 	PlanetRegion(const World& world, uint32_t lod_level);
 
-	void regenerate(int32_t cell_number, double width, double inner_radius, const Eigen::Vector3d& position);
+	void regenerate(int32_t cell_number, float width, double inner_radius, const Eigen::Vector3d& position);
 
 	void tick(double delta_time);
 	void render();
@@ -39,7 +39,7 @@ public:
 private:
 
 	const World& world;
-	double cell_size;
+	float cell_size;
 	int lod_level;
 	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;
