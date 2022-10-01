@@ -1,5 +1,6 @@
 .idea
 .vs
+.vscode
 /build
 /bin
 /third_party/easycppogl/build

@@ -27,20 +27,21 @@ private:
 class PlanetRegion
 {
 public:
-	PlanetRegion(const World& world, uint32_t lod_level);
+	PlanetRegion(const World& world, uint32_t lod_level, uint32_t my_level);
 
-	void regenerate(int32_t cell_number, float width, double inner_radius, const Eigen::Vector3d& position);
+	void regenerate(int32_t cell_number, float width, double inner_radius);
 
 	void tick(double delta_time);
 	void render();
 
-	Eigen::Vector3d chunk_position;
-	Eigen::Vector3d parent_position;
 private:
 
+	Eigen::Vector3d chunk_position;
 	const World& world;
 	float cell_size;
-	int lod_level;
+	int32_t cell_number;
+	uint32_t current_lod;
+	uint32_t num_lods;
 	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<PlanetRegion> child;

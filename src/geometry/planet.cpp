@@ -6,13 +6,12 @@
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
-static float width = 5;
 static std::shared_ptr<Material> planet_material = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(in_world, 0);
-	root->regenerate(3, width, 200.00, Eigen::Vector3d(0, 0, 0));
+	root = std::make_shared<PlanetRegion>(in_world, 13, 0);
+	root->regenerate(20, 2, 200.00);
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -28,31 +27,20 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 void Planet::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
-
-	Eigen::Vector3d world_origin = world.get_camera()->get_world_position();
-	world_origin.z() = 0;
-
-	root->chunk_position = Eigen::Vector3d(
-		std::round(world_origin.x() / width),
-		std::round(world_origin.y() / width),
-		std::round(world_origin.z() / width)) * width;
-	root->parent_position = world_origin;
-
 	root->tick(delta_time);
 }
 
 void Planet::render()
 {
 	SceneComponent::render();
-
 	root->render();
 }
 
-PlanetRegion::PlanetRegion(const World& in_world, uint32_t in_lod_level) :
-	world(in_world), lod_level(in_lod_level), mesh(Mesh::create())
+PlanetRegion::PlanetRegion(const World& in_world, uint32_t in_lod_level, uint32_t in_my_level) :
+	world(in_world), num_lods(in_lod_level), mesh(Mesh::create()), current_lod(in_my_level)
 {
-	if (lod_level != 0)
-		child = std::make_shared<PlanetRegion>(world, lod_level - 1);
+	if (current_lod + 1 < num_lods)
+		child = std::make_shared<PlanetRegion>(world, num_lods, in_my_level + 1);
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
@@ -62,11 +50,25 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 	const uint32_t x_width = std::abs(x_max - x_min);
 	const uint32_t y_width = std::abs(y_max - y_min);
 
-	// RIGHT side (larger)
+	const float max_global = static_cast<float>(std::max(std::max(std::abs(x_min), std::abs(x_max)),
+	                                                     std::max(std::abs(y_min), std::abs(y_max))));
+	float min_global = static_cast<float>(std::min(std::min(std::abs(x_min), std::abs(x_max)),
+	                                                     std::min(std::abs(y_min), std::abs(y_max))));
+
+	if (min_global == max_global)
+		min_global = 0;
+
 	const auto current_index_offset = static_cast<uint32_t>(positions.size());
 	for (int32_t y = y_min; y <= y_max; ++y)
 		for (int32_t x = x_min; x <= x_max; ++x)
-			positions.emplace_back(Eigen::Vector3f(x * scale, y * scale, 0));
+		{
+			const float value_local = static_cast<float>(std::max(std::abs(x), std::abs(y)));
+			const float distance = (value_local - min_global) / (max_global - min_global);
+			const bool orient_x = std::abs(x) > std::abs(y);
+			positions.emplace_back(Eigen::Vector3f(x * scale, y * scale,
+			                                       (std::abs(x) % 2 == 0 && !orient_x || std::abs(y) % 2 == 0 &&
+				                                       orient_x) * distance));
+		}
 
 	if (flip_direction)
 		for (uint32_t y = 0; y < y_width; ++y)
@@ -95,11 +97,10 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 }
 
 
-void PlanetRegion::regenerate(int32_t cell_number, float in_width, double inner_radius,
-                              const Eigen::Vector3d& in_position)
+void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inner_radius)
 {
+	cell_number = in_cell_number;
 	cell_size = in_width;
-	chunk_position = in_position;
 
 	std::vector<Eigen::Vector3f> positions(11);
 	std::vector<Eigen::Vector3f> normals;
@@ -132,44 +133,56 @@ void PlanetRegion::regenerate(int32_t cell_number, float in_width, double inner_
 	positions.clear();
 	indices.clear();
 
-	// TOP side (larger)
-	generate_rectangle_area(indices, positions,
-	                        cell_number,
-	                        cell_number * 2 + 1,
-	                        -cell_number - 1,
-	                        cell_number * 2 + 1,
-	                        cell_size);
+	if (current_lod == 0)
+	{
+		generate_rectangle_area(indices, positions,
+		                        -cell_number * 2 - 1,
+		                        cell_number * 2 + 1,
+		                        -cell_number * 2 - 1,
+		                        cell_number * 2 + 1,
+		                        cell_size);
+	}
+	else
+	{
+		// TOP side (larger)
+		generate_rectangle_area(indices, positions,
+		                        cell_number,
+		                        cell_number * 2 + 1,
+		                        -cell_number - 1,
+		                        cell_number * 2 + 1,
+		                        cell_size);
 
-	// RIGHT side (larger)
-	generate_rectangle_area(indices, positions,
-	                        -cell_number * 2 - 1,
-	                        cell_number + 1,
-	                        cell_number,
-	                        cell_number * 2 + 1,
-	                        cell_size, true);
+		// RIGHT side (larger)
+		generate_rectangle_area(indices, positions,
+		                        -cell_number * 2 - 1,
+		                        cell_number, // + 1
+		                        cell_number,
+		                        cell_number * 2 + 1,
+		                        cell_size, true);
 
-	// BOTTOM side (larger)
-	generate_rectangle_area(indices, positions,
-	                        -cell_number * 2 - 1,
-	                        -cell_number - 1,
-	                        -cell_number * 2 - 1,
-	                        cell_number + 1,
-	                        cell_size);
+		// BOTTOM side
+		generate_rectangle_area(indices, positions,
+		                        -cell_number * 2 - 1,
+		                        -cell_number - 1,
+		                        -cell_number * 2 - 1,
+		                        cell_number, // - 1
+		                        cell_size);
 
-	// LEFT side (larger)
-	generate_rectangle_area(indices, positions,
-	                        -cell_number - 1,
-	                        cell_number * 2 + 1,
-	                        -cell_number * 2 - 1,
-	                        -cell_number - 1,
-	                        cell_size, true);
+		// LEFT side
+		generate_rectangle_area(indices, positions,
+		                        -cell_number - 1,
+		                        cell_number * 2 + 1,
+		                        -cell_number * 2 - 1,
+		                        -cell_number - 1,
+		                        cell_size, true);
+	}
 
 	for (int i = 0; i < positions.size(); ++i)
 	{
 		normals.emplace_back(Eigen::Vector3f(
-			static_cast<float>(fmod(std::abs(sin((lod_level + 1) * 3678.45678)), 1.0)),
-			static_cast<float>(fmod(std::abs(sin((lod_level + 1) * 98.0987654)), 1.0)),
-			static_cast<float>(fmod(std::abs(sin((lod_level + 1) * 567.845496)), 1.0))));
+			static_cast<float>(fmod(std::abs(sin((num_lods + 1) * 3678.45678)), 1.0)),
+			static_cast<float>(fmod(std::abs(sin((num_lods + 1) * 98.0987654)), 1.0)),
+			static_cast<float>(fmod(std::abs(sin((num_lods + 1) * 567.845496)), 1.0))));
 		texture_coordinates.emplace_back(Eigen::Vector2f(0, 0));
 	}
 
@@ -179,46 +192,37 @@ void PlanetRegion::regenerate(int32_t cell_number, float in_width, double inner_
 	mesh->set_indices(indices);
 
 	if (child)
-		child->regenerate(cell_number, cell_size * 2, 0,
-		                  chunk_position - Eigen::Vector3d(cell_size / 4, cell_size / 4, 0));
+		child->regenerate(cell_number, cell_size * 2, 0);
 }
 
 void PlanetRegion::tick(double delta_time)
 {
-	transform = Eigen::Affine3d::Identity();
-	transform.translate(chunk_position); // +Eigen::Vector3d(cell_size, -cell_size, cell_size));
+	const auto camera_location = world.get_camera()->get_world_position();
 
-	Eigen::AngleAxisd rotation = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
-	if (parent_position.x() >= chunk_position.x() && parent_position.y() < chunk_position.y())
-	{
-		rotation = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
-	}
-	else if (parent_position.x() < chunk_position.x() && parent_position.y() >= chunk_position.y())
-	{
-		rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
-	}
-	else if (parent_position.x() && parent_position.y() < chunk_position.y())
-	{
-		rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
-	}
-	else if (parent_position.x() >= chunk_position.x() && parent_position.y() >= chunk_position.y())
+	const double snapping = cell_size * 2;
+	chunk_position = Eigen::Vector3d(
+		std::round(camera_location.x() / snapping + 0.5) - 0.5,
+		std::round(camera_location.y() / snapping + 0.5) - 0.5,
+		0) * snapping;
+	transform = Eigen::Affine3d::Identity();
+	transform.translate(chunk_position);
+
+	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
+	if (camera_location.x() >= chunk_position.x() && camera_location.y() < chunk_position.y())
 	{
 		rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
 	}
-	// std::cout << "cell : " << cell_size << " / pos : " << chunk_position.x() + 20 << " -> cam : " << parent_position.x() << std::endl;
-
-
-	transform.rotate(rotation);
-
-	if (child)
+	else if (camera_location.x() < chunk_position.x() && camera_location.y() >= chunk_position.y())
 	{
-		Eigen::Affine3d child_transform = Eigen::Affine3d::Identity();
-		child_transform.rotate(rotation);
-		child_transform.translate(Eigen::Vector3d(cell_size * 2, -cell_size * 2, 0));
-		child->parent_position = chunk_position;
-		child->chunk_position = chunk_position + child_transform.translation();
-		child->tick(delta_time);
+		rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
 	}
+	else if (camera_location.x() >= chunk_position.x() && camera_location.y() >= chunk_position.y())
+	{
+		rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+	}
+	transform.rotate(rotation);
+	if (child)
+		child->tick(delta_time);
 }
 
 void PlanetRegion::render()
@@ -228,6 +232,11 @@ void PlanetRegion::render()
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	Planet::get_landscape_material()->use();
+	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "inner_width"),
+	            cell_number * cell_size);
+	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "outer_width"),
+	            cell_number * cell_size * 2);
+	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"), cell_size);
 	Planet::get_landscape_material()->set_model_transform(transform);
 	mesh->draw();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

@@ -7,12 +7,13 @@ layout(location = 3) in vec3 colors;
 
 layout(location = 0) out vec3 out_norm;
 layout(location = 1) out float time;
-layout(location = 2) out vec2 out_tc;
-layout(location = 3) out vec3 out_color;
 layout(location = 4) out float altitude;
 
 
 layout(location = 1) uniform mat4 model;
+layout(location = 2) uniform float inner_width;
+layout(location = 3) uniform float outer_width;
+layout(location = 4) uniform float cell_width;
 
 layout (std140, binding = 0) uniform WorldData
 {
@@ -67,39 +68,69 @@ float get_height_at_location(vec2 pos) {
 	return pNoise(pos, 1) * 100 + pNoise(pos, 4) * 50 + pNoise(pos, 10) * 20 +  pNoise(pos * 0.001, 7) * 400 - 10;
  }
 
+float altitude_with_water(float altitude) {
+	return altitude < 1 ? 1 : altitude;
+}
+
+
+float square_distance(vec3 a, vec3 b) {
+	return 
+		max(abs(a.x - b.x),
+		max(abs(a.y - b.y),
+		abs(a.z - b.z)
+	));
+}
 
 void main()
 {
     time = world_time;
-    out_tc = tc;
-	out_color = abs(norm);
-	
-	vec4 final_pos = model * vec4(pos, 1);
 
+	mat4 model_no_rotation = model;
+	model_no_rotation[3][0] = 0;
+	model_no_rotation[3][1] = 0;
+	model_no_rotation[3][2] = 0;
+	
+	vec3 final_pos = (model * vec4(pos, 1)).xyz;
+	vec3 final_pos_unrotated = (model_no_rotation * vec4(pos, 1)).xyz;
+	vec3 center = (model * vec4(0, 0, 0, 1)).xyz;
+
+	float center_distance_normalized = (square_distance(center, final_pos) - inner_width) / (outer_width - inner_width);
+
+	vec3 normalized_pos_direction = normalize(final_pos_unrotated);
+	vec2 normalized_direction = vec2(abs(
+		normalized_pos_direction.x) < abs(normalized_pos_direction.y) ? 
+			normalized_pos_direction.y < 0 ? -1 : 1 :
+			0,
+		abs(normalized_pos_direction.y) < abs(normalized_pos_direction.x) ? 
+			normalized_pos_direction.x < 0 ? -1 : 1 :
+			0);
+
+	// Compute normals
 	vec3 h0 = vec3(0, 0, get_height_at_location(final_pos.xy));
 	vec3 h1 = vec3(1, 0, get_height_at_location(final_pos.xy + vec2(1, 0)));
 	vec3 h2 = vec3(0, 1, get_height_at_location(final_pos.xy + vec2(0, 1)));
-
     out_norm = normalize(cross(h1 - h0, h2 - h0));
 
-	final_pos.z += h0.z;
-	altitude = final_pos.z;
+	altitude = h0.z;
 
-	float depth_scale = clamp(-final_pos.z / 10, 0, 1);
 
-	if (final_pos.z < 1) {
-		final_pos.z = 1;
+	float h_left = altitude_with_water(get_height_at_location(final_pos.xy + normalized_direction * cell_width * 1));
+	float h_right = altitude_with_water(get_height_at_location(final_pos.xy - normalized_direction * cell_width * 1));
+	float h_mean = (h_left + h_right) / 2;
+
+	final_pos.z = mix(altitude_with_water(altitude), h_mean, pos.z );
+
+	// Underwater normal and depth
+	float depth_scale = clamp(-altitude / 10, 0, 1);
+	if (altitude < 1) {
 		out_norm = mix(vec3(0,0,1), out_norm, 1 - depth_scale);
 	}
 
+	// Morph to sphere
+	float planet_radius = 8000;
+	final_pos = vec3(sin(final_pos.x / planet_radius), sin(final_pos.y / planet_radius), cos(final_pos.x / planet_radius) * cos(final_pos.y / planet_radius)) * planet_radius;
+	final_pos += normalize(final_pos.xyz) * altitude;
+	final_pos -= vec3(0, 0, planet_radius);
 
-	float radius = 8000;
-
-	vec3 sphere_pos = vec3(sin(final_pos.x / radius), sin(final_pos.y / radius), cos(final_pos.x / radius) * cos(final_pos.y / radius)) * radius;
-
-	sphere_pos += normalize(sphere_pos.xyz) * final_pos.z;
-
-	sphere_pos -= vec3(0, 0, radius);
-
-	gl_Position = pv_matrix * vec4(sphere_pos, 1.0);
+	gl_Position = pv_matrix * vec4(final_pos, 1.0);
 }
