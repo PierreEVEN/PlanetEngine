@@ -32,7 +32,7 @@ public:
 	void regenerate(int32_t cell_number, float width, double inner_radius);
 
 	void tick(double delta_time);
-	void render();
+	void render() const;
 
 private:
 

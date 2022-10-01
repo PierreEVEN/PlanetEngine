@@ -2,11 +2,12 @@
 
 #include <imgui.h>
 
-Camera::Camera(): res({800, 600}), camera_fov(45), camera_near(1), camera_far(100000), pitch(0), yaw(0)
+Camera::Camera(): res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0)
 {
 	update_rotation();
 }
 
+/*
 Eigen::Matrix4d Camera::projection_matrix() const
 {
 	const auto tan_h_fov = 1.0 / std::tan(camera_fov / 2.0);
@@ -17,6 +18,21 @@ Eigen::Matrix4d Camera::projection_matrix() const
 	m << tan_h_fov / aspect_ratio, 0, 0, 0,
 		0, tan_h_fov, 0, 0,
 		0, 0, (camera_far + camera_near) * range_inv, 2.0 * camera_near * camera_far * range_inv,
+		0, 0, -1, 0;
+
+	return m;
+}
+*/
+
+Eigen::Matrix4d Camera::reversed_z_projection_matrix() const
+{
+	const auto tan_h_fov = 1.0 / std::tan(camera_fov / 2.0);
+	const auto aspect_ratio = res.x() / res.y();
+
+	Eigen::Matrix4d m;
+	m << tan_h_fov / aspect_ratio, 0, 0, 0,
+		0, tan_h_fov, 0, 0,
+		0, 0, 0.0, camera_near,
 		0, 0, -1, 0;
 
 	return m;

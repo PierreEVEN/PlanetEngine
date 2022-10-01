@@ -27,6 +27,7 @@ int main()
 	auto world = World();
 	camera_controller = std::make_unique<DefaultCameraController>(world.get_camera());
 	world_camera = world.get_camera();
+	world_camera->set_local_position({ 0, 0, 10 });
 
 	glfwSetKeyCallback(renderer.get_window(), [](GLFWwindow* window, int key, int scan_code, int action, int mode)
 	                   {
@@ -59,15 +60,19 @@ int main()
 	std::vector<std::shared_ptr<EZCOGL::Texture2D>> textures;
 	// GBuffer color
 	const auto g_buffer_color = EZCOGL::Texture2D::create();
-	g_buffer_color->alloc(800, 600, GL_RGB8, nullptr);
+	g_buffer_color->alloc(800, 600, GL_RGB16F, nullptr);
 	textures.push_back(g_buffer_color);
+	// GBuffer positions
+	const auto g_buffer_position = EZCOGL::Texture2D::create();
+	g_buffer_position->alloc(800, 600, GL_RGB32F, nullptr);
+	textures.push_back(g_buffer_position);
 	// GBuffer normal
 	const auto g_buffer_normal = EZCOGL::Texture2D::create();
-	g_buffer_normal->alloc(800, 600, GL_RGB8, nullptr);
+	g_buffer_normal->alloc(800, 600, GL_RGB16F, nullptr);
 	textures.push_back(g_buffer_normal);
 	// GBuffer depth
 	const auto g_buffer_depth = EZCOGL::Texture2D::create();
-	g_buffer_depth->alloc(800, 600, GL_DEPTH_COMPONENT24, nullptr);
+	g_buffer_depth->alloc(800, 600, GL_DEPTH_COMPONENT32F, nullptr);
 	//textures.push_back(g_buffer_depth);
 	g_buffer = EZCOGL::FBO_DepthTexture::create(textures, g_buffer_depth);
 
@@ -87,11 +92,27 @@ int main()
 	const auto main_planet = std::make_shared<Planet>(world);
 	world.get_scene_root().add_child(main_planet);
 
-	Eigen::Matrix4f test = Eigen::Matrix4f::Identity();
+	GLint major, minor;
+	glGetIntegerv(GL_MAJOR_VERSION, &major);
+	glGetIntegerv(GL_MINOR_VERSION, &minor);
+	if ((major > 4 || (major == 4 && minor >= 5)) ||
+		glfwExtensionSupported("GL_ARB_clip_control"))
+	{
+		glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	}
+	else
+	{
+		std::cerr << "glClipControl required, sorry." << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
+	Eigen::Matrix4f test = Eigen::Matrix4f::Identity();
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	while (!renderer.should_close())
 	{
 		renderer.begin();
+		glClearDepth(0.0);
+		glDepthFunc(GL_GREATER);
 
 		camera_controller->tick(world.get_delta_seconds());
 		world.tick_world();
@@ -113,6 +134,8 @@ int main()
 		/**
 		 * GBUFFERS COMBINE
 		 */
+		glClearDepth(1.0);
+		glDepthFunc(GL_LESS);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
@@ -124,9 +147,12 @@ int main()
 		g_buffer_combine->use();
 
 		const int color_location = glGetUniformLocation(g_buffer_combine->program_id(), "color");
+		const int position_location = glGetUniformLocation(g_buffer_combine->program_id(), "position");
 		const int normal_location = glGetUniformLocation(g_buffer_combine->program_id(), "normal");
 		const int depth_location = glGetUniformLocation(g_buffer_combine->program_id(), "depth");
 
+		glUniform1i(position_location, position_location);
+		g_buffer_position->bind(position_location);
 		glUniform1i(color_location, color_location);
 		g_buffer_color->bind(color_location);
 
@@ -135,6 +161,7 @@ int main()
 
 		glUniform1i(depth_location, depth_location);
 		g_buffer_depth->bind(depth_location);
+
 
 		EZCOGL::VAO::none()->bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);

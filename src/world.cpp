@@ -36,7 +36,7 @@ void World::tick_world()
 	last_time = glfwGetTime();
 
 	// Update world data
-	const auto proj_matrix = camera->projection_matrix();
+	const auto proj_matrix = camera->reversed_z_projection_matrix();
 	const auto view_matrix = camera->view_matrix();
 	const auto pv_matrix = proj_matrix * view_matrix;
 	const WorldDataStructure world_data = {

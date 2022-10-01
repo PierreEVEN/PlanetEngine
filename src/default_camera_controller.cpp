@@ -6,7 +6,8 @@
 #include "camera.h"
 #include "utils/maths.h"
 
-DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera) : camera(in_camera)
+DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera) : camera(in_camera),
+	camera_desired_position(0, 0, 10)
 {
 }
 
@@ -95,12 +96,15 @@ void DefaultCameraController::process_mouse_wheel(double x_pos, double y_pos)
 	if (!capture_input)
 		return;
 	movement_speed *= y_pos / 3 + 1;
+	if (movement_speed < 0.001)
+		movement_speed = 0.001;
 }
 
 void DefaultCameraController::tick(double delta_time)
 {
 	if (!capture_input)
 		return;
-	camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
+	camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (
+		input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
 	camera->set_local_position(Maths::lerp(camera->get_local_position(), camera_desired_position, 15 * delta_time));
 }

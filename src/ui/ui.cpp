@@ -125,7 +125,7 @@ namespace ui
 
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-		ImGuizmo::Manipulate(Eigen::Matrix4f(camera.view_matrix().cast<float>()).data(), Eigen::Matrix4f(camera.projection_matrix().cast<float>()).data(), mCurrentGizmoOperation, mCurrentGizmoMode, matrix.data(), NULL, useSnap ? &snap.x() : NULL);
+		ImGuizmo::Manipulate(Eigen::Matrix4f(camera.view_matrix().cast<float>()).data(), Eigen::Matrix4f(camera.reversed_z_projection_matrix().cast<float>()).data(), mCurrentGizmoOperation, mCurrentGizmoMode, matrix.data(), NULL, useSnap ? &snap.x() : NULL);
 	}
 
 

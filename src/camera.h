@@ -7,7 +7,8 @@ class Camera : public SceneComponent
 public:
 	Camera();
 
-	Eigen::Matrix4d projection_matrix() const;
+	//Eigen::Matrix4d projection_matrix() const;
+	Eigen::Matrix4d reversed_z_projection_matrix() const;
 	Eigen::Matrix4d view_matrix();
 
 	double& field_of_view()
@@ -18,11 +19,6 @@ public:
 	double& z_near()
 	{
 		return camera_near;
-	}
-
-	double& z_far()
-	{
-		return camera_far;
 	}
 
 	Eigen::Vector2d& viewport_res()
@@ -51,7 +47,6 @@ private:
 	Eigen::Vector2d res;
 	double camera_fov;
 	double camera_near;
-	double camera_far;
 
 	double pitch;
 	double yaw;

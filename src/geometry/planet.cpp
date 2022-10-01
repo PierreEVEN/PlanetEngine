@@ -10,8 +10,8 @@ static std::shared_ptr<Material> planet_material = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(in_world, 13, 0);
-	root->regenerate(20, 0.1, 200.00);
+	root = std::make_shared<PlanetRegion>(in_world, 15, 0);
+	root->regenerate(40, 0.1, 200.00);
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -19,8 +19,8 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	if (planet_material)
 		return planet_material;
 	planet_material = Material::create("standard_material");
-	planet_material->load_from_source("resources/shaders/standard_material.vs",
-	                                  "resources/shaders/standard_material.fs");
+	planet_material->load_from_source("resources/shaders/planet_material.vs",
+	                                  "resources/shaders/planet_material.fs");
 	return planet_material;
 }
 
@@ -102,36 +102,8 @@ void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inn
 	cell_number = in_cell_number;
 	cell_size = in_width;
 
-	std::vector<Eigen::Vector3f> positions(11);
-	std::vector<Eigen::Vector3f> normals;
-	std::vector<Eigen::Vector2f> texture_coordinates;
-	std::vector<Eigen::Vector3f> colors;
-
-	positions[0] = Eigen::Vector3d(-inner_radius - cell_size, inner_radius + cell_size, 0).cast<float>(); // A
-	positions[1] = Eigen::Vector3d(inner_radius + cell_size, inner_radius + cell_size, 0).cast<float>(); // B 
-	positions[2] = Eigen::Vector3d(inner_radius + cell_size, -inner_radius - cell_size, 0).cast<float>(); // C
-	positions[3] = Eigen::Vector3d(-inner_radius - cell_size, -inner_radius - cell_size, 0).cast<float>(); // D
-
-	positions[4] = Eigen::Vector3d(-inner_radius, inner_radius, 0).cast<float>(); // E
-	positions[5] = Eigen::Vector3d(inner_radius, inner_radius, 0).cast<float>(); // F
-	positions[6] = Eigen::Vector3d(inner_radius, -inner_radius, 0).cast<float>(); // G
-	positions[7] = Eigen::Vector3d(-inner_radius, -inner_radius, 0).cast<float>(); // H
-
-	positions[8] = Eigen::Vector3d(-inner_radius, inner_radius - cell_size / 2, 0).cast<float>(); // I
-	positions[9] = Eigen::Vector3d(inner_radius - cell_size / 2, inner_radius - cell_size / 2, 0).cast<float>(); // J
-	positions[10] = Eigen::Vector3d(inner_radius - cell_size / 2, -inner_radius, 0).cast<float>(); // K
-
-	std::vector<uint32_t> indices = {
-		0, 5, 1, 0, 4, 5,
-		1, 6, 2, 1, 5, 6,
-		2, 7, 3, 2, 6, 7,
-		3, 4, 0, 3, 7, 4,
-		4, 9, 5, 4, 8, 9,
-		5, 10, 6, 5, 9, 10
-	};
-
-	positions.clear();
-	indices.clear();
+	std::vector<Eigen::Vector3f> positions;
+	std::vector<uint32_t> indices;
 
 	if (current_lod == 0)
 	{
@@ -177,18 +149,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inn
 		                        cell_size, true);
 	}
 
-	for (int i = 0; i < positions.size(); ++i)
-	{
-		normals.emplace_back(Eigen::Vector3f(
-			static_cast<float>(fmod(std::abs(sin((num_lods + 1) * 3678.45678)), 1.0)),
-			static_cast<float>(fmod(std::abs(sin((num_lods + 1) * 98.0987654)), 1.0)),
-			static_cast<float>(fmod(std::abs(sin((num_lods + 1) * 567.845496)), 1.0))));
-		texture_coordinates.emplace_back(Eigen::Vector2f(0, 0));
-	}
-
 	mesh->set_positions(positions, 0, true);
-	mesh->set_normals(normals, 1, true);
-	mesh->set_texture_coordinates(texture_coordinates, 2, true);
 	mesh->set_indices(indices);
 
 	if (child)
@@ -225,7 +186,7 @@ void PlanetRegion::tick(double delta_time)
 		child->tick(delta_time);
 }
 
-void PlanetRegion::render()
+void PlanetRegion::render() const
 {
 	if (child)
 		child->render();
