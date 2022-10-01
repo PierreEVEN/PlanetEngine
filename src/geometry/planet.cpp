@@ -11,7 +11,7 @@ static std::shared_ptr<Material> planet_material = nullptr;
 Planet::Planet(const World& in_world) : world(in_world)
 {
 	root = std::make_shared<PlanetRegion>(in_world, 13, 0);
-	root->regenerate(20, 2, 200.00);
+	root->regenerate(20, 0.1, 200.00);
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -155,7 +155,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inn
 		// RIGHT side (larger)
 		generate_rectangle_area(indices, positions,
 		                        -cell_number * 2 - 1,
-		                        cell_number, // + 1
+		                        cell_number,
 		                        cell_number,
 		                        cell_number * 2 + 1,
 		                        cell_size, true);
@@ -165,7 +165,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inn
 		                        -cell_number * 2 - 1,
 		                        -cell_number - 1,
 		                        -cell_number * 2 - 1,
-		                        cell_number, // - 1
+		                        cell_number,
 		                        cell_size);
 
 		// LEFT side

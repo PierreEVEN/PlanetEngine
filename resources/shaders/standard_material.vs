@@ -65,7 +65,7 @@ float pNoise(vec2 p, int res){
 
 
 float get_height_at_location(vec2 pos) {
-	return pNoise(pos, 1) * 100 + pNoise(pos, 4) * 50 + pNoise(pos, 10) * 20 +  pNoise(pos * 0.001, 7) * 400 - 10;
+	return pNoise(pos, 4) * 100 + pNoise(pos * 3, 4) * 15 + pNoise(pos * 20, 5) * 4 +  pNoise(pos * 0.001, 4) * 400 - 10;
  }
 
 float altitude_with_water(float altitude) {
@@ -118,7 +118,8 @@ void main()
 	float h_right = altitude_with_water(get_height_at_location(final_pos.xy - normalized_direction * cell_width * 1));
 	float h_mean = (h_left + h_right) / 2;
 
-	final_pos.z = mix(altitude_with_water(altitude), h_mean, pos.z );
+	final_pos.z = mix(altitude_with_water(altitude), h_mean, pos.z);
+	float altitude_with_water = final_pos.z;
 
 	// Underwater normal and depth
 	float depth_scale = clamp(-altitude / 10, 0, 1);
@@ -129,7 +130,7 @@ void main()
 	// Morph to sphere
 	float planet_radius = 8000;
 	final_pos = vec3(sin(final_pos.x / planet_radius), sin(final_pos.y / planet_radius), cos(final_pos.x / planet_radius) * cos(final_pos.y / planet_radius)) * planet_radius;
-	final_pos += normalize(final_pos.xyz) * altitude;
+	final_pos += normalize(final_pos.xyz) * altitude_with_water;
 	final_pos -= vec3(0, 0, planet_radius);
 
 	gl_Position = pv_matrix * vec4(final_pos, 1.0);
