@@ -6,13 +6,13 @@
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 
-static double width = 0.1;
+static double width = 10;
 static std::shared_ptr<Material> planet_material = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(in_world, 10);
-	root->regenerate(40, width, 20.00, Eigen::Vector3d(0, 0, 0));
+	root = std::make_shared<PlanetRegion>(in_world, 2);
+	root->regenerate(3, width, 200.00, Eigen::Vector3d(0, 0, 0));
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -25,19 +25,18 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	return planet_material;
 }
 
-static Eigen::Vector3d world_origin;
-
 void Planet::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
 
-	world_origin = world.get_camera()->get_world_position();
+	Eigen::Vector3d world_origin = world.get_camera()->get_world_position();
 	world_origin.z() = 0;
 
-	root->position = Eigen::Vector3d(
-		std::round(world_origin.x() / width),
-		std::round(world_origin.y() / width),
-		std::round(world_origin.z() / width)) * width;
+	root->chunk_position = Eigen::Vector3d(
+		std::round(world_origin.x() / width / 4),
+		std::round(world_origin.y() / width / 4),
+		std::round(world_origin.z() / width / 4)) * width * 4;
+	root->parent_position = world_origin;
 
 	root->tick(delta_time);
 }
@@ -56,17 +55,19 @@ PlanetRegion::PlanetRegion(const World& in_world, uint32_t in_lod_level) :
 		child = std::make_shared<PlanetRegion>(world, lod_level - 1);
 }
 
-void PlanetRegion::regenerate(uint32_t cell_number, double in_width, double inner_radius,
+void PlanetRegion::regenerate(int32_t cell_number, double in_width, double inner_radius,
                               const Eigen::Vector3d& in_position)
 {
 	cell_size = in_width;
-	position = in_position;
+	chunk_position = in_position;
 
 	std::vector<Eigen::Vector3f> positions(11);
 	std::vector<Eigen::Vector3f> normals;
 	std::vector<Eigen::Vector2f> texture_coordinates;
 	std::vector<Eigen::Vector3f> colors;
 
+	constexpr int outter_size = 4;
+	constexpr int inner_size = 0;
 
 	positions[0] = Eigen::Vector3d(-inner_radius - cell_size, inner_radius + cell_size, 0).cast<float>(); // A
 	positions[1] = Eigen::Vector3d(inner_radius + cell_size, inner_radius + cell_size, 0).cast<float>(); // B 
@@ -93,53 +94,51 @@ void PlanetRegion::regenerate(uint32_t cell_number, double in_width, double inne
 
 	positions.clear();
 	indices.clear();
-	const uint32_t big_border_cell_count = cell_number * 4;
-	const uint32_t small_border_cell_count = cell_number * 2;
-	size_t current_index_offset = 0;
+	const int32_t big_border_cell_count = cell_number * 3 - inner_size + outter_size;
+	const int32_t small_border_cell_count = cell_number * 3 - inner_size;
 
-	// TOP side
-	current_index_offset = positions.size();
-	for (int y = -2; y <= static_cast<int>(cell_number); ++y)
+	// TOP side (larger)
+	for (int32_t x = cell_number - inner_size; x <= cell_number * 2 - inner_size + outter_size * 2; ++x)
 	{
-		const float pos_y = y * cell_size + cell_number * cell_size;
-		for (uint32_t x = 0; x <= big_border_cell_count; ++x)
+		const float pos_x = x * cell_size;
+		for (int32_t y = -cell_number; y <= cell_number * 2 - inner_size; ++y)
 		{
-			const float pos_x = x * cell_size - big_border_cell_count * cell_size / 2.0;
+			const float pos_y = y * cell_size;
 			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
 		}
 	}
 
-	for (uint32_t y = 0; y < cell_number + 2; ++y)
+	for (int32_t y = 0; y < cell_number + outter_size; ++y)
 	{
-		for (uint32_t x = 0; x < big_border_cell_count; ++x)
+		for (int32_t x = 0; x < small_border_cell_count; ++x)
 		{
-			uint32_t base_index = x + y * (big_border_cell_count + 1);
+			int32_t base_index = x + y * (small_border_cell_count + 1);
 			indices.emplace_back(base_index);
+			indices.emplace_back(base_index + (small_border_cell_count + 1));
 			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + (big_border_cell_count + 1));
-			indices.emplace_back(base_index + (big_border_cell_count + 1));
+			indices.emplace_back(base_index + (small_border_cell_count + 1));
+			indices.emplace_back(base_index + small_border_cell_count + 2);
 			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + big_border_cell_count + 2);
 		}
 	}
 
 	// BOTTOM side
-	current_index_offset = positions.size();
-	for (uint32_t y = 0; y <= cell_number; ++y)
+	size_t current_index_offset = positions.size();
+	for (int32_t x = -cell_number * 2; x <= -cell_number; ++x)
 	{
-		const float pos_y = -(y * cell_size + cell_number * cell_size);
-		for (uint32_t x = 0; x <= big_border_cell_count; ++x)
+		const float pos_x = x * cell_size;
+		for (int32_t y = -cell_number * 2 - outter_size; y <= cell_number - inner_size; ++y)
 		{
-			const float pos_x = x * cell_size - big_border_cell_count * cell_size / 2.0;
+			const float pos_y = y * cell_size;
 			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
 		}
 	}
 
-	for (uint32_t y = 0; y < cell_number; ++y)
+	for (int32_t y = 0; y < cell_number; ++y)
 	{
-		for (uint32_t x = 0; x < big_border_cell_count; ++x)
+		for (int32_t x = 0; x < big_border_cell_count; ++x)
 		{
-			uint32_t base_index = x + y * (big_border_cell_count + 1) + current_index_offset;
+			int32_t base_index = x + y * (big_border_cell_count + 1) + current_index_offset;
 			indices.emplace_back(base_index + 1);
 			indices.emplace_back(base_index);
 			indices.emplace_back(base_index + big_border_cell_count + 1);
@@ -149,55 +148,55 @@ void PlanetRegion::regenerate(uint32_t cell_number, double in_width, double inne
 		}
 	}
 
-	// RIGHT side
+	// RIGHT side (larger)
 	current_index_offset = positions.size();
-	for (int x = -2; x <= static_cast<int>(cell_number); ++x)
+	for (int32_t y = -cell_number * 2 - outter_size; y <= -cell_number; ++y)
 	{
-		const float pos_x = x * cell_size + cell_number * cell_size;
-		for (uint32_t y = 0; y <= small_border_cell_count - 2; ++y)
+		const float pos_y = y * cell_size;
+		for (int32_t x = -cell_number; x <= cell_number * 2 - inner_size + outter_size; ++x)
 		{
-			const float pos_y = y * cell_size - small_border_cell_count * cell_size / 2.0;
+			const float pos_x = x * cell_size;
 			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
 		}
 	}
 
-	for (uint32_t y = 0; y < cell_number + 2; ++y)
+	for (int32_t y = 0; y < cell_number + outter_size; ++y)
 	{
-		for (uint32_t x = 0; x < small_border_cell_count - 2; ++x)
+		for (int32_t x = 0; x < big_border_cell_count; ++x)
 		{
-			uint32_t base_index = x + y * (small_border_cell_count -1) + current_index_offset;
-			indices.emplace_back(base_index + 1);
+			int32_t base_index = x + y * (big_border_cell_count + 1) + current_index_offset;
 			indices.emplace_back(base_index);
-			indices.emplace_back(base_index + small_border_cell_count - 1);
+			indices.emplace_back(base_index + big_border_cell_count + 2);
+			indices.emplace_back(base_index + big_border_cell_count + 1);
+			indices.emplace_back(base_index);
 			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + small_border_cell_count - 1);
-			indices.emplace_back(base_index + small_border_cell_count );
+			indices.emplace_back(base_index + big_border_cell_count + 2);
 		}
 	}
 
 	// LEFT side
 	current_index_offset = positions.size();
-	for (uint32_t x = 0; x <= cell_number; ++x)
+	for (int32_t y = cell_number - inner_size; y <= cell_number * 2 - inner_size; ++y)
 	{
-		const float pos_x = -(x * cell_size + cell_number * cell_size);
-		for (uint32_t y = 0; y < small_border_cell_count - 1; ++y)
+		const float pos_y = y * cell_size;
+		for (int32_t x = -cell_number * 2; x <= cell_number - inner_size; ++x)
 		{
-			const float pos_y = y * cell_size - small_border_cell_count * cell_size / 2.0;
+			const float pos_x = x * cell_size;
 			positions.emplace_back(Eigen::Vector3f(pos_x, pos_y, 0));
 		}
 	}
 
-	for (uint32_t y = 0; y < cell_number; ++y)
+	for (int32_t y = 0; y < cell_number; ++y)
 	{
-		for (uint32_t x = 0; x < small_border_cell_count - 2; ++x)
+		for (int32_t x = 0; x < small_border_cell_count; ++x)
 		{
-			uint32_t base_index = x + y * (small_border_cell_count - 1) + current_index_offset;
+			int32_t base_index = x + y * (small_border_cell_count + 1) + current_index_offset;
+			indices.emplace_back(base_index);
+			indices.emplace_back(base_index + small_border_cell_count + 2);
+			indices.emplace_back(base_index + small_border_cell_count + 1);
 			indices.emplace_back(base_index);
 			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + small_border_cell_count - 1);
-			indices.emplace_back(base_index + small_border_cell_count - 1);
-			indices.emplace_back(base_index + 1);
-			indices.emplace_back(base_index + small_border_cell_count);
+			indices.emplace_back(base_index + small_border_cell_count + 2);
 		}
 	}
 
@@ -218,32 +217,43 @@ void PlanetRegion::regenerate(uint32_t cell_number, double in_width, double inne
 
 	if (child)
 		child->regenerate(cell_number + 1, cell_size * 2, 0,
-		                  position - Eigen::Vector3d(cell_size / 4, cell_size / 4, 0));
+		                  chunk_position - Eigen::Vector3d(cell_size / 4, cell_size / 4, 0));
 }
 
 void PlanetRegion::tick(double delta_time)
 {
 	transform = Eigen::Affine3d::Identity();
-	transform.translate(position);
+	transform.translate(chunk_position); // +Eigen::Vector3d(cell_size, -cell_size, cell_size));
 
-	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
-	if (world_origin.x() >= position.x() && world_origin.y() < position.y())
-		rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
-	else if (world_origin.x() < position.x() && world_origin.y() >= position.y())
-		rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
-	else if (world_origin.x() < position.x() && world_origin.y() < position.y())
+	Eigen::AngleAxisd rotation = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
+	if (parent_position.x() >= chunk_position.x() && parent_position.y() < chunk_position.y())
+	{
 		rotation = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ());
-	else if (world_origin.x() >= position.x() && world_origin.y() >= position.y())
+	}
+	else if (parent_position.x() < chunk_position.x() && parent_position.y() >= chunk_position.y())
+	{
 		rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+	}
+	else if (parent_position.x() && parent_position.y() < chunk_position.y())
+	{
+		rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
+	}
+	else if (parent_position.x() >= chunk_position.x() && parent_position.y() >= chunk_position.y())
+	{
+		rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
+	}
+	// std::cout << "cell : " << cell_size << " / pos : " << chunk_position.x() + 20 << " -> cam : " << parent_position.x() << std::endl;
+
+
 	transform.rotate(rotation);
 
 	if (child)
 	{
 		Eigen::Affine3d child_transform = Eigen::Affine3d::Identity();
 		child_transform.rotate(rotation);
-		child_transform.translate(Eigen::Vector3d(cell_size * 2, cell_size * 2, 0));
-
-		child->position = position - child_transform.translation();
+		child_transform.translate(Eigen::Vector3d(cell_size * 2, -cell_size * 2, 0));
+		child->parent_position = chunk_position;
+		child->chunk_position = chunk_position + child_transform.translation();
 		child->tick(delta_time);
 	}
 }

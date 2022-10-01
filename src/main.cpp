@@ -82,7 +82,6 @@ int main()
 	const auto mesh_comp = std::make_shared<MeshComponent>();
 	mesh_comp->set_mesh(cube_mesh);
 	mesh_comp->set_material(standard_material);
-	mesh_comp->set_local_position({8, 0, 0});
 	world.get_scene_root().add_child(mesh_comp);
 
 	const auto main_planet = std::make_shared<Planet>(world);
@@ -105,7 +104,7 @@ int main()
 		 * GBUFFERS
 		 */
 		g_buffer->bind();
-		glClearColor(.55078125, .765625, 0.828125, 0.0);
+		glClearColor(0, 0, 0, 0);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		// Render world
@@ -126,11 +125,16 @@ int main()
 
 		const int color_location = glGetUniformLocation(g_buffer_combine->program_id(), "color");
 		const int normal_location = glGetUniformLocation(g_buffer_combine->program_id(), "normal");
+		const int depth_location = glGetUniformLocation(g_buffer_combine->program_id(), "depth");
 
 		glUniform1i(color_location, color_location);
 		g_buffer_color->bind(color_location);
+
 		glUniform1i(normal_location, normal_location);
 		g_buffer_normal->bind(normal_location);
+
+		glUniform1i(depth_location, depth_location);
+		g_buffer_depth->bind(depth_location);
 
 		EZCOGL::VAO::none()->bind();
 		glDrawArrays(GL_TRIANGLES, 0, 3);

@@ -29,12 +29,13 @@ class PlanetRegion
 public:
 	PlanetRegion(const World& world, uint32_t lod_level);
 
-	void regenerate(uint32_t cell_number, double width, double inner_radius, const Eigen::Vector3d& position);
+	void regenerate(int32_t cell_number, double width, double inner_radius, const Eigen::Vector3d& position);
 
 	void tick(double delta_time);
 	void render();
 
-	Eigen::Vector3d position;
+	Eigen::Vector3d chunk_position;
+	Eigen::Vector3d parent_position;
 private:
 
 	const World& world;
