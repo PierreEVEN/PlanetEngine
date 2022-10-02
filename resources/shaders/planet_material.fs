@@ -67,16 +67,17 @@ void main()
 	vec3 h2 = vec3(0, 1, get_height_at_location(coordinates.xy + vec2(0, 1)));
     normal_vector = normalize(cross(h1 - h0, h2 - h0));
 
-	vec2 uv = position.xy / 5 ;
+	vec2 uv = position.xy / 2;
 
 	vec3 grass_color = texture(grass, uv).rgb;
 	vec3 sand_color = texture(sand, uv).rgb;
 	vec3 rock_color = texture(rock, uv).rgb;
+	vec3 rock_color_bis = texture(rock, uv * 1.39848945).rgb;
 
-	float slope = pow(dot(normal_vector, vec3(0,0,1)), 8);
+	float slope = pow(dot(normal_vector, vec3(0,0,1)), 20) + .2;
 	
 
-	gColor = mix(rock_color, grass_color, slope);
+	gColor = mix((rock_color_bis + rock_color) / 2, grass_color, clamp(slope, 0, 1));
 
 	gColor = mix(sand_color, gColor, clamp(altitude / 1 - 2, 0, 1));
 
