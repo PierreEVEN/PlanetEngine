@@ -11,6 +11,9 @@ layout(location = 2) in vec3 position;
 layout(location = 3) in float altitude;
 layout(location = 4) in vec2 coordinates;
 
+uniform sampler2D grass;
+uniform sampler2D sand;
+uniform sampler2D rock;
 
 float PI = 3.14159265358979323846;
 float rand(vec2 c){
@@ -64,14 +67,18 @@ void main()
 	vec3 h2 = vec3(0, 1, get_height_at_location(coordinates.xy + vec2(0, 1)));
     normal_vector = normalize(cross(h1 - h0, h2 - h0));
 
+	vec2 uv = position.xy / 5 ;
 
+	vec3 grass_color = texture(grass, uv).rgb;
+	vec3 sand_color = texture(sand, uv).rgb;
+	vec3 rock_color = texture(rock, uv).rgb;
 
 	float slope = pow(dot(normal_vector, vec3(0,0,1)), 8);
 	
 
-	gColor = mix(vec3(0.5, 0.5, 0.5), vec3(0.7, 1, 0.6), slope);
+	gColor = mix(rock_color, grass_color, slope);
 
-	gColor = mix(vec3(0.8,0.7,0.5), gColor, clamp(altitude / 5, 0, 1));
+	gColor = mix(sand_color, gColor, clamp(altitude / 1 - 2, 0, 1));
 
 	float depth_scale = clamp(-altitude / 10, 0, 1);
 
@@ -79,7 +86,6 @@ void main()
 		normal_vector = vec3(0,0,1);
 		gColor = mix(vec3(97, 130, 223) / 256, vec3(97, 130, 223) / 350 , depth_scale);
 	}
-
 
 	gNormal = normal_vector;
 	gPosition = position;

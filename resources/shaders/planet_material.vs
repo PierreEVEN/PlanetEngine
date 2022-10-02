@@ -136,7 +136,7 @@ void main()
 	}
 
 	// Morph to sphere
-	float planet_radius = 80000;
+	float planet_radius = 100000;
 
 	float d = clamp(length(final_pos.xy), 0, planet_radius);
 	final_pos = to_3d_v4(final_pos.xy, planet_radius);

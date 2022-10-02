@@ -9,11 +9,11 @@ TextureImage::~TextureImage()
 	textures.erase(std::ranges::find(textures, this));
 }
 
-std::shared_ptr<TextureImage> TextureImage::create(const std::string& name)
+std::shared_ptr<TextureImage> TextureImage::create(const std::string& name, const std::vector<GLenum>& params)
 {
-	return std::shared_ptr<TextureImage>(new TextureImage(name));
+	return std::shared_ptr<TextureImage>(new TextureImage(name, params));
 }
-TextureImage::TextureImage(std::string in_name) : Texture2D(), name(std::move(in_name))
+TextureImage::TextureImage(std::string in_name, const std::vector<GLenum>& params) : Texture2D(params), name(std::move(in_name))
 {
 	Engine::get().get_asset_manager().textures.emplace_back(this);
 }

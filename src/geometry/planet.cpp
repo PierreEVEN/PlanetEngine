@@ -5,8 +5,12 @@
 
 #include "graphics/mesh.h"
 #include "graphics/material.h"
+#include "graphics/texture_image.h"
 
 static std::shared_ptr<Material> planet_material = nullptr;
+static std::shared_ptr<TextureImage> grass = nullptr;
+static std::shared_ptr<TextureImage> rock = nullptr;
+static std::shared_ptr<TextureImage> sand = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
@@ -21,6 +25,14 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	planet_material = Material::create("planet material");
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
 	                                  "resources/shaders/planet_material.fs");
+
+	grass = TextureImage::create("terrain grass", {GL_REPEAT});
+	grass->load("resources/textures/terrain/grass.jpg");
+	rock = TextureImage::create("terrain rock", {GL_REPEAT});
+	rock->load("resources/textures/terrain/rock_diffuse.jpg");
+	sand = TextureImage::create("terrain sand", {GL_REPEAT});
+	sand->load("resources/textures/terrain/sand_diffuse.jpg");
+
 	return planet_material;
 }
 
@@ -171,19 +183,23 @@ void PlanetRegion::tick(double delta_time)
 	transform.translate(chunk_position);
 
 	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
-	if (camera_location.x() >= chunk_position.x() && camera_location.y() < chunk_position.y())
+
+	if (current_lod != 0)
 	{
-		rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
+		if (camera_location.x() >= chunk_position.x() && camera_location.y() < chunk_position.y())
+		{
+			rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
+		}
+		else if (camera_location.x() < chunk_position.x() && camera_location.y() >= chunk_position.y())
+		{
+			rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
+		}
+		else if (camera_location.x() >= chunk_position.x() && camera_location.y() >= chunk_position.y())
+		{
+			rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+		}
+		transform.rotate(rotation);
 	}
-	else if (camera_location.x() < chunk_position.x() && camera_location.y() >= chunk_position.y())
-	{
-		rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
-	}
-	else if (camera_location.x() >= chunk_position.x() && camera_location.y() >= chunk_position.y())
-	{
-		rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
-	}
-	transform.rotate(rotation);
 	if (child)
 		child->tick(delta_time);
 }
@@ -198,6 +214,20 @@ void PlanetRegion::render() const
 	            cell_number * cell_size * 2);
 	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"), cell_size);
 	Planet::get_landscape_material()->set_model_transform(transform);
+
+
+	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
+	glUniform1i(grass_location, grass_location);
+	grass->bind(grass_location);
+
+	const int rock_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "rock");
+	glUniform1i(rock_location, rock_location);
+	rock->bind(rock_location);
+
+	const int sand_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "sand");
+	glUniform1i(sand_location, sand_location);
+	sand->bind(sand_location);
+
 	mesh->draw();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glFrontFace(GL_CW);

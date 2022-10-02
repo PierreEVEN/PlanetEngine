@@ -8,9 +8,9 @@ class TextureImage : public EZCOGL::Texture2D
 public:
 	virtual ~TextureImage();
 
-	static std::shared_ptr<TextureImage> create(const std::string& name);
+	static std::shared_ptr<TextureImage> create(const std::string& name, const std::vector<GLenum>& params = {});
 
 	const std::string name;
 private:
-	TextureImage(std::string name);
+	TextureImage(std::string name, const std::vector<GLenum>& params = {});
 };
