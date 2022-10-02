@@ -4,11 +4,22 @@
 #include <GLFW/glfw3.h>
 
 #include "camera.h"
+#include "engine/engine.h"
 #include "utils/maths.h"
 
 DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera) : camera(in_camera),
 	camera_desired_position(0, 0, 10)
 {
+	Engine::get().on_key_down.add_object(this, &DefaultCameraController::process_key);
+	Engine::get().on_mouse_moved.add_object(this, &DefaultCameraController::process_mouse_input);
+	Engine::get().on_mouse_scroll.add_object(this, &DefaultCameraController::process_mouse_wheel);
+}
+
+DefaultCameraController::~DefaultCameraController()
+{
+	Engine::get().on_key_down.clear_object(this);
+	Engine::get().on_mouse_moved.clear_object(this);
+	Engine::get().on_mouse_scroll.clear_object(this);
 }
 
 void DefaultCameraController::process_key(GLFWwindow* window, int key, int scan_code, int action, int mode)
@@ -72,7 +83,7 @@ void DefaultCameraController::process_key(GLFWwindow* window, int key, int scan_
 	}
 }
 
-void DefaultCameraController::process_mouse_input(double x_pos, double y_pos)
+void DefaultCameraController::process_mouse_input(GLFWwindow* window, double x_pos, double y_pos)
 {
 	if (!capture_input)
 		return;
@@ -91,7 +102,7 @@ void DefaultCameraController::process_mouse_input(double x_pos, double y_pos)
 	last_mouse_y = y_pos;
 }
 
-void DefaultCameraController::process_mouse_wheel(double x_pos, double y_pos)
+void DefaultCameraController::process_mouse_wheel(GLFWwindow* window, double x_pos, double y_pos)
 {
 	if (!capture_input)
 		return;
@@ -102,8 +113,6 @@ void DefaultCameraController::process_mouse_wheel(double x_pos, double y_pos)
 
 void DefaultCameraController::tick(double delta_time)
 {
-	if (!capture_input)
-		return;
 	camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (
 		input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
 	camera->set_local_position(Maths::lerp(camera->get_local_position(), camera_desired_position, 15 * delta_time));

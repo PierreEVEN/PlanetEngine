@@ -3,6 +3,7 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include "camera.h"
+#include "engine/engine.h"
 
 struct WorldDataStructure
 {
@@ -19,10 +20,7 @@ World::World() : camera(std::make_shared<Camera>()), root_component(std::make_un
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(WorldDataStructure), nullptr, GL_STATIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	glBindBufferRange(GL_UNIFORM_BUFFER, 0, world_uniform, 0, sizeof(WorldDataStructure));
-
-
 	root_component->add_child(camera);
-
 }
 
 World::~World()
@@ -32,7 +30,7 @@ World::~World()
 
 void World::tick_world()
 {
-	delta_seconds = glfwGetTime() - last_time;
+	delta_seconds = std::min(glfwGetTime() - last_time, 1 / 15.0);
 	last_time = glfwGetTime();
 
 	// Update world data

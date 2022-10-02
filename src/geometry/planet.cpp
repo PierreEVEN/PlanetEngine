@@ -1,7 +1,7 @@
-#include <imgui.h>
+#include <GL/gl3w.h>
 
 #include "camera.h"
-#include "Planet.h"
+#include "planet.h"
 
 #include "graphics/mesh.h"
 #include "graphics/material.h"
@@ -11,14 +11,14 @@ static std::shared_ptr<Material> planet_material = nullptr;
 Planet::Planet(const World& in_world) : world(in_world)
 {
 	root = std::make_shared<PlanetRegion>(in_world, 15, 0);
-	root->regenerate(40, 0.1, 200.00);
+	root->regenerate(40, 0.1f, 200.00);
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
 {
 	if (planet_material)
 		return planet_material;
-	planet_material = Material::create("standard_material");
+	planet_material = Material::create("planet material");
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
 	                                  "resources/shaders/planet_material.fs");
 	return planet_material;
@@ -37,8 +37,10 @@ void Planet::render()
 }
 
 PlanetRegion::PlanetRegion(const World& in_world, uint32_t in_lod_level, uint32_t in_my_level) :
-	world(in_world), num_lods(in_lod_level), mesh(Mesh::create()), current_lod(in_my_level)
+	world(in_world), num_lods(in_lod_level), current_lod(in_my_level)
 {
+	mesh = Mesh::create("planet_lod:" + std::to_string(current_lod));
+
 	if (current_lod + 1 < num_lods)
 		child = std::make_shared<PlanetRegion>(world, num_lods, in_my_level + 1);
 }
@@ -53,7 +55,7 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 	const float max_global = static_cast<float>(std::max(std::max(std::abs(x_min), std::abs(x_max)),
 	                                                     std::max(std::abs(y_min), std::abs(y_max))));
 	float min_global = static_cast<float>(std::min(std::min(std::abs(x_min), std::abs(x_max)),
-	                                                     std::min(std::abs(y_min), std::abs(y_max))));
+	                                               std::min(std::abs(y_min), std::abs(y_max))));
 
 	if (min_global == max_global)
 		min_global = 0;
@@ -188,9 +190,6 @@ void PlanetRegion::tick(double delta_time)
 
 void PlanetRegion::render() const
 {
-	if (child)
-		child->render();
-
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	Planet::get_landscape_material()->use();
 	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "inner_width"),
@@ -206,4 +205,7 @@ void PlanetRegion::render() const
 	glFrontFace(GL_CCW);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_CULL_FACE);
+
+	if (child)
+		child->render();
 }

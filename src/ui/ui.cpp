@@ -1,19 +1,40 @@
 #include <fbo.h>
 #include <imgui.h>
 #include <ImGuizmo.h>
+#include <iostream>
 #include <GLFW/glfw3.h>
 #include <ui/ui.h>
 
+#include "asset_manager_ui.h"
 #include "camera.h"
+#include "graphic_debugger.h"
 #include "world.h"
+#include "engine/engine.h"
+#include "engine/renderer.h"
 
-static bool show_debug_window = false;
-static bool enable_vsync = true;
 static bool show_demo_window = false;
+
+class ImGuiDemoWindow : public ImGuiWindow
+{
+public:
+	ImGuiDemoWindow()
+	{
+		window_name = "demo window";
+	}
+	void draw() override
+	{
+		ImGui::ShowDemoWindow(&open);
+		
+		if (!open)
+			close();
+	}
+
+	bool open = true;
+};
 
 namespace ui
 {
-	void draw(const Renderer& renderer, const World& world, const std::shared_ptr<EZCOGL::FBO_DepthTexture>& g_buffer)
+	void draw()
 	{
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -21,21 +42,27 @@ namespace ui
 			{
 				if (ImGui::MenuItem("Exit"))
 				{
-					exit(0);
+					exit(EXIT_SUCCESS);
 				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Window"))
+			{
+				if (ImGui::MenuItem("Texture view")) ImGuiWindow::create_window<TextureManagerUi>();
+				if (ImGui::MenuItem("Material view")) ImGuiWindow::create_window<MaterialManagerUi>();
+				if (ImGui::MenuItem("Mesh view")) ImGuiWindow::create_window<MeshManagerUi>();
+				ImGui::Separator();
+				if (ImGui::MenuItem("Graphic debugger")) ImGuiWindow::create_window<GraphicDebugger>();
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Debug"))
 			{
-				ImGui::Checkbox("framebuffers", &show_debug_window);
-				if (ImGui::Checkbox("Enable VSync", &enable_vsync))
-					glfwSwapInterval(enable_vsync ? 1 : 0);
-				ImGui::Checkbox("demo window", &show_demo_window);
+				if (ImGui::MenuItem("Demo window")) ImGuiWindow::create_window<ImGuiDemoWindow>();
 				ImGui::EndMenu();
 			}
 
 			ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - 100, 0));
-			ImGui::Text("%f fps", 1.0f / world.get_delta_seconds());
+			ImGui::Text("%f fps", 1.0 / Engine::get().get_world().get_delta_seconds());
 
 			ImGui::EndMainMenuBar();
 		}
@@ -43,28 +70,7 @@ namespace ui
 		if (show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
 
-		if (show_debug_window)
-		{
-			const float available_width = ImGui::GetContentRegionAvail().x;
-			if (ImGui::Begin("framebuffers", &show_debug_window))
-			{
-				for (int i = 0; i < g_buffer->nb_textures(); ++i)
-				{
-					const float ratio = available_width / g_buffer->width();
-					ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<size_t>(g_buffer->texture(i)->id())),
-					             ImVec2(g_buffer->width() * ratio, g_buffer->height() * ratio), ImVec2(0, 1),
-					             ImVec2(1, 0));
-				}
-				if (g_buffer->depth_texture())
-				{
-					const float ratio = available_width / g_buffer->width();
-					ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<size_t>(g_buffer->depth_texture()->id())),
-					             ImVec2(g_buffer->width() * ratio, g_buffer->height() * ratio), ImVec2(0, 1),
-					             ImVec2(1, 0));
-				}
-			}
-			ImGui::End();
-		}
+		ImGuiWindow::draw_all();
 	}
 
 
@@ -72,11 +78,11 @@ namespace ui
 	{
 		static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
 		static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
-		if (ImGui::IsKeyPressed(90))
+		if (ImGui::IsKeyPressed(ImGuiKey_T))
 			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-		if (ImGui::IsKeyPressed(69))
+		if (ImGui::IsKeyPressed(ImGuiKey_R))
 			mCurrentGizmoOperation = ImGuizmo::ROTATE;
-		if (ImGui::IsKeyPressed(82)) // r Key
+		if (ImGui::IsKeyPressed(ImGuiKey_S)) // r Key
 			mCurrentGizmoOperation = ImGuizmo::SCALE;
 		if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
 			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -102,7 +108,7 @@ namespace ui
 				mCurrentGizmoMode = ImGuizmo::WORLD;
 		}
 		static bool useSnap(false);
-		if (ImGui::IsKeyPressed(83))
+		if (ImGui::IsKeyPressed(ImGuiKey_W))
 			useSnap = !useSnap;
 		ImGui::Checkbox("use snap", &useSnap);
 		ImGui::SameLine();
@@ -125,8 +131,41 @@ namespace ui
 
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-		ImGuizmo::Manipulate(Eigen::Matrix4f(camera.view_matrix().cast<float>()).data(), Eigen::Matrix4f(camera.reversed_z_projection_matrix().cast<float>()).data(), mCurrentGizmoOperation, mCurrentGizmoMode, matrix.data(), NULL, useSnap ? &snap.x() : NULL);
+		ImGuizmo::Manipulate(Eigen::Matrix4f(camera.view_matrix().cast<float>()).data(),
+		                     Eigen::Matrix4f(camera.reversed_z_projection_matrix().cast<float>()).data(),
+		                     mCurrentGizmoOperation, mCurrentGizmoMode, matrix.data(), NULL,
+		                     useSnap ? &snap.x() : NULL);
 	}
+}
 
+static std::vector<std::shared_ptr<ImGuiWindow>> imgui_windows;
+static size_t current_window_id = 0;
+size_t ImGuiWindow::make_window_id()
+{
+	return current_window_id++;
+}
 
+void ImGuiWindow::register_window_internal(std::shared_ptr<ImGuiWindow> window)
+{
+	imgui_windows.emplace_back(window);
+}
+
+void ImGuiWindow::draw_all()
+{
+	for (int64_t i = static_cast<int64_t>(imgui_windows.size()) - 1; i >= 0; --i)
+		if (!imgui_windows[i]->is_open)
+			imgui_windows.erase(imgui_windows.begin() + i);
+
+	for (const auto& window : imgui_windows)
+		window->draw_internal();
+}
+
+void ImGuiWindow::draw_internal()
+{
+	if (Engine::get().get_renderer().is_fullscreen())
+		return;
+
+	if (ImGui::Begin((window_name + "##" + std::to_string(window_id)).c_str(), &is_open))
+		draw();
+	ImGui::End();
 }

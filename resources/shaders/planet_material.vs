@@ -6,7 +6,7 @@ layout(location = 0) out vec3 out_norm;
 layout(location = 1) out float time;
 layout(location = 2) out vec3 out_position;
 layout(location = 3) out float altitude;
-
+layout(location = 4) out vec2 coordinates;
 
 layout(location = 1) uniform mat4 model;
 layout(location = 2) uniform float inner_width;
@@ -63,13 +63,13 @@ float pNoise(vec2 p, int res){
 
 
 float get_height_at_location(vec2 pos) {
-	return pNoise(pos, 4) * 100 + pNoise(pos * 3, 4) * 15 + pNoise(pos * 20, 5) * 4 +  pNoise(pos * 0.001, 4) * 400 - 10;
+	vec2 poss = pos;
+	return pNoise(poss, 4) * 100 + pNoise(poss * 3, 4) * 15 + pNoise(poss * 20, 5) * 4 +  pNoise(poss * 0.1 + vec2(330, 100), 2) * 400 - 80;
  }
 
 float altitude_with_water(float altitude) {
 	return altitude < 1 ? 1 : altitude;
 }
-
 
 float square_distance(vec3 a, vec3 b) {
 	return 
@@ -101,6 +101,7 @@ void main()
 	vec3 final_pos = (model * vec4(pos, 1)).xyz;
 	vec3 final_pos_unrotated = (model_no_rotation * vec4(pos, 1)).xyz;
 	vec3 center = (model * vec4(0, 0, 0, 1)).xyz;
+	coordinates = final_pos.xy;
 
 	float center_distance_normalized = (square_distance(center, final_pos) - inner_width) / (outer_width - inner_width);
 

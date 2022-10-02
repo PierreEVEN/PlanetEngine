@@ -6,7 +6,7 @@ namespace primitives {
 
 	std::shared_ptr<Mesh> cube(float size)
 	{
-		auto mesh = Mesh::create();
+		auto mesh = Mesh::create("cube");
 		
 		float V = size;
 		float v = -size;

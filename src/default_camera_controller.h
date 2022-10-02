@@ -6,14 +6,15 @@
 class Camera;
 struct GLFWwindow;
 
-class DefaultCameraController
+class DefaultCameraController final
 {
 public:
 	DefaultCameraController(const std::shared_ptr<Camera>& camera);
+	~DefaultCameraController();
 
 	void process_key(GLFWwindow* window, int key, int scan_code, int action, int mode);
-	void process_mouse_input(double x_pos, double y_pos);
-	void process_mouse_wheel(double x_pos, double y_pos);
+	void process_mouse_input(GLFWwindow* window, double x_pos, double y_pos);
+	void process_mouse_wheel(GLFWwindow* window, double x_pos, double y_pos);
 
 	void tick(double delta_time);
 

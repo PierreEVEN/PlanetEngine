@@ -1,12 +1,31 @@
 #include "material.h"
 
-Material::Material(const std::string& in_name) : name(in_name) {}
+#include <filesystem>
+#include <GL/gl3w.h>
 
-Material::~Material() {
+#include <shader_program.h>
+
+#include "engine/asset_manager.h"
+#include "engine/engine.h"
+
+Material::Material(const std::string& in_name) : name(in_name)
+{
+	Engine::get().get_asset_manager().materials.emplace_back(this);
+}
+
+Material::~Material()
+{
+	auto& materials = Engine::get().get_asset_manager().materials;
+	materials.erase(std::ranges::find(materials, this));
 	glDeleteProgram(shader_id);
 }
 
-void Material::use() {
+void Material::use()
+{
+	if (auto_reload && (last_vertex_update != std::filesystem::last_write_time(vertex_path) || last_fragment_update !=
+		std::filesystem::last_write_time(fragment_path)))
+		hot_reload();
+
 	glUseProgram(shader_id);
 }
 
@@ -15,8 +34,12 @@ void Material::set_model_transform(const Eigen::Affine3d& transformation)
 	glUniformMatrix4fv(1, 1, false, transformation.cast<float>().matrix().data());
 }
 
-void Material::load_from_source(const char* vertex_path, const char* fragment_path) {
-
+void Material::load_from_source(const std::string& in_vertex_path, const std::string& in_fragment_path)
+{
+	vertex_path = in_vertex_path;
+	fragment_path = in_fragment_path;
+	last_vertex_update = std::filesystem::last_write_time(vertex_path);
+	last_fragment_update = std::filesystem::last_write_time(fragment_path);
 	// Compile shader
 	shader_id = glCreateProgram();
 
@@ -41,12 +64,23 @@ void Material::load_from_source(const char* vertex_path, const char* fragment_pa
 		char* infoLog = new char[infologLength];
 		int charsWritten = 0;
 		glGetProgramInfoLog(shader_id, infologLength, &charsWritten, infoLog);
+		last_error = infoLog;
+		if (infologLength > 0 && infoLog[0] == 'F')
+			last_error = last_error + "\nfile : " + fragment_path;
+		else
+			last_error = last_error +"\nfile : " + vertex_path;
 		std::cerr << "Link message :" << name << " :" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
+		shader_id = NULL;
 	}
 
 	glUseProgram(0);
 
 	auto world_data_id = glGetUniformBlockIndex(shader_id, "WorldData");
 	glUniformBlockBinding(shader_id, world_data_id, 0);
+}
+
+void Material::hot_reload()
+{
+	load_from_source(vertex_path, fragment_path);
 }

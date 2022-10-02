@@ -19,9 +19,9 @@ class Mesh final
 public:
 	~Mesh();
 
-	static std::shared_ptr<Mesh> create()
+	static std::shared_ptr<Mesh> create(const std::string& name)
 	{
-		return std::shared_ptr<Mesh>(new Mesh());
+		return std::shared_ptr<Mesh>(new Mesh(name));
 	}
 
 	static std::shared_ptr<Mesh> from_file(const std::string& path)
@@ -41,9 +41,17 @@ public:
 
 	void rebuild_mesh_data() const;
 
+	[[nodiscard]] size_t index_count() const { return indices.size(); }
+	[[nodiscard]] size_t vertex_count() const { return positions.size(); }
+	[[nodiscard]] uint32_t vao_id() const { return vao; }
+	[[nodiscard]] uint32_t vbo_id() const { return vbo; }
+	[[nodiscard]] uint32_t ebo_id() const { return ebo; }
+
+	const std::string name;
+
 private:
-	Mesh();
-	Mesh(const std::string& path);
+	Mesh(const std::string& name);
+	Mesh(const std::string& name, const std::string& path);
 
 	uint32_t vao;
 	uint32_t vbo;

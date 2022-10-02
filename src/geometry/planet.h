@@ -1,7 +1,5 @@
 #pragma once
 
-#include <thread>
-
 #include "world/scene_component.h"
 
 class Mesh;
@@ -35,7 +33,6 @@ public:
 	void render() const;
 
 private:
-
 	Eigen::Vector3d chunk_position;
 	const World& world;
 	float cell_size;

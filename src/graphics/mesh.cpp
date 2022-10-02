@@ -5,8 +5,13 @@
 
 #include <utility>
 
+#include "engine/asset_manager.h"
+#include "engine/engine.h"
+
 Mesh::~Mesh()
 {
+	auto& meshes = Engine::get().get_asset_manager().meshes;
+	meshes.erase(std::ranges::find(meshes, this));
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &ebo);
 	glDeleteBuffers(1, &vbo);
@@ -68,14 +73,15 @@ void Mesh::draw() const
 	glBindVertexArray(0);
 }
 
-Mesh::Mesh()
+Mesh::Mesh(const std::string& in_name) : name(in_name)
 {
+	Engine::get().get_asset_manager().meshes.emplace_back(this);
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);
 	glGenBuffers(1, &ebo);
 }
 
-Mesh::Mesh(const std::string& path) : Mesh()
+Mesh::Mesh(const std::string& in_name, const std::string& path) : Mesh(in_name)
 {
 }
 
