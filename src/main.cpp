@@ -33,7 +33,7 @@ int main()
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	Engine::get().get_world().get_camera()->set_local_position({ 0, 0, 10 });
+	Engine::get().get_world().get_camera()->set_local_position({0, 0, 10});
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -51,18 +51,18 @@ int main()
 		Engine::get().get_renderer().bind_deferred_combine();
 
 		g_buffer_combine_material->use();
-		const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
 		const int position_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "position");
-		const int normal_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "normal");
-		const int depth_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "depth");
-		glUniform1i(position_location, position_location);
 		Engine::get().get_renderer().world_position().bind(position_location);
-		glUniform1i(color_location, color_location);
+		glUniform1i(position_location, position_location);
+		const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
 		Engine::get().get_renderer().world_color().bind(color_location);
-		glUniform1i(normal_location, normal_location);
+		glUniform1i(color_location, color_location);
+		const int normal_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "normal");
 		Engine::get().get_renderer().world_normal().bind(normal_location);
-		glUniform1i(depth_location, depth_location);
+		glUniform1i(normal_location, normal_location);
+		const int depth_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "depth");
 		Engine::get().get_renderer().world_depth().bind(depth_location);
+		glUniform1i(depth_location, depth_location);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		// UI

@@ -11,17 +11,36 @@ uniform sampler2D depth;
 
 vec3 light_dir = normalize(vec3(1, 1, 1));
 
+layout (std140, binding = 0) uniform WorldData
+{
+    mat4 proj_matrix;
+    mat4 view_matrix;
+    mat4 pv_matrix;
+    mat4 proj_matrix_inv;
+    mat4 view_matrix_inv;
+    mat4 pv_matrix_inv;
+	vec3 camera_pos;
+	vec3 camera_forward;
+    float world_time;
+};
+
 void main()
 {
 	float depth = texture(depth, uv).r;
 
 	if (depth <= 0) {
-		oFragmentColor = vec4(.55078125, .765625, 0.828125, 1);
+		oFragmentColor = vec4(sin(world_time), .765625, 0.828125, 1);
 		return;
 	}
 
-	vec3 color = texture(color, uv).rgb;
-	vec3 position = texture(position, uv).rgb;
-	vec3 normal = normalize(texture(normal, uv).rgb);
-	oFragmentColor = vec4(color * dot(normal, light_dir), 1);
+	vec3 col = texture(color, uv).rgb;
+	vec3 pos = texture(position, uv).rgb;
+	vec3 norm = normalize(texture(normal, uv).rgb);
+
+
+	oFragmentColor = vec4(col * dot(norm, light_dir), 1);
+
+	// vec2 device_space = (uv * 2 - 1);
+	// vec4 rev_pos = pv_matrix_inv * vec4(device_space.x, -device_space.y, -1, 1);
+	// oFragmentColor = vec4(rev_pos.xyz, 1);
 }

@@ -10,6 +10,11 @@ struct WorldDataStructure
 	alignas(16) Eigen::Matrix4f proj_matrix;
 	alignas(16) Eigen::Matrix4f view_matrix;
 	alignas(16) Eigen::Matrix4f vp_matrix;
+	alignas(16) Eigen::Matrix4f proj_matrix_inv;
+	alignas(16) Eigen::Matrix4f view_matrix_inv;
+	alignas(16) Eigen::Matrix4f vp_matrix_inv;
+	alignas(16) Eigen::Vector3f camera_pos;
+	alignas(16) Eigen::Vector3f camera_forward;
 	alignas(16) float world_time;
 };
 
@@ -41,6 +46,11 @@ void World::tick_world()
 		.proj_matrix = proj_matrix.cast<float>(),
 		.view_matrix = view_matrix.cast<float>(),
 		.vp_matrix = pv_matrix.cast<float>(),
+		.proj_matrix_inv = proj_matrix.cast<float>().inverse(),
+		.view_matrix_inv  = view_matrix.cast<float>().inverse(),
+		.vp_matrix_inv = pv_matrix.cast<float>().inverse(),
+		.camera_pos = camera->get_world_position().cast<float>(),
+		.camera_forward = camera->world_forward().cast<float>(),
 		.world_time = static_cast<float>(glfwGetTime())
 	};
 	glBindBuffer(GL_UNIFORM_BUFFER, world_uniform);
