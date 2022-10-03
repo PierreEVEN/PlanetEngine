@@ -22,6 +22,13 @@ imstb_rectpack.h
 imstb_textedit.h
 imstb_truetype.h
 
+GraphEditor.h
+ImCurveEdit.h
+ImGradient.h
+ImGuizmo.h
+ImSequencer.h
+ImZoomSlider.h
+
 portable_file_dialogs.h
 
 gl_eigen.h
@@ -61,6 +68,12 @@ imgui_impl_glfw.cpp
 imgui_impl_opengl3.cpp
 imgui_tables.cpp
 imgui_widgets.cpp
+
+GraphEditor.cpp
+ImCurveEdit.cpp
+ImGradient.cpp
+ImGuizmo.cpp
+ImSequencer.cpp
 
 vao.cpp
 gl_eigen.cpp
