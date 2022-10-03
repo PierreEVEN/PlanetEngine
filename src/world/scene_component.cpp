@@ -1,5 +1,15 @@
 #include "scene_component.h"
 
+#include <Eigen/Core>
+
+Eigen::Quaterniond SceneComponent::get_world_rotation()
+{
+	if (parent)
+		return Eigen::Quaterniond((parent->get_world_transform() * local_rotation).rotation());
+
+	return local_rotation;
+}
+
 void SceneComponent::tick_internal(double delta_time)
 {
 	tick(delta_time);

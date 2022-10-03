@@ -1,5 +1,7 @@
 #include "asset_manager_ui.h"
 
+#include <filesystem>
+
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include <imgui.h>

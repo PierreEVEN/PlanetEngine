@@ -1,7 +1,6 @@
 #include <camera.h>
-#include <fbo.h>
-#include <mesh.h>
-#include <imgui.h>
+#include <texture2d.h>
+#include <GL/gl3w.h>
 
 #include "graphics/material.h"
 
@@ -9,7 +8,7 @@
 #include "world.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
-#include "geometry/Planet.h"
+#include "geometry/planet.h"
 #include "ui/asset_manager_ui.h"
 #include "ui/graphic_debugger.h"
 #include "ui/ui.h"
@@ -70,4 +69,5 @@ int main()
 
 		Engine::get().get_renderer().submit();
 	}
+
 }

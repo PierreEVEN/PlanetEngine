@@ -2,7 +2,8 @@
 #include <memory>
 #include <vector>
 
-#include <gl_eigen.h>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 class SceneComponent
 {
@@ -51,13 +52,7 @@ public:
 		return local_position;
 	}
 
-	[[nodiscard]] virtual Eigen::Quaterniond get_world_rotation()
-	{
-		if (parent)
-			return Eigen::Quaterniond((parent->get_world_transform() * local_rotation).rotation());
-
-		return local_rotation;
-	}
+	[[nodiscard]] virtual Eigen::Quaterniond get_world_rotation();
 
 	[[nodiscard]] virtual Eigen::Vector3d get_world_scale() const
 	{

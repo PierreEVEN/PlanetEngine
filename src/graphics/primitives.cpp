@@ -1,6 +1,6 @@
 
 #include "primitives.h"
-#include "mesh.h"
+#include "graphics/mesh.h"
 
 namespace primitives {
 

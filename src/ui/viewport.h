@@ -1,6 +1,6 @@
 #pragma once
 #include "ui.h"
-#include <Eigen/Eigen>
+#include <Eigen/Dense>
 
 class Viewport : public ImGuiWindow
 {

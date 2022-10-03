@@ -11,10 +11,15 @@
 Material::Material(const std::string& in_name) : name(in_name)
 {
 	Engine::get().get_asset_manager().materials.emplace_back(this);
+	last_vertex_update = new std::filesystem::file_time_type();
+	last_fragment_update = new std::filesystem::file_time_type();
 }
 
 Material::~Material()
 {
+	delete reinterpret_cast<std::filesystem::file_time_type*>(last_vertex_update);
+	delete reinterpret_cast<std::filesystem::file_time_type*>(last_fragment_update);
+
 	auto& materials = Engine::get().get_asset_manager().materials;
 	materials.erase(std::ranges::find(materials, this));
 	glDeleteProgram(shader_id);
@@ -22,7 +27,9 @@ Material::~Material()
 
 void Material::use()
 {
-	if (auto_reload && (last_vertex_update != std::filesystem::last_write_time(vertex_path) || last_fragment_update !=
+	if (auto_reload && (*reinterpret_cast<std::filesystem::file_time_type*>(last_vertex_update) !=
+		std::filesystem::last_write_time(vertex_path) || *reinterpret_cast<std::filesystem::file_time_type*>(
+			last_fragment_update) !=
 		std::filesystem::last_write_time(fragment_path)))
 		hot_reload();
 
@@ -38,8 +45,8 @@ void Material::load_from_source(const std::string& in_vertex_path, const std::st
 {
 	vertex_path = in_vertex_path;
 	fragment_path = in_fragment_path;
-	last_vertex_update = std::filesystem::last_write_time(vertex_path);
-	last_fragment_update = std::filesystem::last_write_time(fragment_path);
+	*reinterpret_cast<std::filesystem::file_time_type*>(last_vertex_update) = std::filesystem::last_write_time(vertex_path);
+	*reinterpret_cast<std::filesystem::file_time_type*>(last_fragment_update) = std::filesystem::last_write_time(fragment_path);
 	// Compile shader
 	shader_id = glCreateProgram();
 
@@ -68,7 +75,7 @@ void Material::load_from_source(const std::string& in_vertex_path, const std::st
 		if (infologLength > 0 && infoLog[0] == 'F')
 			last_error = last_error + "\nfile : " + fragment_path;
 		else
-			last_error = last_error +"\nfile : " + vertex_path;
+			last_error = last_error + "\nfile : " + vertex_path;
 		std::cerr << "Link message :" << name << " :" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
 		shader_id = NULL;

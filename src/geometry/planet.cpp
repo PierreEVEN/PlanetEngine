@@ -3,6 +3,8 @@
 #include "camera.h"
 #include "planet.h"
 
+#include <imgui.h>
+
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
@@ -14,8 +16,9 @@ static std::shared_ptr<TextureImage> sand = nullptr;
 
 Planet::Planet(const World& in_world) : world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(in_world, 15, 0);
-	root->regenerate(40, 0.1f, 200.00);
+	root = std::make_shared<PlanetRegion>(*this, in_world, 13, 0);
+	root->regenerate(15, 0.1f, 200.00);
+	ImGuiWindow::create_window<PlanetInformations>(this);
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -48,13 +51,13 @@ void Planet::render()
 	root->render();
 }
 
-PlanetRegion::PlanetRegion(const World& in_world, uint32_t in_lod_level, uint32_t in_my_level) :
-	world(in_world), num_lods(in_lod_level), current_lod(in_my_level)
+PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint32_t in_lod_level, uint32_t in_my_level) :
+	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), parent(in_parent)
 {
 	mesh = Mesh::create("planet_lod:" + std::to_string(current_lod));
 
 	if (current_lod + 1 < num_lods)
-		child = std::make_shared<PlanetRegion>(world, num_lods, in_my_level + 1);
+		child = std::make_shared<PlanetRegion>(parent, world, num_lods, in_my_level + 1);
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
@@ -214,6 +217,7 @@ void PlanetRegion::render() const
 	            cell_number * cell_size * 2);
 	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"), cell_size);
 	Planet::get_landscape_material()->set_model_transform(transform);
+	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "fragment_normals"), parent.fragment_normals);
 
 
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
@@ -238,4 +242,9 @@ void PlanetRegion::render() const
 
 	if (child)
 		child->render();
+}
+
+void PlanetInformations::draw()
+{
+	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
 }

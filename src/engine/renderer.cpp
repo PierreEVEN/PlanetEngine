@@ -5,7 +5,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <iostream>
-#include <material.h>
 #include <texture2d.h>
 #include <vao.h>
 #include <GL/gl3w.h>

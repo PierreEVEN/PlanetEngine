@@ -1,4 +1,4 @@
-#include "mesh.h"
+#include "graphics/mesh.h"
 
 #include <iostream>
 #include <GL/gl3w.h>

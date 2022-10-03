@@ -21,3 +21,4 @@ public:
 	MeshManagerUi() { window_name = "Mesh manager"; }
 	void draw() override;
 };
+

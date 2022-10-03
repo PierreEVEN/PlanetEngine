@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/ui.h"
 #include "world/scene_component.h"
 
 class Mesh;
@@ -13,9 +14,12 @@ public:
 
 	static std::shared_ptr<Material> get_landscape_material();
 
+	bool fragment_normals = false;
+
 protected:
 	void tick(double delta_time) override;
 	void render() override;
+
 
 private:
 	std::shared_ptr<PlanetRegion> root;
@@ -25,7 +29,7 @@ private:
 class PlanetRegion
 {
 public:
-	PlanetRegion(const World& world, uint32_t lod_level, uint32_t my_level);
+	PlanetRegion(const Planet& parent, const World& world, uint32_t lod_level, uint32_t my_level);
 
 	void regenerate(int32_t cell_number, float width, double inner_radius);
 
@@ -33,6 +37,7 @@ public:
 	void render() const;
 
 private:
+	const Planet& parent;
 	Eigen::Vector3d chunk_position;
 	const World& world;
 	float cell_size;
@@ -42,4 +47,17 @@ private:
 	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<PlanetRegion> child;
+};
+
+class PlanetInformations : public ImGuiWindow
+{
+public:
+	PlanetInformations(Planet* in_planet) : planet(in_planet)
+	{
+		window_name = "planet editor";
+	}
+	void draw() override;
+
+private:
+	Planet* planet;
 };

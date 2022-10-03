@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 
-#include <Eigen/Eigen>
+#include <Eigen/Dense>
 
 class Camera;
 struct GLFWwindow;

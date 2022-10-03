@@ -1,7 +1,5 @@
 #pragma once
 
-#include <filesystem>
-
 #include "world.h"
 
 namespace EZCOGL
@@ -41,6 +39,8 @@ private:
 	uint32_t shader_id;
 	std::string vertex_path;
 	std::string fragment_path;
-	std::filesystem::file_time_type last_vertex_update;
-	std::filesystem::file_time_type last_fragment_update;
+
+	// Using raw pointer to improve compile time
+	void* last_vertex_update = nullptr;
+	void* last_fragment_update = nullptr;
 };

@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include <Eigen/Eigen>
+#include <Eigen/Dense>
 
 struct Vertex
 {

@@ -15,6 +15,9 @@ uniform sampler2D grass;
 uniform sampler2D sand;
 uniform sampler2D rock;
 
+uniform int fragment_normal_maps;
+layout(location = 5) uniform int fragment_normals;
+
 float PI = 3.14159265358979323846;
 float rand(vec2 c){
 	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -62,10 +65,12 @@ float get_height_at_location(vec2 pos) {
 void main()
 {
 	vec3 normal_vector = normal;	
-	vec3 h0 = vec3(0, 0, get_height_at_location(coordinates.xy));
-	vec3 h1 = vec3(1, 0, get_height_at_location(coordinates.xy + vec2(1, 0)));
-	vec3 h2 = vec3(0, 1, get_height_at_location(coordinates.xy + vec2(0, 1)));
-    normal_vector = normalize(cross(h1 - h0, h2 - h0));
+	if (fragment_normals != 0) {
+		vec3 h0 = vec3(0, 0, get_height_at_location(coordinates.xy));
+		vec3 h1 = vec3(1, 0, get_height_at_location(coordinates.xy + vec2(1, 0)));
+		vec3 h2 = vec3(0, 1, get_height_at_location(coordinates.xy + vec2(0, 1)));
+		normal_vector = normalize(cross(h1 - h0, h2 - h0));
+	}
 
 	vec2 uv = position.xy / 2;
 
