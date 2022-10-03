@@ -40,9 +40,11 @@ void open_in_ide(const std::string& file_path, int line)
 	std::string text = "code --goto \"" + std::filesystem::absolute(file_path).string() + ":" + std::to_string(line) +
 		":0\"";
 
+#if _WIN32
 	for (auto& c : text)
 		if (c == '/')
 			c = '\\';
+#endif
 
 
 	std::cout << "execute command : " << text << std::endl;

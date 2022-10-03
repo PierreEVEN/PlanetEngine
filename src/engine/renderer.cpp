@@ -213,19 +213,19 @@ void Renderer::init_context()
 	io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 
-	ImGui::GetStyle().Colors[ImGuiCol_FrameBg, ImGui::ColorConvertFloat4ToU32(ImVec4(46, 46, 46, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_TitleBg, ImGui::ColorConvertFloat4ToU32(ImVec4(30, 30, 30, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_CheckMark, ImGui::ColorConvertFloat4ToU32(ImVec4(159, 159, 159, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_SliderGrab, ImGui::ColorConvertFloat4ToU32(ImVec4(159, 159, 159, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_Button, ImGui::ColorConvertFloat4ToU32(ImVec4(69, 69, 69, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_Header, ImGui::ColorConvertFloat4ToU32(ImVec4(71, 71, 71, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_Tab, ImGui::ColorConvertFloat4ToU32(ImVec4(21, 21, 21, 220))];
-	ImGui::GetStyle().Colors[ImGuiCol_TabUnfocused, ImGui::ColorConvertFloat4ToU32(ImVec4(27, 27, 27, 220))];
-	ImGui::GetStyle().Colors[ImGuiCol_TabUnfocusedActive, ImGui::ColorConvertFloat4ToU32(ImVec4(52, 52, 52, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_DockingEmptyBg, ImGui::ColorConvertFloat4ToU32(ImVec4(18, 18, 18, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_TitleBgActive, ImGui::ColorConvertFloat4ToU32(ImVec4(29, 29, 29, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_WindowBg, ImGui::ColorConvertFloat4ToU32(ImVec4(15, 15, 15, 255))];
-	ImGui::GetStyle().Colors[ImGuiCol_TabActive, ImGui::ColorConvertFloat4ToU32(ImVec4(135, 135, 135, 255))];
+	ImGui::GetStyle().Colors[ImGuiCol_FrameBg] = (ImVec4(46, 46, 46, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_TitleBg] = (ImVec4(30, 30, 30, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_CheckMark] = (ImVec4(159, 159, 159, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_SliderGrab] = (ImVec4(159, 159, 159, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_Button] = (ImVec4(69, 69, 69, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_Header] = (ImVec4(71, 71, 71, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_Tab] = (ImVec4(21, 21, 21, 220));
+	ImGui::GetStyle().Colors[ImGuiCol_TabUnfocused] = (ImVec4(27, 27, 27, 220));
+	ImGui::GetStyle().Colors[ImGuiCol_TabUnfocusedActive] = (ImVec4(52, 52, 52, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_DockingEmptyBg] = (ImVec4(18, 18, 18, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_TitleBgActive] = (ImVec4(29, 29, 29, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = (ImVec4(15, 15, 15, 255));
+	ImGui::GetStyle().Colors[ImGuiCol_TabActive] = (ImVec4(135, 135, 135, 255));
 
 	auto& style = ImGui::GetStyle();
 	style.WindowRounding = 0;

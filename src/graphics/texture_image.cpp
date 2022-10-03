@@ -2,11 +2,12 @@
 
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
+#include <algorithm>
 
 TextureImage::~TextureImage()
 {
 	auto& textures = Engine::get().get_asset_manager().textures;
-	textures.erase(std::ranges::find(textures, this));
+	textures.erase(std::find(textures.begin(), textures.end(), this));
 }
 
 std::shared_ptr<TextureImage> TextureImage::create(const std::string& name, const std::vector<GLenum>& params)

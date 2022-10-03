@@ -78,7 +78,7 @@ void Material::load_from_source(const std::string& in_vertex_path, const std::st
 			last_error = last_error + "\nfile : " + vertex_path;
 		std::cerr << "Link message :" << name << " :" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
-		shader_id = NULL;
+		shader_id = 0;
 	}
 
 	glUseProgram(0);

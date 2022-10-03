@@ -52,14 +52,17 @@ else()
 	if(NOT EXISTS "${_fullpath}")
 		message(WARNING "easycppogl is not built !")
 
-		message("--------------------------building easycppogl : Release")
+		include(ProcessorCount)
+		ProcessorCount(N)
+
+		message("--------------------------building easycppogl : Release using ${N} workers")
 		execute_process (COMMAND cmake -S "${PROJECT_ROOT}/third_party/easycppogl" -B "${INTERMEDIATES_DIR}/easycppogl" -DBUILD_TYPE=Release RESULT_VARIABLE output)
-		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --target easycppogl RESULT_VARIABLE output)
+		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --parallel ${N} --target easycppogl RESULT_VARIABLE output)
 		message("done")
 
-		message("--------------------------building easycppogl : Debug")
+		message("--------------------------building easycppogl : Debug using ${N} workers")
 		execute_process (COMMAND cmake -S "${PROJECT_ROOT}/third_party/easycppogl" -B "${INTERMEDIATES_DIR}/easycppogl" -DBUILD_TYPE=Debug RESULT_VARIABLE output)
-		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --target easycppogl RESULT_VARIABLE output)
+		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --parallel ${N} --target easycppogl RESULT_VARIABLE output)
 		message("done")
 
 		message("--------------------------installing easycppogl")
