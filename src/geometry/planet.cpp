@@ -14,7 +14,7 @@ static std::shared_ptr<TextureImage> grass = nullptr;
 static std::shared_ptr<TextureImage> rock = nullptr;
 static std::shared_ptr<TextureImage> sand = nullptr;
 
-Planet::Planet(const World& in_world) : world(in_world)
+Planet::Planet(const World& in_world) : SceneComponent("planet"), world(in_world)
 {
 	root = std::make_shared<PlanetRegion>(*this, in_world, 13, 0);
 	root->regenerate(15, 0.1f, 200.00);

@@ -9,9 +9,12 @@ class SceneComponent
 {
 	friend class World;
 public:
-	SceneComponent() = default;
+	SceneComponent(const std::string& in_name) : name(in_name)
+	{
+	}
+
 	virtual ~SceneComponent() = default;
-	
+
 	virtual void set_local_position(const Eigen::Vector3d& position)
 	{
 		local_position = position;
@@ -63,8 +66,8 @@ public:
 
 	[[nodiscard]] virtual const Eigen::Affine3d& get_world_transform()
 	{
-		if (is_dirty) {
-
+		if (is_dirty)
+		{
 			world_transform = Eigen::Affine3d::Identity();
 			world_transform.translate(local_position);
 			world_transform.rotate(local_rotation);
@@ -79,7 +82,6 @@ public:
 
 	[[nodiscard]] virtual Eigen::Vector3d world_forward()
 	{
-
 		return get_world_transform().rotation() * Eigen::Vector3d(1, 0, 0);
 	}
 
@@ -115,10 +117,18 @@ public:
 		parent = nullptr;
 	}
 
+	[[nodiscard]] const std::vector<std::shared_ptr<SceneComponent>>& get_children() const { return children; }
+
+	const std::string name;
 
 protected:
-	virtual void tick(double delta_time) {}
-	virtual void render() {}
+	virtual void tick(double delta_time)
+	{
+	}
+
+	virtual void render()
+	{
+	}
 
 	void mark_dirty()
 	{
@@ -128,7 +138,6 @@ protected:
 	}
 
 private:
-
 	void tick_internal(double delta_time);
 	void render_internal();
 

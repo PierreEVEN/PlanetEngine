@@ -14,6 +14,7 @@
 #include "engine.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
+#include "utils/profiler.h"
 
 static bool initialized_opengl = false;
 
@@ -53,7 +54,6 @@ Renderer::Renderer()
 	g_buffer_depth->alloc(default_window_res.x(), default_window_res.y(), GL_DEPTH_COMPONENT32F, nullptr);
 	g_buffer = EZCOGL::FBO_DepthTexture::create(textures, g_buffer_depth);
 
-
 	// Resolve buffer
 	resolve_texture = TextureImage::create("resolve");
 	resolve_texture->alloc(default_window_res.x(), default_window_res.y(), GL_RGB8, nullptr);
@@ -71,13 +71,16 @@ Renderer::~Renderer()
 
 void Renderer::initialize() const
 {
+	STAT_DURATION(Initialize_Renderer);
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
 	glfwMakeContextCurrent(main_window);
-
-	glfwPollEvents();
+	{
+		STAT_DURATION(Handle_Events);
+		glfwPollEvents();
+	}
 	EZCOGL::VAO::none()->bind();
 
 	int w, h;
@@ -141,8 +144,11 @@ void Renderer::submit() const
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	}
 
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	{
+		STAT_DURATION(ImGui_Render);
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
 
 	glfwSwapBuffers(main_window);
 }

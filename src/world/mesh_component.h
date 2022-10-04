@@ -8,6 +8,8 @@ class Mesh;
 class MeshComponent : public SceneComponent {
 public:
 
+	using SceneComponent::SceneComponent;
+
 	virtual ~MeshComponent() = default;
 
 	void set_mesh(const std::shared_ptr<Mesh>& in_mesh) {

@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include "camera.h"
 #include "engine/engine.h"
+#include "utils/profiler.h"
 
 struct WorldDataStructure
 {
@@ -18,7 +19,7 @@ struct WorldDataStructure
 	alignas(16) float world_time;
 };
 
-World::World() : camera(std::make_shared<Camera>()), root_component(std::make_unique<SceneComponent>())
+World::World() : camera(std::make_shared<Camera>()), root_component(std::make_unique<SceneComponent>("root"))
 {
 	glGenBuffers(1, &world_uniform);
 	glBindBuffer(GL_UNIFORM_BUFFER, world_uniform);
@@ -35,6 +36,7 @@ World::~World()
 
 void World::tick_world()
 {
+	STAT_DURATION("World tick");
 	delta_seconds = std::min(glfwGetTime() - last_time, 1 / 15.0);
 	last_time = glfwGetTime();
 
@@ -63,5 +65,6 @@ void World::tick_world()
 
 void World::render_world() const
 {
+	STAT_DURATION("World render");
 	root_component->render_internal();
 }

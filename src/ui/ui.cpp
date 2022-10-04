@@ -11,6 +11,7 @@
 #include "world.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
+#include "utils/profiler.h"
 
 static bool show_demo_window = false;
 
@@ -36,6 +37,7 @@ namespace ui
 {
 	void draw()
 	{
+		STAT_DURATION(ImGui_UI);
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))

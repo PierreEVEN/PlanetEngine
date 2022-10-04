@@ -17,7 +17,7 @@ public:
 
 	[[nodiscard]] const std::shared_ptr<Camera>& get_camera() const { return camera; }
 
-	[[nodiscard]] SceneComponent& get_scene_root()
+	[[nodiscard]] SceneComponent& get_scene_root() const
 	{
 		return *root_component;
 	}

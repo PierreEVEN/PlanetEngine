@@ -1,8 +1,6 @@
 #include "camera.h"
 
-#include <imgui.h>
-
-Camera::Camera(): res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0)
+Camera::Camera() : SceneComponent("camera"), res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0)
 {
 	update_rotation();
 }
