@@ -41,45 +41,46 @@ int main()
 
 	while (!Engine::get().get_renderer().should_close())
 	{
+		{
+			STAT_DURATION(Game_loop);
+			Engine::get().get_renderer().initialize();
+
+			// Gameplay
+			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
+			Engine::get().get_world().tick_world();
+
+			// G_buffers
+			{
+				STAT_DURATION(Deferred_GBuffers);
+				Engine::get().get_renderer().bind_g_buffers();
+				Engine::get().get_world().render_world();
+			}
+
+			// Deferred combine
+			{
+				STAT_DURATION(Deferred_Combine);
+				Engine::get().get_renderer().bind_deferred_combine();
+
+				g_buffer_combine_material->use();
+				const int position_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "position");
+				Engine::get().get_renderer().world_position().bind(position_location);
+				glUniform1i(position_location, position_location);
+				const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
+				Engine::get().get_renderer().world_color().bind(color_location);
+				glUniform1i(color_location, color_location);
+				const int normal_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "normal");
+				Engine::get().get_renderer().world_normal().bind(normal_location);
+				glUniform1i(normal_location, normal_location);
+				const int depth_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "depth");
+				Engine::get().get_renderer().world_depth().bind(depth_location);
+				glUniform1i(depth_location, depth_location);
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+			// UI
+			ui::draw();
+
+			Engine::get().get_renderer().submit();
+		}
 		Profiler::get().new_frame();
-		STAT_DURATION(Game_loop);
-		Engine::get().get_renderer().initialize();
-
-		// Gameplay
-		camera_controller.tick(Engine::get().get_world().get_delta_seconds());
-		Engine::get().get_world().tick_world();
-
-		// G_buffers
-		{
-			STAT_DURATION(Deferred_GBuffers);
-			Engine::get().get_renderer().bind_g_buffers();
-			Engine::get().get_world().render_world();
-		}
-
-		// Deferred combine
-		{
-			STAT_DURATION(Deferred_Combine);
-			Engine::get().get_renderer().bind_deferred_combine();
-
-			g_buffer_combine_material->use();
-			const int position_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "position");
-			Engine::get().get_renderer().world_position().bind(position_location);
-			glUniform1i(position_location, position_location);
-			const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
-			Engine::get().get_renderer().world_color().bind(color_location);
-			glUniform1i(color_location, color_location);
-			const int normal_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "normal");
-			Engine::get().get_renderer().world_normal().bind(normal_location);
-			glUniform1i(normal_location, normal_location);
-			const int depth_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "depth");
-			Engine::get().get_renderer().world_depth().bind(depth_location);
-			glUniform1i(depth_location, depth_location);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
-		}
-		// UI
-		ui::draw();
-
-		Engine::get().get_renderer().submit();
 	}
-
 }

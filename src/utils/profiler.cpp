@@ -6,12 +6,13 @@ void Profiler::new_frame()
 	records = std::vector<Record>();
 }
 
-void Profiler::add_record(const char* name, const TimeType& start, const TimeType& end)
+Record* Profiler::add_record(const char* name, const TimeType& start, const TimeType& end)
 {
 	if (!enabled)
-		return;
+		return nullptr;
 
 	records.emplace_back(name, start, end);
+	return &records[records.size() - 1];
 }
 
 std::unique_ptr<Profiler> profiler_singleton = nullptr;
@@ -25,12 +26,14 @@ Profiler& Profiler::get()
 }
 
 TimeWatcher::TimeWatcher(const char* in_stat_name)
-	: stat_name(in_stat_name), record_begin(std::chrono::steady_clock::now())
+	: stat_name(in_stat_name), record_begin(std::chrono::steady_clock::now()),
+	  self_ref(Profiler::get().add_record(stat_name, std::chrono::steady_clock::now(),
+	                                      std::chrono::steady_clock::now()))
 {
 }
 
 TimeWatcher::~TimeWatcher()
 {
-	const auto now = std::chrono::steady_clock::now();
-	Profiler::get().add_record(stat_name, record_begin, now);
+	if (self_ref)
+		self_ref->end = std::chrono::steady_clock::now();
 }

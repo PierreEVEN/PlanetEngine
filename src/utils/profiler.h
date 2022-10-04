@@ -3,7 +3,7 @@
 
 #define CONCAT(x, y) x ## y
 #define CONCAT_2(x, y) CONCAT(x, y)
-#define STAT_DURATION(name) TimeWatcher CONCAT_2(time_watcher, _LINE__)(#name);
+#define STAT_DURATION(name) TimeWatcher CONCAT_2(time_watcher, __LINE__)(#name)
 
 using TimeType = std::chrono::steady_clock::time_point;
 
@@ -19,7 +19,7 @@ class Profiler
 public:
 
 	void new_frame();
-	void add_record(const char* name, const TimeType& start, const TimeType& end);
+	Record* add_record(const char* name, const TimeType& start, const TimeType& end);
 
 	bool enabled = true;
 
@@ -43,4 +43,5 @@ public:
 private:
 	const char* stat_name;
 	TimeType record_begin;
+	Record* self_ref;
 };
