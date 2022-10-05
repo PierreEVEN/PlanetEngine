@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <iostream>
+#include <memory>
 
 void Profiler::new_frame()
 {
@@ -14,7 +15,7 @@ uint64_t Profiler::add_record(const char* name)
 	if (!enabled)
 		return -1;
 
-	records.emplace_back(name, std::chrono::steady_clock::now(), std::chrono::steady_clock::now());
+	records.emplace_back(Record {name, std::chrono::steady_clock::now(), std::chrono::steady_clock::now()} );
 	return records.size() - 1;
 }
 

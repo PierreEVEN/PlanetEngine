@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include <iostream>
+#include <cmath>
 
 #include "utils/profiler.h"
 
