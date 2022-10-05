@@ -9,7 +9,7 @@ set(INTERMEDIATES_DIR ${CMAKE_BINARY_DIR}) # Intermediates dir
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 #Set startup project
-set_property(DIRECTORY ${PROJECT_ROOT} PROPERTY VS_STARTUP_PROJECT Projet)
+set_property(DIRECTORY ${PROJECT_ROOT} PROPERTY VS_STARTUP_PROJECT PlanetEngine)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 project(ProjetProgrammationGraphique)
@@ -76,8 +76,8 @@ set(easycppogl_DIR ${EASY_CPP_OGL_INSTALL_DIR})
 find_package(easycppogl CONFIG REQUIRED)
 
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.h resources/**)
-add_executable(Projet ${SOURCES})
-configure_project(Projet ${SOURCES})
-target_link_libraries(Projet PUBLIC easycppogl)
-target_include_directories(Projet PRIVATE src)
+add_executable(PlanetEngine ${SOURCES})
+configure_project(PlanetEngine ${SOURCES})
+target_link_libraries(PlanetEngine PUBLIC easycppogl)
+target_include_directories(PlanetEngine PRIVATE src)
 source_group(TREE ${PROJECT_ROOT} FILES  ${SOURCES})

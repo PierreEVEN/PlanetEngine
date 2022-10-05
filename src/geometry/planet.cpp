@@ -8,6 +8,7 @@
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
+#include "utils/profiler.h"
 
 static std::shared_ptr<Material> planet_material = nullptr;
 static std::shared_ptr<TextureImage> grass = nullptr;
@@ -41,12 +42,14 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 
 void Planet::tick(double delta_time)
 {
+	STAT_DURATION(Planet_Tick);
 	SceneComponent::tick(delta_time);
 	root->tick(delta_time);
 }
 
 void Planet::render()
 {
+	STAT_DURATION(Render_Planet);
 	SceneComponent::render();
 	root->render();
 }
