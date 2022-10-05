@@ -28,7 +28,14 @@ private:
 	void compute_record_data(RecordData& output, int level, std::vector<Record>::iterator& it,
 		const std::vector<Record>& records);
 	void draw_record_data(const SessionFrontend::RecordData& data) const;
-
+	void draw_record(const DrawRecord& record, int line_index, float scale, int index) const;
 	std::vector<Record> last_frame;
 	RecordData data;
+	float zoom = 0;
+	bool realtime = false;
+	float custom_width = 0;
+	bool use_custom_width = false;
+	float recorded_max = 0;
+
+	int record_first_frame = 2;
 };

@@ -26,6 +26,9 @@ void DefaultCameraController::process_key(GLFWwindow* window, int key, int scan_
 {
 	if (action == GLFW_PRESS)
 	{
+		if (!capture_input && key != GLFW_KEY_ESCAPE)
+			return;
+
 		switch (key)
 		{
 		case GLFW_KEY_ESCAPE:

@@ -150,6 +150,7 @@ void Renderer::submit() const
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
+	STAT_DURATION(Swap_buffers);
 	glfwSwapBuffers(main_window);
 }
 
@@ -177,7 +178,7 @@ void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 	framebuffer().resize(x, y);
 	resolve_framebuffer->resize(x, y);
 
-	Engine::get().get_world().get_camera()->viewport_res() = { x, y };
+	Engine::get().get_world().get_camera()->viewport_res() = {x, y};
 }
 
 void Renderer::init_context()

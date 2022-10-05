@@ -19,7 +19,8 @@ class Profiler
 public:
 
 	void new_frame();
-	Record* add_record(const char* name, const TimeType& start, const TimeType& end);
+	uint64_t add_record(const char* name);
+	void close_record(uint64_t record);
 
 	bool enabled = true;
 
@@ -43,5 +44,5 @@ public:
 private:
 	const char* stat_name;
 	TimeType record_begin;
-	Record* self_ref;
+	int64_t self_ref;
 };
