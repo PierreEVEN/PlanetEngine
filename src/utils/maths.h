@@ -5,7 +5,7 @@
 namespace Maths
 {
 	template<typename Type, int Size>
-	Eigen::Vector<Type, Size> lerp(const Eigen::Vector<Type, Size>& A, const Eigen::Vector<Type, Size>& B, Type t) {
+	Eigen::Matrix<Type, Size, 1> lerp(const Eigen::Matrix<Type, Size, 1>& A, const Eigen::Matrix<Type, Size, 1>& B, Type t) {
 		return A * (1 - t) + B * t;
 	}
 }

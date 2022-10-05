@@ -1,5 +1,6 @@
 #include "profiler.h"
 
+#include <memory>
 #include <iostream>
 
 void Profiler::new_frame()

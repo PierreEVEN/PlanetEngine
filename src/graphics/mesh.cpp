@@ -11,7 +11,7 @@
 Mesh::~Mesh()
 {
 	auto& meshes = Engine::get().get_asset_manager().meshes;
-	meshes.erase(std::ranges::find(meshes, this));
+	meshes.erase(std::find(meshes.begin(), meshes.end(), this));
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &ebo);
 	glDeleteBuffers(1, &vbo);
