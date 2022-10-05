@@ -21,7 +21,7 @@ Material::~Material()
 	delete reinterpret_cast<std::filesystem::file_time_type*>(last_fragment_update);
 
 	auto& materials = Engine::get().get_asset_manager().materials;
-	materials.erase(std::ranges::find(materials, this));
+	materials.erase(std::find(materials.begin(), materials.end(), this));
 	glDeleteProgram(shader_id);
 }
 
