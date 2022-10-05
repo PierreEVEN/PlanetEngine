@@ -1,5 +1,6 @@
 #pragma once
 #include <chrono>
+#include <vector>
 
 #define CONCAT(x, y) x ## y
 #define CONCAT_2(x, y) CONCAT(x, y)

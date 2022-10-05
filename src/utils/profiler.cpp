@@ -1,4 +1,5 @@
 #include "profiler.h"
+#include <memory>
 
 void Profiler::new_frame()
 {
@@ -11,7 +12,7 @@ Record* Profiler::add_record(const char* name, const TimeType& start, const Time
 	if (!enabled)
 		return nullptr;
 
-	records.emplace_back(name, start, end);
+	records.emplace_back(Record{name, start, end});
 	return &records[records.size() - 1];
 }
 
