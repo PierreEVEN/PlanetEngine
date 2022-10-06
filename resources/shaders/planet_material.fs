@@ -62,14 +62,29 @@ float get_height_at_location(vec2 pos) {
  }
 
 
+layout (std140, binding = 0) uniform WorldData
+{
+    mat4 proj_matrix;
+    mat4 view_matrix;
+    mat4 pv_matrix;
+    mat4 proj_matrix_inv;
+    mat4 view_matrix_inv;
+    mat4 pv_matrix_inv;
+	vec3 camera_pos;
+	vec3 camera_forward;
+    float world_time;
+};
+
 void main()
 {
 	vec3 normal_vector = normal;	
 	if (fragment_normals != 0) {
+		float offset = max(0.2, distance(position, camera_pos) / 500.0);
 		vec3 h0 = vec3(0, 0, get_height_at_location(coordinates.xy));
-		vec3 h1 = vec3(1, 0, get_height_at_location(coordinates.xy + vec2(1, 0)));
-		vec3 h2 = vec3(0, 1, get_height_at_location(coordinates.xy + vec2(0, 1)));
+		vec3 h1 = vec3(offset, 0, get_height_at_location(coordinates.xy + vec2(offset, 0)));
+		vec3 h2 = vec3(0, offset, get_height_at_location(coordinates.xy + vec2(0, offset)));
 		normal_vector = normalize(cross(h1 - h0, h2 - h0));
+
 	}
 
 	vec2 uv = position.xy / 2;

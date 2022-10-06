@@ -18,10 +18,10 @@ void SceneComponent::tick_internal(double delta_time)
 		child->tick_internal(delta_time);
 }
 
-void SceneComponent::render_internal()
+void SceneComponent::render_internal(Camera& camera)
 {
-	render();
+	render(camera);
 
 	for (const auto& child : children)
-		child->render_internal();
+		child->render_internal(camera);
 }

@@ -66,5 +66,5 @@ void World::tick_world()
 void World::render_world() const
 {
 	STAT_DURATION("World render");
-	root_component->render_internal();
+	root_component->render_internal(*camera);
 }

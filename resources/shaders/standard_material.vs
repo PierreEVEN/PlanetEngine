@@ -21,6 +21,6 @@ layout (std140, binding = 0) uniform WorldData
 void main()
 {
 	out_norm = norm;
-	out_pos = pos;
-	gl_Position = pv_matrix * model * vec4(out_pos, 1.0);
+	out_pos = (model * vec4(pos, 1.0)).xyz;
+	gl_Position = pv_matrix * vec4(out_pos, 1.0);
 }

@@ -16,9 +16,11 @@ public:
 
 	bool fragment_normals = false;
 
+	float radius = 8000;
+	bool morph_to_sphere = true;
 protected:
 	void tick(double delta_time) override;
-	void render() override;
+	void render(Camera& camera) override;
 
 
 private:
@@ -34,7 +36,7 @@ public:
 	void regenerate(int32_t cell_number, float width, double inner_radius);
 
 	void tick(double delta_time);
-	void render() const;
+	void render(Camera& camera) const;
 
 private:
 	const Planet& parent;

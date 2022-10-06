@@ -135,12 +135,9 @@ void SessionFrontend::draw_record(const DrawRecord& record, int line_index, floa
 void SessionFrontend::draw_record_data(const RecordData& data) const
 {
 	const float zoom_scale = use_custom_width ? 1 : std::exp(zoom / 200);
-
 	const float zoom_width = use_custom_width ? std::exp(custom_width / 200) * 1000 : ImGui::GetContentRegionAvail().x - 20;
 	const float box_scales = zoom_width / (use_custom_width ? recorded_max : data.max_value) * zoom_scale;
-
 	const float window_width = zoom_width * zoom_scale;
-
 	int record_index = 0;
 	if (ImGui::BeginChild("record", ImVec2(ImGui::GetContentRegionAvail().x, data.lines.size() * 25 + static_cast<float>(25)), false, ImGuiWindowFlags_HorizontalScrollbar))
 	{

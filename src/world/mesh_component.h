@@ -29,7 +29,7 @@ public:
 		return material;
 	}
 
-	virtual void render() override;
+	virtual void render(Camera& camera) override;
 
 private:
 	std::shared_ptr<Material> material;

@@ -5,6 +5,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+class Camera;
+
 class SceneComponent
 {
 	friend class World;
@@ -126,7 +128,7 @@ protected:
 	{
 	}
 
-	virtual void render()
+	virtual void render(Camera& camera)
 	{
 	}
 
@@ -139,7 +141,7 @@ protected:
 
 private:
 	void tick_internal(double delta_time);
-	void render_internal();
+	void render_internal(Camera& camera);
 
 	std::vector<std::shared_ptr<SceneComponent>> children;
 	SceneComponent* parent = nullptr;

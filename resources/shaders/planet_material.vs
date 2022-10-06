@@ -12,6 +12,8 @@ layout(location = 1) uniform mat4 model;
 layout(location = 2) uniform float inner_width;
 layout(location = 3) uniform float outer_width;
 layout(location = 4) uniform float cell_width;
+layout(location = 6) uniform float radius;
+layout(location = 8) uniform int morph_to_sphere;
 
 layout (std140, binding = 0) uniform WorldData
 {
@@ -141,11 +143,14 @@ void main()
 	}
 
 	// Morph to sphere
-	float planet_radius = 100000;
-
-	float d = clamp(length(final_pos.xy), 0, planet_radius);
-	final_pos = to_3d_v4(final_pos.xy, planet_radius);
-	final_pos += normalize(final_pos) * altitude_with_water - vec3(0, 0, planet_radius);
+	float planet_radius = radius;
+	if (morph_to_sphere != 0) {
+		float d = clamp(length(final_pos.xy), 0, planet_radius);
+		final_pos = to_3d_v4(final_pos.xy, planet_radius);
+		final_pos += normalize(final_pos) * altitude_with_water - vec3(0, 0, planet_radius);
+	}
+	
+	final_pos.z += model[3][2];
 
 	out_position = final_pos;
 	gl_Position = pv_matrix * vec4(final_pos, 1.0);

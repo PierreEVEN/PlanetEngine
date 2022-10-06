@@ -5,6 +5,7 @@
 
 #include <imgui.h>
 
+#include "engine/engine.h"
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
@@ -14,6 +15,9 @@ static std::shared_ptr<Material> planet_material = nullptr;
 static std::shared_ptr<TextureImage> grass = nullptr;
 static std::shared_ptr<TextureImage> rock = nullptr;
 static std::shared_ptr<TextureImage> sand = nullptr;
+
+float test_p = 0;
+float test_y = 0;
 
 Planet::Planet(const World& in_world) : SceneComponent("planet"), world(in_world)
 {
@@ -27,8 +31,8 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	if (planet_material)
 		return planet_material;
 	planet_material = Material::create("planet material");
-	planet_material->load_from_source("resources/shaders/planet_material.vs",
-	                                  "resources/shaders/planet_material.fs");
+	planet_material->load_from_source("resources/shaders/planet_material_v2.vs",
+	                                  "resources/shaders/planet_material_v2.fs");
 
 	grass = TextureImage::create("terrain grass", {GL_REPEAT});
 	grass->load("resources/textures/terrain/grass.jpg");
@@ -47,14 +51,15 @@ void Planet::tick(double delta_time)
 	root->tick(delta_time);
 }
 
-void Planet::render()
+void Planet::render(Camera& camera)
 {
 	STAT_DURATION(Render_Planet);
-	SceneComponent::render();
-	root->render();
+	SceneComponent::render(camera);
+	root->render(camera);
 }
 
-PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint32_t in_lod_level, uint32_t in_my_level) :
+PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint32_t in_lod_level,
+                           uint32_t in_my_level) :
 	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), parent(in_parent)
 {
 	mesh = Mesh::create("planet_lod:" + std::to_string(current_lod));
@@ -187,6 +192,7 @@ void PlanetRegion::tick(double delta_time)
 		0) * snapping;
 	transform = Eigen::Affine3d::Identity();
 	transform.translate(chunk_position);
+	transform.translate(-Engine::get().get_world().get_camera()->get_world_position());
 
 	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
 
@@ -202,15 +208,16 @@ void PlanetRegion::tick(double delta_time)
 		}
 		else if (camera_location.x() >= chunk_position.x() && camera_location.y() >= chunk_position.y())
 		{
-			rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ());
+			rotation = Eigen::AngleAxisd(static_cast<float>(M_PI), Eigen::Vector3d::UnitZ());
 		}
 		transform.rotate(rotation);
 	}
+
 	if (child)
 		child->tick(delta_time);
 }
 
-void PlanetRegion::render() const
+void PlanetRegion::render(Camera& camera) const
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	Planet::get_landscape_material()->use();
@@ -219,8 +226,12 @@ void PlanetRegion::render() const
 	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "outer_width"),
 	            cell_number * cell_size * 2);
 	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"), cell_size);
+	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "fragment_normals"),
+	            parent.fragment_normals);
+	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"), parent.radius);
+	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "morph_to_sphere"),
+	            parent.morph_to_sphere);
 	Planet::get_landscape_material()->set_model_transform(transform);
-	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "fragment_normals"), parent.fragment_normals);
 
 
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
@@ -244,10 +255,14 @@ void PlanetRegion::render() const
 	glEnable(GL_CULL_FACE);
 
 	if (child)
-		child->render();
+		child->render(camera);
 }
 
 void PlanetInformations::draw()
 {
 	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
+	ImGui::SliderFloat("pitch : ", &test_p, -M_PI, M_PI);
+	ImGui::SliderFloat("yaw : ", &test_y, -M_PI, M_PI);
+	ImGui::DragFloat("radius : ", &planet->radius, 10);
+	ImGui::Checkbox("is sphere : ", &planet->morph_to_sphere);
 }

@@ -9,6 +9,7 @@
 #include "engine/engine.h"
 #include "engine/renderer.h"
 #include "geometry/planet.h"
+#include "graphics/primitives.h"
 #include "ui/asset_manager_ui.h"
 #include "ui/graphic_debugger.h"
 #include "ui/session_frontend.h"
@@ -16,6 +17,7 @@
 #include "ui/viewport.h"
 #include "ui/world_outliner.h"
 #include "utils/profiler.h"
+#include "world/mesh_component.h"
 
 int main()
 {
@@ -34,6 +36,14 @@ int main()
 	// Create planet
 	const auto main_planet = std::make_shared<Planet>(Engine::get().get_world());
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
+
+	const auto default_material = Material::create("standard_material");
+	default_material->load_from_source("resources/shaders/standard_material.vs",
+		"resources/shaders/standard_material.fs");
+	const auto cube = std::make_shared<MeshComponent>("cube");
+	cube->set_material(default_material);
+	cube->set_mesh(primitives::cube());
+	Engine::get().get_world().get_scene_root().add_child(cube);
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());

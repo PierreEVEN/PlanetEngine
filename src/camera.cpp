@@ -43,7 +43,7 @@ Eigen::Matrix4d Camera::view_matrix()
 	auto mat_trans = Eigen::Affine3d::Identity();
 	mat_trans.rotate(Eigen::Quaterniond(corr_z * corr_y));
 	mat_trans.rotate(get_world_rotation().inverse());
-	mat_trans.translate(-get_world_position());
+	//mat_trans.translate(-get_world_position());
 	return mat_trans.matrix();
 }
 
