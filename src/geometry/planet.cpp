@@ -183,33 +183,65 @@ void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inn
 
 void PlanetRegion::tick(double delta_time)
 {
-	const auto camera_location = world.get_camera()->get_world_position();
+	auto camera_relative_location = world.get_camera()->get_world_position();
+
+	// @TODO Presque OK
+	Eigen::Vector3d sphere_relative_location = Eigen::Vector3d(asin(camera_relative_location.x() / parent.radius),
+	                                                           asin(camera_relative_location.y() / parent.radius),
+	                                                           1) * parent.radius;
+
+	// @TODO Temp
+	planet_rotation = Eigen::Affine3d::Identity();
+	planet_rotation.translate(-Engine::get().get_world().get_camera()->get_world_position()); // Camera is the center of the world ! yay
+	planet_rotation.translate(Eigen::Vector3d(0, 0, -parent.radius));
+	planet_rotation.rotate(
+		Eigen::AngleAxisd(test_p, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(test_y, Eigen::Vector3d::UnitY()));
+
+	// @TODO Pas OK
+	const auto camera_world_pos = Engine::get().get_world().get_camera()->get_world_position();
+	const auto planet_center = Eigen::Vector3d(0, 0, -parent.radius);
+	const auto camera_direction = (camera_world_pos - planet_center).normalized();
+
+	Eigen::Affine3d camera_dir_matrix = Eigen::Affine3d::Identity();
+	camera_dir_matrix.rotate(Eigen::Quaterniond::Identity());
+	camera_dir_matrix.translate(sphere_relative_location);
+
+	sphere_relative_location = camera_dir_matrix.translation();
+
 
 	const double snapping = cell_size * 2;
 	chunk_position = Eigen::Vector3d(
-		std::round(camera_location.x() / snapping + 0.5) - 0.5,
-		std::round(camera_location.y() / snapping + 0.5) - 0.5,
+		std::round(sphere_relative_location.x() / snapping + 0.5) - 0.5,
+		std::round(sphere_relative_location.y() / snapping + 0.5) - 0.5,
 		0) * snapping;
 	transform = Eigen::Affine3d::Identity();
 	transform.translate(chunk_position);
+
+	temp_location = Eigen::Affine3d::Identity();
+	temp_location.translate(chunk_position);
+
+	temp_rotation = Eigen::Affine3d::Identity();
 
 	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
 
 	if (current_lod != 0)
 	{
-		if (camera_location.x() >= chunk_position.x() && camera_location.y() < chunk_position.y())
+		if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.y() < chunk_position.y())
 		{
 			rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
 		}
-		else if (camera_location.x() < chunk_position.x() && camera_location.y() >= chunk_position.y())
+		else if (sphere_relative_location.x() < chunk_position.x() && sphere_relative_location.y() >= chunk_position.
+			y())
 		{
 			rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
 		}
-		else if (camera_location.x() >= chunk_position.x() && camera_location.y() >= chunk_position.y())
+		else if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.y() >= chunk_position.
+			y())
 		{
 			rotation = Eigen::AngleAxisd(static_cast<float>(M_PI), Eigen::Vector3d::UnitZ());
 		}
 		transform.rotate(rotation);
+		temp_rotation.rotate(rotation);
 	}
 
 	if (child)
@@ -230,15 +262,11 @@ void PlanetRegion::render(Camera& camera) const
 	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"), parent.radius);
 	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "morph_to_sphere"),
 	            parent.morph_to_sphere);
-	Planet::get_landscape_material()->set_model_transform(transform);
-
-
-	Eigen::Affine3d planet_rotation = Eigen::Affine3d::Identity();
-	//planet_rotation.translate(Eigen::Vector3d(0, 0, -parent.radius / 2));
-	planet_rotation.rotate(Eigen::AngleAxisd(test_p, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(test_y, Eigen::Vector3d::UnitY()));
-	//planet_rotation.translate(Eigen::Vector3d(0, 0, parent.radius / 2 ));
-	glUniformMatrix4fv(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "planet_rotation"), 1, false, planet_rotation.cast<float>().matrix().data());
-
+	glUniformMatrix4fv(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "temp_location"), 1, false,
+	                   temp_location.cast<float>().matrix().data());
+	glUniformMatrix4fv(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "temp_rotation"), 1, false,
+	                   temp_rotation.cast<float>().matrix().data());
+	Planet::get_landscape_material()->set_model_transform(planet_rotation);
 
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
 	glUniform1i(grass_location, grass_location);

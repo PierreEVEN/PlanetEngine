@@ -49,6 +49,11 @@ private:
 	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<PlanetRegion> child;
+
+
+	Eigen::Affine3d temp_location;
+	Eigen::Affine3d temp_rotation;
+	Eigen::Affine3d planet_rotation;
 };
 
 class PlanetInformations : public ImGuiWindow
