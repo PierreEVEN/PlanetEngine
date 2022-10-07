@@ -192,7 +192,6 @@ void PlanetRegion::tick(double delta_time)
 		0) * snapping;
 	transform = Eigen::Affine3d::Identity();
 	transform.translate(chunk_position);
-	transform.translate(-Engine::get().get_world().get_camera()->get_world_position());
 
 	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
 
@@ -232,6 +231,13 @@ void PlanetRegion::render(Camera& camera) const
 	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "morph_to_sphere"),
 	            parent.morph_to_sphere);
 	Planet::get_landscape_material()->set_model_transform(transform);
+
+
+	Eigen::Affine3d planet_rotation = Eigen::Affine3d::Identity();
+	//planet_rotation.translate(Eigen::Vector3d(0, 0, -parent.radius / 2));
+	planet_rotation.rotate(Eigen::AngleAxisd(test_p, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(test_y, Eigen::Vector3d::UnitY()));
+	//planet_rotation.translate(Eigen::Vector3d(0, 0, parent.radius / 2 ));
+	glUniformMatrix4fv(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "planet_rotation"), 1, false, planet_rotation.cast<float>().matrix().data());
 
 
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");

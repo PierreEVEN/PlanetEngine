@@ -14,6 +14,7 @@ layout(location = 3) uniform float outer_width;
 layout(location = 4) uniform float cell_width;
 layout(location = 6) uniform float radius;
 layout(location = 8) uniform int morph_to_sphere;
+layout(location = 9) uniform mat4 planet_rotation;
 
 layout (std140, binding = 0) uniform WorldData
 {
@@ -43,7 +44,7 @@ vec3 to_3d_v4(vec2 pos, float rho) {
     return rho * vec3(
         cos(norm_pos.y) * sin(norm_pos.x), 
         sin(norm_pos.y),
-        cos(norm_pos.y) * cos(norm_pos.x) - 1
+        cos(norm_pos.y) * cos(norm_pos.x)
     );
 }
 
@@ -51,7 +52,11 @@ void main()
 {
 	vec3 post_transform_pos = (model * vec4(pos, 1)).xyz;
 
-	vec3 planet_pos = to_3d_v4(post_transform_pos.xy, 8000);
+	vec3 planet_pos = to_3d_v4(post_transform_pos.xy, radius );
 	out_position = planet_pos;
-	gl_Position = pv_matrix * vec4(out_position, 1.0);
+	//out_position = vec3(post_transform_pos.xy, 0);
+    out_position -= camera_pos;
+
+	
+	gl_Position = pv_matrix * planet_rotation * vec4(out_position, 1.0);
 }
