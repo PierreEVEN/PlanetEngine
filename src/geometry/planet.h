@@ -21,7 +21,7 @@ public:
 	float cell_width = 1.0f;
 	int cell_count = 10;
 	bool wire_frame = false;
-	bool double_sided = true;
+	bool double_sided = false;
 	void regenerate();
 	Eigen::Affine3d planet_global_transform;
 	Eigen::Vector3f planet_color = Eigen::Vector3f(97.f / 256, 130.f / 256, 223.f / 256);

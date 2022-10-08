@@ -35,16 +35,22 @@ int main()
 
 	// Create planet
 	const auto main_planet = std::make_shared<Planet>(Engine::get().get_world());
+	main_planet->radius = 6000000;
+	main_planet->num_lods = 20;
+	main_planet->regenerate();
+	main_planet->set_local_position({-main_planet->radius, 0, 0});
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
 
 	const auto secondary_planet = std::make_shared<Planet>(Engine::get().get_world());
-	secondary_planet->set_local_position({ 90000, 90000, 90000 });
 	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
+	secondary_planet->radius = 1700000;
+	secondary_planet->num_lods = 19;
+	secondary_planet->regenerate();
 	double planet_rotation = 0;
 
 	const auto default_material = Material::create("standard_material");
 	default_material->load_from_source("resources/shaders/standard_material.vs",
-		"resources/shaders/standard_material.fs");
+	                                   "resources/shaders/standard_material.fs");
 	const auto cube = std::make_shared<MeshComponent>("cube");
 	cube->set_material(default_material);
 	cube->set_mesh(primitives::cube());
@@ -62,8 +68,9 @@ int main()
 			// Gameplay
 			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
-			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.1;
-			secondary_planet->set_local_position(Eigen::Vector3d(std::cos(planet_rotation), std::sin(planet_rotation), 0) * 600000);
+			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.02;
+			secondary_planet->set_local_position(
+				Eigen::Vector3d(std::cos(planet_rotation), std::sin(planet_rotation), 0) * 300000000);
 
 			// G_buffers
 			{

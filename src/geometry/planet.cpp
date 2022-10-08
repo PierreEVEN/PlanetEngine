@@ -20,7 +20,6 @@ static double snap(double value, double delta) { return round(value / delta) * d
 
 Planet::Planet(const World& in_world) : SceneComponent("planet"), world(in_world)
 {
-	set_local_position({-radius, 0, 0});
 	root = std::make_shared<PlanetRegion>(*this, in_world, 16, 0);
 	regenerate();
 	ImGuiWindow::create_window<PlanetInformations>(this);
@@ -81,6 +80,7 @@ void Planet::tick(double delta_time)
 		);
 		planet_global_transform = planet_global_transform * planet_orientation;
 		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
+
 	}
 
 
@@ -232,23 +232,24 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 	if (child)
 		child->tick(delta_time, num_lods);
 
-	STAT_DURATION("Planet Tick_LOD :" + std::to_string(current_lod));
-	const Eigen::Vector3d camera_relative_location = parent.planet_global_transform.inverse() * -world.get_camera()->
-		get_world_position();
-	
-	// @TODO Presque OK
-	Eigen::Vector3d sphere_relative_location = Eigen::Vector3d(
-		0,
-		asin(std::clamp(camera_relative_location.y() / parent.radius, -1.0, 1.0)),
-		asin(std::clamp(camera_relative_location.z() / parent.radius, -1.0, 1.0))) * parent.radius;
+	STAT_DURATION("Planet Tick LOD :" + std::to_string(current_lod));
 
-	sphere_relative_location = Eigen::Vector3d::Identity();
+	// Compute camera position in local space
+	const Eigen::Vector3d camera_local_position = parent.planet_global_transform.inverse() * (world.get_camera()->
+		get_world_position() - parent.get_world_position());
+
+	// Convert linear position to position on sphere // @TODO Minor fix required here
+	Eigen::Vector3d local_location = Eigen::Vector3d(
+		0,
+		asin(std::clamp(camera_local_position.y() / parent.radius / 2, -1.0, 1.0)),
+		asin(std::clamp(camera_local_position.z() / parent.radius / 2, -1.0, 1.0))) * parent.radius;
 
 	const double snapping = cell_size * 2;
 	chunk_position = Eigen::Vector3d(
-		std::round(sphere_relative_location.x() / snapping + 0.5) - 0.5,
+		std::round(local_location.y() / snapping + 0.5) - 0.5,
 		0,
-		std::round(sphere_relative_location.z() / snapping + 0.5) - 0.5) * snapping;
+		std::round(local_location.z() / snapping + 0.5) - 0.5) * snapping;
+
 
 	lod_local_transform = Eigen::Affine3d::Identity();
 	lod_local_transform.translate(chunk_position);
@@ -257,23 +258,14 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 
 	if (current_lod != 0)
 	{
-		if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.z() < chunk_position.z())
-		{
-			rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
-		}
-		else if (sphere_relative_location.x() < chunk_position.x() && sphere_relative_location.z() >= chunk_position.
-			z())
-		{
-			rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
-		}
-		else if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.z() >= chunk_position.
-			z())
-		{
-			rotation = Eigen::AngleAxisd(static_cast<float>(M_PI), Eigen::Vector3d::UnitZ());
-		}
+		if (local_location.y() >= chunk_position.x() && local_location.z() < chunk_position.z())
+			rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitY());
+		else if (local_location.y() < chunk_position.x() && local_location.z() >= chunk_position.z())
+			rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY());
+		else if (local_location.y() >= chunk_position.x() && local_location.z() >= chunk_position.z())
+			rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY());
 		lod_local_transform.rotate(rotation);
 	}
-
 }
 
 void PlanetRegion::render(Camera& camera) const
@@ -313,14 +305,14 @@ void PlanetRegion::render(Camera& camera) const
 	glEnable(GL_CULL_FACE);
 	glPolygonMode(GL_FRONT_AND_BACK, parent.wire_frame ? GL_LINE : GL_FILL);
 	mesh->draw();
-	if (parent.double_sided) {
+	if (parent.double_sided)
+	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glFrontFace(GL_CW);
 		mesh->draw();
 		glFrontFace(GL_CCW);
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
 }
 
 void PlanetInformations::draw()
@@ -331,7 +323,7 @@ void PlanetInformations::draw()
 	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
 	ImGui::SliderInt("num LODs : ", &planet->num_lods, 1, 20);
 	ImGui::DragFloat("radius : ", &planet->radius, 10);
-	if (ImGui::SliderInt("cell number", &planet->cell_count, 2, 40) ||
+	if (ImGui::SliderInt("cell number", &planet->cell_count, 1, 40) ||
 		ImGui::SliderFloat("cell_width : ", &planet->cell_width, 0.05f, 10))
 		planet->regenerate();
 	ImGui::Separator();
