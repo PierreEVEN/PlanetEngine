@@ -17,7 +17,7 @@ SessionFrontend::~SessionFrontend()
 
 struct DrawRecord
 {
-	const char* name;
+	std::string name;
 	float start;
 	float end;
 };
@@ -119,14 +119,14 @@ void SessionFrontend::draw_record(const DrawRecord& record, int line_index, floa
 	ImGui::GetWindowDrawList()->AddRectFilled(
 		min, max,
 		ImGui::ColorConvertFloat4ToU32(ImVec4(r, g, b, 1)));
-	ImGui::GetWindowDrawList()->AddText(ImVec2(draw_start_pos.x + record.start * scale, draw_start_pos.y + line_index * 25.f), ImGui::ColorConvertFloat4ToU32(ImVec4(0.86f, 0.96f, 0.96f, 1)), record.name);
+	ImGui::GetWindowDrawList()->AddText(ImVec2(draw_start_pos.x + record.start * scale, draw_start_pos.y + line_index * 25.f), ImGui::ColorConvertFloat4ToU32(ImVec4(0.86f, 0.96f, 0.96f, 1)), record.name.c_str());
 	ImGui::PopClipRect();
 	ImGui::EndGroup();
 
 	if (ImGui::IsMouseHoveringRect(min, max))
 	{
 		ImGui::BeginTooltip();
-		ImGui::Text("%s : %f ms / start : %f / end : %f", record.name, (record.end - record.start) * 1000,
+		ImGui::Text("%s : %f ms / start : %f / end : %f", record.name.c_str(), (record.end - record.start) * 1000,
 			record.start * 1000, record.end * 1000);
 		ImGui::EndTooltip();
 	}

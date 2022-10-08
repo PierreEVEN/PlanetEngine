@@ -17,10 +17,14 @@ public:
 	bool fragment_normals = false;
 
 	float radius = 80000;
-	int num_lods = 4;
+	int num_lods = 14;
 	float cell_width = 1.0f;
 	int cell_count = 10;
+	bool wire_frame = false;
+	bool double_sided = true;
 	void regenerate();
+	Eigen::Affine3d planet_global_transform;
+	Eigen::Vector3f planet_color = Eigen::Vector3f(97.f / 256, 130.f / 256, 223.f / 256);
 
 protected:
 	void tick(double delta_time) override;
@@ -55,7 +59,6 @@ private:
 
 
 	Eigen::Affine3d lod_local_transform;
-	Eigen::Affine3d planet_global_transform;
 };
 
 class PlanetInformations : public ImGuiWindow
@@ -65,6 +68,7 @@ public:
 	{
 		window_name = "planet editor";
 	}
+
 	void draw() override;
 
 private:

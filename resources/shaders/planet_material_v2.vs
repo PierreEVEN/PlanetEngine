@@ -78,11 +78,15 @@ vec3 to_3d_v4(vec2 pos, float rho) {
 
 void main()
 {
-	vec3 post_transform_pos = (lod_local_transform * vec4(pos, 1)).xyz;
+	vec3 vertex_pos = (lod_local_transform * vec4(pos, 1)).xyz;
 
-	vec3 planet_pos = to_3d_v4(post_transform_pos.xz, radius );
-	out_position = planet_pos;
-    //out_position = vec3(0, post_transform_pos.x, post_transform_pos.z);
+	vec3 planet_pos = to_3d_v4(vertex_pos.xz, radius );
 
-	gl_Position = pv_matrix * model * vec4(out_position, 1.0);
+    mat3 rot = mat3(model);
+
+    out_norm = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
+
+    vec4 world_pos = model * vec4(planet_pos, 1.0);
+	out_position = world_pos.xyz;
+	gl_Position = pv_matrix * world_pos;
 }

@@ -71,14 +71,14 @@ Renderer::~Renderer()
 
 void Renderer::initialize() const
 {
-	STAT_DURATION(Initialize_Renderer);
+	STAT_DURATION("Initialize_Renderer");
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
 	glfwMakeContextCurrent(main_window);
 	{
-		STAT_DURATION(Handle_Events);
+		STAT_DURATION("Handle_Events");
 		glfwPollEvents();
 	}
 	EZCOGL::VAO::none()->bind();
@@ -145,12 +145,12 @@ void Renderer::submit() const
 	}
 
 	{
-		STAT_DURATION(ImGui_Render);
+		STAT_DURATION("ImGui_Render");
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
-	STAT_DURATION(Swap_buffers);
+	STAT_DURATION("Swap_buffers");
 	glfwSwapBuffers(main_window);
 }
 
@@ -198,7 +198,7 @@ void Renderer::init_context()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
 #endif
 
-	main_window = glfwCreateWindow(default_window_res.x(), default_window_res.y(), "Project", nullptr, nullptr);
+	main_window = glfwCreateWindow(default_window_res.x(), default_window_res.y(), "Planet Engine", nullptr, nullptr);
 	if (!main_window) { std::cerr << "Failed to create Window!" << std::endl; }
 
 	glfwMakeContextCurrent(main_window);

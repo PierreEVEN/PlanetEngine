@@ -117,7 +117,7 @@ void DefaultCameraController::process_mouse_wheel(GLFWwindow* window, double x_p
 
 void DefaultCameraController::tick(double delta_time)
 {
-	STAT_DURATION(CameraController_update);
+	STAT_DURATION("CameraController_update");
 	camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (
 		input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
 	camera->set_local_position(Maths::lerp(camera->get_local_position(), camera_desired_position, 15 * delta_time));

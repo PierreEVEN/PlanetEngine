@@ -16,6 +16,8 @@ static std::shared_ptr<TextureImage> grass = nullptr;
 static std::shared_ptr<TextureImage> rock = nullptr;
 static std::shared_ptr<TextureImage> sand = nullptr;
 
+static double snap(double value, double delta) { return round(value / delta) * delta; }
+
 Planet::Planet(const World& in_world) : SceneComponent("planet"), world(in_world)
 {
 	set_local_position({-radius, 0, 0});
@@ -49,14 +51,45 @@ void Planet::regenerate()
 
 void Planet::tick(double delta_time)
 {
-	STAT_DURATION(Planet_Tick);
+	STAT_DURATION("Planet_Tick");
 	SceneComponent::tick(delta_time);
+
+
+	{
+		STAT_DURATION("compute planet global transform");
+		// Get camera direction from planet center
+		const auto camera_direction = (Engine::get().get_world().get_camera()->get_world_position() -
+			get_world_position()).normalized();
+
+		// Compute global rotation snapping step
+		const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
+
+		// Compute global planet rotation (orient planet mesh toward camera)
+		const auto pitch = asin(camera_direction.z());
+		const auto yaw = atan2(camera_direction.y(), camera_direction.x());
+		const auto planet_orientation =
+			Eigen::Affine3d(
+				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
+				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
+			);
+
+		// Compute global planet transformation (ensure ground is always close to origin)
+		planet_global_transform = Eigen::Affine3d::Identity();
+		planet_global_transform.translate(
+			get_world_position() -
+			Engine::get().get_world().get_camera()->get_world_position()
+		);
+		planet_global_transform = planet_global_transform * planet_orientation;
+		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
+	}
+
+
 	root->tick(delta_time, num_lods);
 }
 
 void Planet::render(Camera& camera)
 {
-	STAT_DURATION(Render_Planet);
+	STAT_DURATION("Render Planet");
 	SceneComponent::render(camera);
 	root->render(camera);
 }
@@ -125,6 +158,7 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 
 void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 {
+	STAT_DURATION("regenerate planet LOD" + std::to_string(current_lod));
 	cell_number = in_cell_number;
 	cell_size = in_width;
 
@@ -182,11 +216,6 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		child->regenerate(cell_number, cell_size * 2);
 }
 
-double snap(double value, double delta)
-{
-	return round(value / delta) * delta;
-}
-
 
 void PlanetRegion::tick(double delta_time, int in_num_lods)
 {
@@ -200,37 +229,13 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 	if (child && current_lod >= num_lods - 1)
 		child = nullptr;
 
+	if (child)
+		child->tick(delta_time, num_lods);
 
-	// Get camera direction from planet center
-	const auto camera_direction = (Engine::get().get_world().get_camera()->get_world_position() - parent.
-		get_world_position()).normalized();
-
-	// Compute global rotation snapping step
-	const double max_cell_radian_step = cell_size * std::pow(2, num_lods - current_lod) / (parent.radius * 2);
-
-	// Compute global planet rotation (orient planet mesh toward camera)
-	const auto pitch = asin(camera_direction.z());
-	const auto yaw = atan2(camera_direction.y(), camera_direction.x());
-	const auto planet_orientation =
-		Eigen::Affine3d(
-			Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
-			Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
-		);
-
-	// Compute global planet transformation (ensure ground is always close to origin)
-	planet_global_transform = Eigen::Affine3d::Identity();
-	planet_global_transform.translate(
-		parent.get_world_position() -
-		Engine::get().get_world().get_camera()->get_world_position()
-	);
-	planet_global_transform = planet_global_transform * planet_orientation;
-	planet_global_transform.translate(Eigen::Vector3d(parent.radius, 0, 0));
-
-
-	const Eigen::Vector3d camera_relative_location = planet_global_transform.inverse() * -world.get_camera()->get_world_position();
-
-	ImGui::Text("%f, %f, %f", camera_relative_location.x(), camera_relative_location.y(), camera_relative_location.z());
-
+	STAT_DURATION("Planet Tick_LOD :" + std::to_string(current_lod));
+	const Eigen::Vector3d camera_relative_location = parent.planet_global_transform.inverse() * -world.get_camera()->
+		get_world_position();
+	
 	// @TODO Presque OK
 	Eigen::Vector3d sphere_relative_location = Eigen::Vector3d(
 		0,
@@ -269,23 +274,28 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 		lod_local_transform.rotate(rotation);
 	}
 
-	if (child)
-		child->tick(delta_time, num_lods);
 }
 
 void PlanetRegion::render(Camera& camera) const
 {
+	if (child)
+		child->render(camera);
+	STAT_DURATION("Render planet lod " + std::to_string(current_lod));
 	// Set uniforms
 	Planet::get_landscape_material()->use();
 	glUniform1f(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"),
 		parent.radius);
 
+	glUniform3fv(
+		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "ground_color"), 1,
+		parent.planet_color.data());
+
 	glUniformMatrix4fv(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "lod_local_transform"),
 		1, false, lod_local_transform.cast<float>().matrix().data());
 
-	Planet::get_landscape_material()->set_model_transform(planet_global_transform);
+	Planet::get_landscape_material()->set_model_transform(parent.planet_global_transform);
 
 	// Bind textures
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
@@ -300,21 +310,24 @@ void PlanetRegion::render(Camera& camera) const
 	glUniform1i(sand_location, sand_location);
 	sand->bind(sand_location);
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	mesh->draw();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glFrontFace(GL_CW);
-	mesh->draw();
-	glFrontFace(GL_CCW);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_CULL_FACE);
+	glPolygonMode(GL_FRONT_AND_BACK, parent.wire_frame ? GL_LINE : GL_FILL);
+	mesh->draw();
+	if (parent.double_sided) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glFrontFace(GL_CW);
+		mesh->draw();
+		glFrontFace(GL_CCW);
+	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	if (child)
-		child->render(camera);
 }
 
 void PlanetInformations::draw()
 {
+	ImGui::Checkbox("Wire frame", &planet->wire_frame);
+	ImGui::Checkbox("Double sided", &planet->double_sided);
+	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
 	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
 	ImGui::SliderInt("num LODs : ", &planet->num_lods, 1, 20);
 	ImGui::DragFloat("radius : ", &planet->radius, 10);
@@ -322,4 +335,5 @@ void PlanetInformations::draw()
 		ImGui::SliderFloat("cell_width : ", &planet->cell_width, 0.05f, 10))
 		planet->regenerate();
 	ImGui::Separator();
+	ImGui::ColorPicker3("color", planet->planet_color.data());
 }

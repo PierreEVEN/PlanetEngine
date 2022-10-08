@@ -40,6 +40,7 @@ int main()
 	const auto secondary_planet = std::make_shared<Planet>(Engine::get().get_world());
 	secondary_planet->set_local_position({ 90000, 90000, 90000 });
 	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
+	double planet_rotation = 0;
 
 	const auto default_material = Material::create("standard_material");
 	default_material->load_from_source("resources/shaders/standard_material.vs",
@@ -55,23 +56,25 @@ int main()
 	while (!Engine::get().get_renderer().should_close())
 	{
 		{
-			STAT_DURATION(Game_loop);
+			STAT_DURATION("Game_loop");
 			Engine::get().get_renderer().initialize();
 
 			// Gameplay
 			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
+			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.1;
+			secondary_planet->set_local_position(Eigen::Vector3d(std::cos(planet_rotation), std::sin(planet_rotation), 0) * 600000);
 
 			// G_buffers
 			{
-				STAT_DURATION(Deferred_GBuffers);
+				STAT_DURATION("Deferred_GBuffers");
 				Engine::get().get_renderer().bind_g_buffers();
 				Engine::get().get_world().render_world();
 			}
 
 			// Deferred combine
 			{
-				STAT_DURATION(Deferred_Combine);
+				STAT_DURATION("Deferred_Combine");
 				Engine::get().get_renderer().bind_deferred_combine();
 
 				g_buffer_combine_material->use();

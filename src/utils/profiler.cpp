@@ -10,12 +10,12 @@ void Profiler::new_frame()
 	records = std::vector<Record>();
 }
 
-uint64_t Profiler::add_record(const char* name)
+uint64_t Profiler::add_record(std::string name)
 {
 	if (!enabled)
 		return -1;
 
-	records.emplace_back(Record {name, std::chrono::steady_clock::now(), std::chrono::steady_clock::now()} );
+	records.emplace_back(Record {std::move(name), std::chrono::steady_clock::now(), std::chrono::steady_clock::now()} );
 	return records.size() - 1;
 }
 
@@ -34,11 +34,11 @@ Profiler& Profiler::get()
 	return *profiler_singleton;
 }
 
-TimeWatcher::TimeWatcher(const char* in_stat_name)
+TimeWatcher::TimeWatcher(std::string in_stat_name)
 	: stat_name(in_stat_name), record_begin(std::chrono::steady_clock::now()),
 	  self_ref(-1)
 {
-	self_ref = Profiler::get().add_record(stat_name);
+	self_ref = Profiler::get().add_record(std::move(stat_name));
 }
 
 TimeWatcher::~TimeWatcher()

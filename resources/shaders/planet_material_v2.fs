@@ -15,6 +15,7 @@ uniform sampler2D grass;
 uniform sampler2D sand;
 uniform sampler2D rock;
 uniform int fragment_normal_maps;
+uniform vec3 ground_color;
 layout(location = 5) uniform int fragment_normals;
 
 void main()
@@ -42,6 +43,8 @@ void main()
 		gColor = mix(vec3(97, 130, 223) / 256, vec3(97, 130, 223) / 350 , depth_scale);
 	}
 
-	gNormal = normal_vector;
+	gColor = ground_color;
+
+	gNormal = normal;
 	gPosition = position;
 }
