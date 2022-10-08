@@ -16,13 +16,11 @@ static std::shared_ptr<TextureImage> grass = nullptr;
 static std::shared_ptr<TextureImage> rock = nullptr;
 static std::shared_ptr<TextureImage> sand = nullptr;
 
-float test_p = 0;
-float test_y = 0;
-
 Planet::Planet(const World& in_world) : SceneComponent("planet"), world(in_world)
 {
-	root = std::make_shared<PlanetRegion>(*this, in_world, 13, 0);
-	root->regenerate(15, 0.1f, 200.00);
+	set_local_position({-radius, 0, 0});
+	root = std::make_shared<PlanetRegion>(*this, in_world, 16, 0);
+	regenerate();
 	ImGuiWindow::create_window<PlanetInformations>(this);
 }
 
@@ -44,11 +42,16 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	return planet_material;
 }
 
+void Planet::regenerate()
+{
+	root->regenerate(cell_count, cell_width);
+}
+
 void Planet::tick(double delta_time)
 {
 	STAT_DURATION(Planet_Tick);
 	SceneComponent::tick(delta_time);
-	root->tick(delta_time);
+	root->tick(delta_time, num_lods);
 }
 
 void Planet::render(Camera& camera)
@@ -63,43 +66,41 @@ PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint3
 	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), parent(in_parent)
 {
 	mesh = Mesh::create("planet_lod:" + std::to_string(current_lod));
-
-	if (current_lod + 1 < num_lods)
-		child = std::make_shared<PlanetRegion>(parent, world, num_lods, in_my_level + 1);
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
-                                    int32_t x_min, int32_t x_max, int32_t y_min, int32_t y_max, float scale,
+                                    int32_t x_min, int32_t x_max, int32_t z_min, int32_t z_max, double scale,
                                     bool flip_direction = false)
 {
 	const uint32_t x_width = std::abs(x_max - x_min);
-	const uint32_t y_width = std::abs(y_max - y_min);
+	const uint32_t z_width = std::abs(z_max - z_min);
 
 	const float max_global = static_cast<float>(std::max(std::max(std::abs(x_min), std::abs(x_max)),
-	                                                     std::max(std::abs(y_min), std::abs(y_max))));
+	                                                     std::max(std::abs(z_min), std::abs(z_max))));
 	float min_global = static_cast<float>(std::min(std::min(std::abs(x_min), std::abs(x_max)),
-	                                               std::min(std::abs(y_min), std::abs(y_max))));
+	                                               std::min(std::abs(z_min), std::abs(z_max))));
 
 	if (min_global == max_global)
 		min_global = 0;
 
 	const auto current_index_offset = static_cast<uint32_t>(positions.size());
-	for (int32_t y = y_min; y <= y_max; ++y)
+	for (int32_t z = z_min; z <= z_max; ++z)
 		for (int32_t x = x_min; x <= x_max; ++x)
 		{
-			const float value_local = static_cast<float>(std::max(std::abs(x), std::abs(y)));
+			const float value_local = static_cast<float>(std::max(std::abs(x), std::abs(z)));
 			const float distance = (value_local - min_global) / (max_global - min_global);
-			const bool orient_x = std::abs(x) > std::abs(y);
-			positions.emplace_back(Eigen::Vector3f(x * scale, y * scale,
-			                                       (std::abs(x) % 2 == 0 && !orient_x || std::abs(y) % 2 == 0 &&
-				                                       orient_x) * distance));
+			const bool orient_x = std::abs(x) > std::abs(z);
+			positions.emplace_back(Eigen::Vector3f(x * static_cast<float>(scale),
+			                                       (std::abs(x) % 2 == 0 && !orient_x || std::abs(z) % 2 == 0 &&
+				                                       orient_x) * distance,
+			                                       z * static_cast<float>(scale)));
 		}
 
 	if (flip_direction)
-		for (uint32_t y = 0; y < y_width; ++y)
+		for (uint32_t z = 0; z < z_width; ++z)
 			for (uint32_t x = 0; x < x_width; ++x)
 			{
-				uint32_t base_index = x + y * (x_width + 1) + current_index_offset;
+				uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
 				indices.emplace_back(base_index);
 				indices.emplace_back(base_index + x_width + 2);
 				indices.emplace_back(base_index + x_width + 1);
@@ -108,10 +109,10 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 				indices.emplace_back(base_index + x_width + 2);
 			}
 	else
-		for (uint32_t y = 0; y < y_width; ++y)
+		for (uint32_t z = 0; z < z_width; ++z)
 			for (uint32_t x = 0; x < x_width; ++x)
 			{
-				uint32_t base_index = x + y * (x_width + 1) + current_index_offset;
+				uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
 				indices.emplace_back(base_index);
 				indices.emplace_back(base_index + 1);
 				indices.emplace_back(base_index + x_width + 1);
@@ -122,7 +123,7 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 }
 
 
-void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inner_radius)
+void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 {
 	cell_number = in_cell_number;
 	cell_size = in_width;
@@ -178,96 +179,115 @@ void PlanetRegion::regenerate(int32_t in_cell_number, float in_width, double inn
 	mesh->set_indices(indices);
 
 	if (child)
-		child->regenerate(cell_number, cell_size * 2, 0);
+		child->regenerate(cell_number, cell_size * 2);
 }
 
-void PlanetRegion::tick(double delta_time)
+double snap(double value, double delta)
 {
-	auto camera_relative_location = world.get_camera()->get_world_position();
+	return round(value / delta) * delta;
+}
+
+
+void PlanetRegion::tick(double delta_time, int in_num_lods)
+{
+	// Create or destroy children
+	num_lods = in_num_lods;
+	if (!child && current_lod + 1 < num_lods)
+	{
+		child = std::make_shared<PlanetRegion>(parent, world, num_lods, current_lod + 1);
+		child->regenerate(cell_number, cell_size * 2);
+	}
+	if (child && current_lod >= num_lods - 1)
+		child = nullptr;
+
+
+	// Get camera direction from planet center
+	const auto camera_direction = (Engine::get().get_world().get_camera()->get_world_position() - parent.
+		get_world_position()).normalized();
+
+	// Compute global rotation snapping step
+	const double max_cell_radian_step = cell_size * std::pow(2, num_lods - current_lod) / (parent.radius * 2);
+
+	// Compute global planet rotation (orient planet mesh toward camera)
+	const auto pitch = asin(camera_direction.z());
+	const auto yaw = atan2(camera_direction.y(), camera_direction.x());
+	const auto planet_orientation =
+		Eigen::Affine3d(
+			Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
+			Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
+		);
+
+	// Compute global planet transformation (ensure ground is always close to origin)
+	planet_global_transform = Eigen::Affine3d::Identity();
+	planet_global_transform.translate(
+		parent.get_world_position() -
+		Engine::get().get_world().get_camera()->get_world_position()
+	);
+	planet_global_transform = planet_global_transform * planet_orientation;
+	planet_global_transform.translate(Eigen::Vector3d(parent.radius, 0, 0));
+
+
+	const Eigen::Vector3d camera_relative_location = planet_global_transform.inverse() * -world.get_camera()->get_world_position();
+
+	ImGui::Text("%f, %f, %f", camera_relative_location.x(), camera_relative_location.y(), camera_relative_location.z());
 
 	// @TODO Presque OK
-	Eigen::Vector3d sphere_relative_location = Eigen::Vector3d(asin(camera_relative_location.x() / parent.radius),
-	                                                           asin(camera_relative_location.y() / parent.radius),
-	                                                           1) * parent.radius;
+	Eigen::Vector3d sphere_relative_location = Eigen::Vector3d(
+		0,
+		asin(std::clamp(camera_relative_location.y() / parent.radius, -1.0, 1.0)),
+		asin(std::clamp(camera_relative_location.z() / parent.radius, -1.0, 1.0))) * parent.radius;
 
-	// @TODO Temp
-	planet_rotation = Eigen::Affine3d::Identity();
-	planet_rotation.translate(-Engine::get().get_world().get_camera()->get_world_position()); // Camera is the center of the world ! yay
-	planet_rotation.translate(Eigen::Vector3d(0, 0, -parent.radius));
-	planet_rotation.rotate(
-		Eigen::AngleAxisd(test_p, Eigen::Vector3d::UnitX()) * Eigen::AngleAxisd(test_y, Eigen::Vector3d::UnitY()));
-
-	// @TODO Pas OK
-	const auto camera_world_pos = Engine::get().get_world().get_camera()->get_world_position();
-	const auto planet_center = Eigen::Vector3d(0, 0, -parent.radius);
-	const auto camera_direction = (camera_world_pos - planet_center).normalized();
-
-	Eigen::Affine3d camera_dir_matrix = Eigen::Affine3d::Identity();
-	camera_dir_matrix.rotate(Eigen::Quaterniond::Identity());
-	camera_dir_matrix.translate(sphere_relative_location);
-
-	sphere_relative_location = camera_dir_matrix.translation();
-
+	sphere_relative_location = Eigen::Vector3d::Identity();
 
 	const double snapping = cell_size * 2;
 	chunk_position = Eigen::Vector3d(
 		std::round(sphere_relative_location.x() / snapping + 0.5) - 0.5,
-		std::round(sphere_relative_location.y() / snapping + 0.5) - 0.5,
-		0) * snapping;
-	transform = Eigen::Affine3d::Identity();
-	transform.translate(chunk_position);
+		0,
+		std::round(sphere_relative_location.z() / snapping + 0.5) - 0.5) * snapping;
 
-	temp_location = Eigen::Affine3d::Identity();
-	temp_location.translate(chunk_position);
-
-	temp_rotation = Eigen::Affine3d::Identity();
+	lod_local_transform = Eigen::Affine3d::Identity();
+	lod_local_transform.translate(chunk_position);
 
 	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
 
 	if (current_lod != 0)
 	{
-		if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.y() < chunk_position.y())
+		if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.z() < chunk_position.z())
 		{
 			rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ());
 		}
-		else if (sphere_relative_location.x() < chunk_position.x() && sphere_relative_location.y() >= chunk_position.
-			y())
+		else if (sphere_relative_location.x() < chunk_position.x() && sphere_relative_location.z() >= chunk_position.
+			z())
 		{
 			rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ());
 		}
-		else if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.y() >= chunk_position.
-			y())
+		else if (sphere_relative_location.x() >= chunk_position.x() && sphere_relative_location.z() >= chunk_position.
+			z())
 		{
 			rotation = Eigen::AngleAxisd(static_cast<float>(M_PI), Eigen::Vector3d::UnitZ());
 		}
-		transform.rotate(rotation);
-		temp_rotation.rotate(rotation);
+		lod_local_transform.rotate(rotation);
 	}
 
 	if (child)
-		child->tick(delta_time);
+		child->tick(delta_time, num_lods);
 }
 
 void PlanetRegion::render(Camera& camera) const
 {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	// Set uniforms
 	Planet::get_landscape_material()->use();
-	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "inner_width"),
-	            cell_number * cell_size);
-	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "outer_width"),
-	            cell_number * cell_size * 2);
-	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"), cell_size);
-	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "fragment_normals"),
-	            parent.fragment_normals);
-	glUniform1f(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"), parent.radius);
-	glUniform1i(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "morph_to_sphere"),
-	            parent.morph_to_sphere);
-	glUniformMatrix4fv(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "temp_location"), 1, false,
-	                   temp_location.cast<float>().matrix().data());
-	glUniformMatrix4fv(glGetUniformLocation(Planet::get_landscape_material()->program_id(), "temp_rotation"), 1, false,
-	                   temp_rotation.cast<float>().matrix().data());
-	Planet::get_landscape_material()->set_model_transform(planet_rotation);
+	glUniform1f(
+		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"),
+		parent.radius);
 
+	glUniformMatrix4fv(
+		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "lod_local_transform"),
+		1, false, lod_local_transform.cast<float>().matrix().data());
+
+	Planet::get_landscape_material()->set_model_transform(planet_global_transform);
+
+	// Bind textures
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
 	glUniform1i(grass_location, grass_location);
 	grass->bind(grass_location);
@@ -280,6 +300,7 @@ void PlanetRegion::render(Camera& camera) const
 	glUniform1i(sand_location, sand_location);
 	sand->bind(sand_location);
 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	mesh->draw();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glFrontFace(GL_CW);
@@ -295,8 +316,10 @@ void PlanetRegion::render(Camera& camera) const
 void PlanetInformations::draw()
 {
 	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
-	ImGui::SliderFloat("pitch : ", &test_p, -M_PI, M_PI);
-	ImGui::SliderFloat("yaw : ", &test_y, -M_PI, M_PI);
+	ImGui::SliderInt("num LODs : ", &planet->num_lods, 1, 20);
 	ImGui::DragFloat("radius : ", &planet->radius, 10);
-	ImGui::Checkbox("is sphere : ", &planet->morph_to_sphere);
+	if (ImGui::SliderInt("cell number", &planet->cell_count, 2, 40) ||
+		ImGui::SliderFloat("cell_width : ", &planet->cell_width, 0.05f, 10))
+		planet->regenerate();
+	ImGui::Separator();
 }

@@ -9,7 +9,7 @@
 #include "utils/profiler.h"
 
 DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera) : camera(in_camera),
-                                                                                             camera_desired_position(0, 0, 10)
+                                                                                             camera_desired_position(0, 0, 0)
 {
 	Engine::get().on_key_down.add_object(this, &DefaultCameraController::process_key);
 	Engine::get().on_mouse_moved.add_object(this, &DefaultCameraController::process_mouse_input);

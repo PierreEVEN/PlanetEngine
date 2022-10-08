@@ -16,8 +16,12 @@ public:
 
 	bool fragment_normals = false;
 
-	float radius = 8000;
-	bool morph_to_sphere = true;
+	float radius = 80000;
+	int num_lods = 4;
+	float cell_width = 1.0f;
+	int cell_count = 10;
+	void regenerate();
+
 protected:
 	void tick(double delta_time) override;
 	void render(Camera& camera) override;
@@ -33,27 +37,25 @@ class PlanetRegion
 public:
 	PlanetRegion(const Planet& parent, const World& world, uint32_t lod_level, uint32_t my_level);
 
-	void regenerate(int32_t cell_number, float width, double inner_radius);
+	void regenerate(int32_t cell_number, double width);
 
-	void tick(double delta_time);
+	void tick(double delta_time, int num_lods);
 	void render(Camera& camera) const;
 
 private:
 	const Planet& parent;
 	Eigen::Vector3d chunk_position;
 	const World& world;
-	float cell_size;
+	double cell_size;
 	int32_t cell_number;
 	uint32_t current_lod;
 	uint32_t num_lods;
-	Eigen::Affine3d transform;
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<PlanetRegion> child;
 
 
-	Eigen::Affine3d temp_location;
-	Eigen::Affine3d temp_rotation;
-	Eigen::Affine3d planet_rotation;
+	Eigen::Affine3d lod_local_transform;
+	Eigen::Affine3d planet_global_transform;
 };
 
 class PlanetInformations : public ImGuiWindow

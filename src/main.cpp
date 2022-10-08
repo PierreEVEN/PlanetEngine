@@ -37,6 +37,10 @@ int main()
 	const auto main_planet = std::make_shared<Planet>(Engine::get().get_world());
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
 
+	const auto secondary_planet = std::make_shared<Planet>(Engine::get().get_world());
+	secondary_planet->set_local_position({ 90000, 90000, 90000 });
+	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
+
 	const auto default_material = Material::create("standard_material");
 	default_material->load_from_source("resources/shaders/standard_material.vs",
 		"resources/shaders/standard_material.fs");
@@ -47,7 +51,6 @@ int main()
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	Engine::get().get_world().get_camera()->set_local_position({0, 0, 10});
 
 	while (!Engine::get().get_renderer().should_close())
 	{
