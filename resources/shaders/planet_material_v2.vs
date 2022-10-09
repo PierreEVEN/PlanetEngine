@@ -295,7 +295,7 @@ void main()
     dvec3 norm_f64 = normalize(rot * (planet_pos + dvec3(radius, 0, 0)));
     out_norm = vec3(norm_f64);
 
-    coordinates = vec2(seamless_uv_from_sphere_normal(norm_f64));
+    coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));
     
 
 

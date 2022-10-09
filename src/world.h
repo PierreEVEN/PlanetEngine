@@ -27,7 +27,7 @@ public:
 		return delta_seconds;
 	}
 
-	int framerate_limit = 30;
+	int framerate_limit = 0;
 
 private:
 	uint32_t world_uniform;

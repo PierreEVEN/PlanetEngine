@@ -19,7 +19,7 @@
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
 
-const double earth_location = 149597870700;
+const double earth_location = 0;// 149597870700;
 
 int main()
 {
@@ -44,7 +44,7 @@ int main()
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
 
 	const auto secondary_planet = std::make_shared<Planet>(Engine::get().get_world());
-	// Engine::get().get_world().get_scene_root().add_child(secondary_planet);
+	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
 	secondary_planet->radius = 1700000;
 	secondary_planet->num_lods = 19;
 	secondary_planet->regenerate();
@@ -73,7 +73,7 @@ int main()
 			Engine::get().get_world().tick_world();
 			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.02;
 			secondary_planet->set_local_position(
-				Eigen::Vector3d(std::cos(planet_rotation), std::sin(planet_rotation), 0) * 300000000 + Eigen::Vector3d(
+				Eigen::Vector3d(std::cos(planet_rotation), 0, std::sin(planet_rotation)) * 300000000 + Eigen::Vector3d(
 					earth_location, 0, 0));
 
 			// G_buffers
@@ -89,9 +89,6 @@ int main()
 				Engine::get().get_renderer().bind_deferred_combine();
 
 				g_buffer_combine_material->use();
-				const int position_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "position");
-				Engine::get().get_renderer().world_position().bind(position_location);
-				glUniform1i(position_location, position_location);
 				const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
 				Engine::get().get_renderer().world_color().bind(color_location);
 				glUniform1i(color_location, color_location);

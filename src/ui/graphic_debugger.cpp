@@ -20,6 +20,8 @@ void GraphicDebugger::draw()
 	if (ImGui::Checkbox("Enable VSync", &enable_vsync))
 		glfwSwapInterval(enable_vsync ? 1 : 0);
 
+	if (ImGui::Checkbox("Wireframe", &Engine::get().get_renderer().wireframe))
+		glfwSwapInterval(enable_vsync ? 1 : 0);
 
 	ImGui::DragInt("Framerate limit", &Engine::get().get_world().framerate_limit);
 	if (Engine::get().get_world().framerate_limit < 0) Engine::get().get_world().framerate_limit = 0;

@@ -33,7 +33,6 @@ public:
 	[[nodiscard]] GLFWwindow* get_window() const { return main_window; }
 
 	[[nodiscard]] EZCOGL::Texture2D& world_color() const { return *g_buffer_color; }
-	[[nodiscard]] EZCOGL::Texture2D& world_position() const { return *g_buffer_position; }
 	[[nodiscard]] EZCOGL::Texture2D& world_normal() const { return *g_buffer_normal; }
 	[[nodiscard]] EZCOGL::Texture2D& world_depth() const { return *g_buffer_depth; }
 	[[nodiscard]] EZCOGL::FBO_DepthTexture& framebuffer() const { return *g_buffer; }
@@ -45,13 +44,13 @@ public:
 
 	void resize_framebuffer_internal(GLFWwindow*, int x, int y);
 
+	bool wireframe = false;
 	EventFullscreen on_fullscreen;
 private:
 	void init_context();
 
 	std::shared_ptr<EZCOGL::FBO_DepthTexture> g_buffer;
 	std::shared_ptr<EZCOGL::Texture2D> g_buffer_color;
-	std::shared_ptr<EZCOGL::Texture2D> g_buffer_position;
 	std::shared_ptr<EZCOGL::Texture2D> g_buffer_normal;
 	std::shared_ptr<EZCOGL::Texture2D> g_buffer_depth;
 

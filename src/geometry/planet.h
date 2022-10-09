@@ -20,11 +20,11 @@ public:
 	int num_lods = 14;
 	float cell_width = 1.0f;
 	int cell_count = 10;
-	bool wire_frame = false;
 	bool double_sided = false;
 	void regenerate();
 	Eigen::Affine3d planet_global_transform;
 	Eigen::Vector3f planet_color = Eigen::Vector3f(97.f / 256, 130.f / 256, 223.f / 256);
+	Eigen::Affine3d planet_inverse_rotation;
 
 protected:
 	void tick(double delta_time) override;
@@ -47,7 +47,7 @@ public:
 	void render(Camera& camera) const;
 
 private:
-	const Planet& parent;
+	const Planet& planet;
 	Eigen::Vector3d chunk_position;
 	const World& world;
 	double cell_size;

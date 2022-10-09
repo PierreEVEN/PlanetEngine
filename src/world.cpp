@@ -2,6 +2,7 @@
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
+#include <thread>
 #include "camera.h"
 #include "engine/engine.h"
 #include "utils/profiler.h"

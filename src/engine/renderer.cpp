@@ -38,12 +38,7 @@ Renderer::Renderer()
 	g_buffer_color = TextureImage::create("gbuffer-color");
 	g_buffer_color->alloc(default_window_res.x(), default_window_res.y(), GL_RGB16F, nullptr);
 	textures.push_back(g_buffer_color);
-
-	// GBuffer positions
-	g_buffer_position = TextureImage::create("gbuffer-position");
-	g_buffer_position->alloc(default_window_res.x(), default_window_res.y(), GL_RGB32F, nullptr);
-	textures.push_back(g_buffer_position);
-
+	
 	// GBuffer normal
 	g_buffer_normal = TextureImage::create("gbuffer-normal");
 	g_buffer_normal->alloc(default_window_res.x(), default_window_res.y(), GL_RGB16F, nullptr);

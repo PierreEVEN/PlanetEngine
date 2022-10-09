@@ -2,8 +2,7 @@
 precision highp float;
 
 layout (location = 0) out vec3 gColor;
-layout (location = 1) out vec3 gPosition;
-layout (location = 2) out vec3 gNormal;
+layout (location = 1) out vec3 gNormal;
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in vec3 debug_scalar;
@@ -35,31 +34,32 @@ void main()
 {
 	vec3 normal_vector = normal;
 
+
+
 	vec2 uv = position.xy / 2 + camera_pos.zx;
 
-	vec3 grass_color = vec3(.2,0.35,.2);//texture(grass, uv).rgb;
-	vec3 sand_color = vec3(0.4,0.4,0.2);//texture(sand, uv).rgb;
-	vec3 rock_color = vec3(0.2, 0.2, 0.2);//texture(rock, uv).rgb;
+	vec3 rock_color = texture(grass, coordinates * 1000).rgb;
+	vec3 sand_color = texture(sand, coordinates * 1000).rgb;
+	vec3 grass_color = texture(rock, coordinates * 1000).rgb;
 	vec3 snow_color = vec3(0.8, 0.75, 0.8);
-	vec3 rock_color_bis = vec3(0.2, 0.2, 0.2);texture(rock, uv * 1.39848945).rgb;
+	vec3 rock_color_bis = texture(rock, coordinates * 1398.48945).rgb;
 
 	float slope = pow(dot(normal_vector, vec3(0,0,1)), 20) + .2;
-	slope = 1;
+	slope = 0;
 
 	gColor = mix((rock_color_bis + rock_color) / 2, grass_color, clamp(slope, 0, 1));
 
-	gColor = mix(sand_color, gColor, clamp(altitude / 10 - 2, 0, 1));
+	gColor = mix(sand_color, gColor, clamp((altitude - 5 ) / 10 , 0, 1));
 
 	gColor = mix(gColor, snow_color, clamp((altitude - 4000) / 800, 0, 1));
 
-	float depth_scale = clamp(-altitude / 10, 0, 1);
+	float depth_scale = clamp(-altitude / 300, 0, 1);
 
 	if (altitude < 1) {
 		gColor = mix(vec3(97, 130, 223) / 256, vec3(97, 130, 223) / 350 , depth_scale);
 	}
 
 	gNormal = normal;
-	gPosition = position;
 
-	//gColor = debug_scalar;//texture(grass, coordinates).rgb;
+	//gColor = vec3(coordinates, 0);
 }

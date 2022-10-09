@@ -6,6 +6,7 @@
 #include <imgui.h>
 
 #include "engine/engine.h"
+#include "engine/renderer.h"
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
@@ -71,6 +72,7 @@ void Planet::tick(double delta_time)
 				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
 				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
 			);
+		planet_inverse_rotation = planet_orientation.inverse();
 
 		// Compute global planet transformation (ensure ground is always close to origin)
 		planet_global_transform = Eigen::Affine3d::Identity();
@@ -94,7 +96,7 @@ void Planet::render(Camera& camera)
 
 PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint32_t in_lod_level,
                            uint32_t in_my_level) :
-	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), parent(in_parent)
+	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), planet(in_parent)
 {
 	mesh = Mesh::create("planet_lod:" + std::to_string(current_lod));
 }
@@ -222,7 +224,7 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 	num_lods = in_num_lods;
 	if (!child && current_lod + 1 < num_lods)
 	{
-		child = std::make_shared<PlanetRegion>(parent, world, num_lods, current_lod + 1);
+		child = std::make_shared<PlanetRegion>(planet, world, num_lods, current_lod + 1);
 		child->regenerate(cell_number, cell_size * 2);
 	}
 	if (child && current_lod >= num_lods - 1)
@@ -234,14 +236,21 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 	STAT_DURATION("Planet Tick LOD :" + std::to_string(current_lod));
 
 	// Compute camera position in local space
-	const Eigen::Vector3d camera_local_position = parent.planet_global_transform.inverse() * (world.get_camera()->
-		get_world_position() - parent.get_world_position());
+	const Eigen::Vector3d camera_local_position = planet.planet_inverse_rotation * (world.get_camera()->get_world_position() - planet.get_world_position());
+
+
+	const Eigen::Vector3d temp = Eigen::Vector3d(
+		0,
+		Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), 0).normalized().y(),
+		Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), camera_local_position.z()).normalized().z()
+		);
+
 
 	// Convert linear position to position on sphere // @TODO Minor fix required here
 	Eigen::Vector3d local_location = Eigen::Vector3d(
 		0,
-		asin(std::clamp(camera_local_position.y() / parent.radius / 2, -1.0, 1.0)),
-		asin(std::clamp(camera_local_position.z() / parent.radius / 2, -1.0, 1.0))) * parent.radius;
+		asin(std::clamp(temp.y(), -1.0, 1.0)),
+		asin(std::clamp(temp.z(), -1.0, 1.0))) * planet.radius;
 
 	const double snapping = cell_size * 2;
 	chunk_position = Eigen::Vector3d(
@@ -276,23 +285,23 @@ void PlanetRegion::render(Camera& camera) const
 	Planet::get_landscape_material()->use();
 	glUniform1f(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"),
-		parent.radius);
+		planet.radius);
 
 
 	Planet::get_landscape_material()->use();
 	glUniform1f(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"),
-		parent.cell_width);
+		planet.cell_width);
 
 	glUniform3fv(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "ground_color"), 1,
-		parent.planet_color.data());
+		planet.planet_color.data());
 
 	glUniformMatrix4fv(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "lod_local_transform"),
 		1, false, lod_local_transform.cast<float>().matrix().data());
 
-	Planet::get_landscape_material()->set_model_transform(parent.planet_global_transform);
+	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind textures
 	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
@@ -308,9 +317,9 @@ void PlanetRegion::render(Camera& camera) const
 	sand->bind(sand_location);
 
 	glEnable(GL_CULL_FACE);
-	glPolygonMode(GL_FRONT_AND_BACK, parent.wire_frame ? GL_LINE : GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, Engine::get().get_renderer().wireframe ? GL_LINE : GL_FILL);
 	mesh->draw();
-	if (parent.double_sided)
+	if (planet.double_sided)
 	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glFrontFace(GL_CW);
@@ -322,11 +331,9 @@ void PlanetRegion::render(Camera& camera) const
 
 void PlanetInformations::draw()
 {
-	ImGui::Checkbox("Wire frame", &planet->wire_frame);
 	ImGui::Checkbox("Double sided", &planet->double_sided);
 	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
-	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
-	ImGui::SliderInt("num LODs : ", &planet->num_lods, 1, 20);
+	ImGui::SliderInt("num LODs : ", &planet->num_lods, 1, 40);
 	ImGui::DragFloat("radius : ", &planet->radius, 10);
 	if (ImGui::SliderInt("cell number", &planet->cell_count, 1, 40) ||
 		ImGui::SliderFloat("cell_width : ", &planet->cell_width, 0.05f, 10))

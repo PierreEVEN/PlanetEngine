@@ -42,6 +42,9 @@ void Engine::init()
 
 		                   if (key == GLFW_KEY_F11 && action == GLFW_PRESS)
 			                   get().renderer->switch_fullscreen();
+
+						   if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
+							   get().renderer->wireframe = !get().renderer->wireframe;
 	                   }
 	);
 
