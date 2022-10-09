@@ -37,7 +37,17 @@ World::~World()
 void World::tick_world()
 {
 	STAT_DURATION("World tick");
-	delta_seconds = std::min(glfwGetTime() - last_time, 1 / 15.0);
+
+	const double required_delta_s = 1.0 / framerate_limit;
+	{
+		STAT_DURATION("Framerate limiter");
+		do {
+			delta_seconds = std::min(glfwGetTime() - last_time, 1.0);
+			if (framerate_limit > 1)
+				std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>(std::max(0.0, required_delta_s - delta_seconds) * 1000000)));
+
+		} while (framerate_limit > 1 && delta_seconds < required_delta_s);
+	}
 	last_time = glfwGetTime();
 
 	// Update world data

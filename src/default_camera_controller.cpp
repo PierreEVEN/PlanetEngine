@@ -122,3 +122,9 @@ void DefaultCameraController::tick(double delta_time)
 		input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
 	camera->set_local_position(Maths::lerp(camera->get_local_position(), camera_desired_position, 15 * delta_time));
 }
+
+void DefaultCameraController::teleport_to(const Eigen::Vector3d& new_location)
+{
+	camera->set_local_position(new_location);
+	camera_desired_position = new_location;
+}

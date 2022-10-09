@@ -9,7 +9,7 @@ uniform sampler2D color;
 uniform sampler2D normal;
 uniform sampler2D depth;
 
-vec3 light_dir = normalize(vec3(1, 0, 0));
+vec3 light_dir = normalize(vec3(0, 0, 1));
 
 layout (std140, binding = 0) uniform WorldData
 {
@@ -38,7 +38,7 @@ void main()
 	vec3 norm = normalize(texture(normal, uv).rgb);
 
 
-	oFragmentColor = vec4(col * dot(norm, light_dir), 1) + 0.04;
+	oFragmentColor = vec4(col * max(0, dot(norm, light_dir)), 1) + 0.04;
 
 	// vec2 device_space = (uv * 2 - 1);
 	// vec4 rev_pos = pv_matrix_inv * vec4(device_space.x, -device_space.y, -1, 1);

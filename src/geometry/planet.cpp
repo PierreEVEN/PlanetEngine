@@ -80,9 +80,7 @@ void Planet::tick(double delta_time)
 		);
 		planet_global_transform = planet_global_transform * planet_orientation;
 		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
-
 	}
-
 
 	root->tick(delta_time, num_lods);
 }
@@ -103,37 +101,40 @@ PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint3
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
                                     int32_t x_min, int32_t x_max, int32_t z_min, int32_t z_max, double scale,
-                                    bool flip_direction = false)
+                                    int32_t cell_min, int32_t cell_max)
 {
-	const uint32_t x_width = std::abs(x_max - x_min);
-	const uint32_t z_width = std::abs(z_max - z_min);
+	// Requirement for Y val
+	const float distance_max = static_cast<float>(cell_max);
+	float min_global = static_cast<float>(cell_min);
 
-	const float max_global = static_cast<float>(std::max(std::max(std::abs(x_min), std::abs(x_max)),
-	                                                     std::max(std::abs(z_min), std::abs(z_max))));
-	float min_global = static_cast<float>(std::min(std::min(std::abs(x_min), std::abs(x_max)),
-	                                               std::min(std::abs(z_min), std::abs(z_max))));
-
-	if (min_global == max_global)
+	// Handle LOD 0 case
+	if (min_global == distance_max)
 		min_global = 0;
 
 	const auto current_index_offset = static_cast<uint32_t>(positions.size());
 	for (int32_t z = z_min; z <= z_max; ++z)
 		for (int32_t x = x_min; x <= x_max; ++x)
 		{
-			const float value_local = static_cast<float>(std::max(std::abs(x), std::abs(z)));
-			const float distance = (value_local - min_global) / (max_global - min_global);
-			const bool orient_x = std::abs(x) > std::abs(z);
-			positions.emplace_back(Eigen::Vector3f(x * static_cast<float>(scale),
-			                                       (std::abs(x) % 2 == 0 && !orient_x || std::abs(z) % 2 == 0 &&
-				                                       orient_x) * distance,
-			                                       z * static_cast<float>(scale)));
+			// The Y val is used to store the progression from previous LOD to the next one
+			const float Linf_distance = static_cast<float>(std::max(std::abs(x), std::abs(z))); // Tchebychev distance
+			const float y_val_weight = (Linf_distance - min_global) / (distance_max - min_global);
+			const bool x_aligned = std::abs(x) > std::abs(z);
+			const int mask = std::abs(x) % 2 == 0 && !x_aligned || std::abs(z) % 2 == 0 && x_aligned;
+			positions.emplace_back(Eigen::Vector3f(
+					x * static_cast<float>(scale), // X
+					mask * y_val_weight, // Y
+					z * static_cast<float>(scale)) // Z
+			);
 		}
 
-	if (flip_direction)
-		for (uint32_t z = 0; z < z_width; ++z)
-			for (uint32_t x = 0; x < x_width; ++x)
+	const uint32_t x_width = std::abs(x_max - x_min);
+	const uint32_t z_width = std::abs(z_max - z_min);
+	for (uint32_t z = 0; z < z_width; ++z)
+		for (uint32_t x = 0; x < x_width; ++x)
+		{
+			uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
+			if (positions[base_index].x() * positions[base_index].z() > 0)
 			{
-				uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
 				indices.emplace_back(base_index);
 				indices.emplace_back(base_index + x_width + 2);
 				indices.emplace_back(base_index + x_width + 1);
@@ -141,11 +142,8 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 				indices.emplace_back(base_index + 1);
 				indices.emplace_back(base_index + x_width + 2);
 			}
-	else
-		for (uint32_t z = 0; z < z_width; ++z)
-			for (uint32_t x = 0; x < x_width; ++x)
+			else
 			{
-				uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
 				indices.emplace_back(base_index);
 				indices.emplace_back(base_index + 1);
 				indices.emplace_back(base_index + x_width + 1);
@@ -153,6 +151,7 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 				indices.emplace_back(base_index + x_width + 2);
 				indices.emplace_back(base_index + x_width + 1);
 			}
+		}
 }
 
 
@@ -172,7 +171,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		                        cell_number * 2 + 1,
 		                        -cell_number * 2 - 1,
 		                        cell_number * 2 + 1,
-		                        cell_size);
+		                        cell_size, 0, cell_number * 2);
 	}
 	else
 	{
@@ -182,7 +181,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		                        cell_number * 2 + 1,
 		                        -cell_number - 1,
 		                        cell_number * 2 + 1,
-		                        cell_size);
+		                        cell_size, cell_number, cell_number * 2 + 1);
 
 		// RIGHT side (larger)
 		generate_rectangle_area(indices, positions,
@@ -190,7 +189,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		                        cell_number,
 		                        cell_number,
 		                        cell_number * 2 + 1,
-		                        cell_size, true);
+		                        cell_size, cell_number, cell_number * 2 + 1);
 
 		// BOTTOM side
 		generate_rectangle_area(indices, positions,
@@ -198,7 +197,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		                        -cell_number - 1,
 		                        -cell_number * 2 - 1,
 		                        cell_number,
-		                        cell_size);
+		                        cell_size, cell_number + 1, cell_number * 2 + 1);
 
 		// LEFT side
 		generate_rectangle_area(indices, positions,
@@ -206,7 +205,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		                        cell_number * 2 + 1,
 		                        -cell_number * 2 - 1,
 		                        -cell_number - 1,
-		                        cell_size, true);
+		                        cell_size, cell_number + 1, cell_number * 2 + 1);
 	}
 
 	mesh->set_positions(positions, 0, true);
@@ -278,6 +277,12 @@ void PlanetRegion::render(Camera& camera) const
 	glUniform1f(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"),
 		parent.radius);
+
+
+	Planet::get_landscape_material()->use();
+	glUniform1f(
+		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"),
+		parent.cell_width);
 
 	glUniform3fv(
 		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "ground_color"), 1,

@@ -19,6 +19,8 @@
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
 
+const double earth_location = 149597870700;
+
 int main()
 {
 	const auto g_buffer_combine_material = Material::create("g_buffer combine");
@@ -38,11 +40,11 @@ int main()
 	main_planet->radius = 6000000;
 	main_planet->num_lods = 20;
 	main_planet->regenerate();
-	main_planet->set_local_position({-main_planet->radius, 0, 0});
+	main_planet->set_local_position({earth_location, 0, -main_planet->radius });
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
 
 	const auto secondary_planet = std::make_shared<Planet>(Engine::get().get_world());
-	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
+	// Engine::get().get_world().get_scene_root().add_child(secondary_planet);
 	secondary_planet->radius = 1700000;
 	secondary_planet->num_lods = 19;
 	secondary_planet->regenerate();
@@ -58,6 +60,7 @@ int main()
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
+	camera_controller.teleport_to({ earth_location , 0, 0 });
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -70,7 +73,8 @@ int main()
 			Engine::get().get_world().tick_world();
 			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.02;
 			secondary_planet->set_local_position(
-				Eigen::Vector3d(std::cos(planet_rotation), std::sin(planet_rotation), 0) * 300000000);
+				Eigen::Vector3d(std::cos(planet_rotation), std::sin(planet_rotation), 0) * 300000000 + Eigen::Vector3d(
+					earth_location, 0, 0));
 
 			// G_buffers
 			{

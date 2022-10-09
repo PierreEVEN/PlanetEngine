@@ -286,6 +286,13 @@ void Renderer::init_context()
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
+
+	if (!glfwExtensionSupported("GL_ARB_gpu_shader_fp64"))
+	{
+		std::cerr << "GL_ARB_gpu_shader_fp64 is required but not supported" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
 	if (major > 4 || major == 4 && minor >= 5 ||
 		glfwExtensionSupported("GL_ARB_clip_control"))
 	{

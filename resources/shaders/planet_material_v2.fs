@@ -6,7 +6,7 @@ layout (location = 1) out vec3 gPosition;
 layout (location = 2) out vec3 gNormal;
 
 layout(location = 0) in vec3 normal;
-layout(location = 1) in float time;
+layout(location = 1) in vec3 debug_scalar;
 layout(location = 2) in vec3 position;
 layout(location = 3) in float altitude;
 layout(location = 4) in vec2 coordinates;
@@ -16,7 +16,7 @@ uniform sampler2D sand;
 uniform sampler2D rock;
 uniform int fragment_normal_maps;
 uniform vec3 ground_color;
-layout(location = 5) uniform int fragment_normals;
+// layout(location = 5) uniform int fragment_normals;
 
 layout (std140, binding = 0) uniform WorldData
 {
@@ -58,8 +58,8 @@ void main()
 		gColor = mix(vec3(97, 130, 223) / 256, vec3(97, 130, 223) / 350 , depth_scale);
 	}
 
-	// gColor = ground_color;
-
 	gNormal = normal;
 	gPosition = position;
+
+	//gColor = debug_scalar;//texture(grass, coordinates).rgb;
 }

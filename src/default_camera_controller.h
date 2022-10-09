@@ -18,6 +18,8 @@ public:
 
 	void tick(double delta_time);
 
+	void teleport_to(const Eigen::Vector3d& new_location);
+
 private:
 	bool set_last_mouse = false;
 	double last_mouse_x = 0;
