@@ -65,12 +65,12 @@ else()
 
 		message("--------------------------building easycppogl : Release using ${N} workers")
 		execute_process (COMMAND cmake -S "${PROJECT_ROOT}/third_party/easycppogl" -B "${INTERMEDIATES_DIR}/easycppogl" -DBUILD_TYPE=Release RESULT_VARIABLE output)
-		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --parallel ${N} --target easycppogl RESULT_VARIABLE output)
+		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --parallel ${N} --target easycppogl --config=Debug RESULT_VARIABLE output)
 		message("done")
 
 		message("--------------------------building easycppogl : Debug using ${N} workers")
 		execute_process (COMMAND cmake -S "${PROJECT_ROOT}/third_party/easycppogl" -B "${INTERMEDIATES_DIR}/easycppogl" -DBUILD_TYPE=Debug RESULT_VARIABLE output)
-		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --parallel ${N} --target easycppogl RESULT_VARIABLE output)
+		execute_process (COMMAND cmake --build "${INTERMEDIATES_DIR}/easycppogl" --parallel ${N} --target easycppogl --config=Release RESULT_VARIABLE output)
 		message("done")
 
 		message("--------------------------installing easycppogl")

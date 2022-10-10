@@ -127,8 +127,10 @@ void ShaderSource::check_update()
 		std::filesystem::last_write_time(source_path))
 	{
 		// No changes here, but check dependencies anyway
-		for (const auto& dep : content)
-			dep->check_update();
+		for (size_t i = 0; i < content.size(); ++i)
+		{
+			content[i]->check_update();
+		}
 		return;
 	}
 
