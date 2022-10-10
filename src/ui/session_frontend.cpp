@@ -139,9 +139,9 @@ void SessionFrontend::draw_record_data(const RecordData& data) const
 	const float box_scales = zoom_width / (use_custom_width ? recorded_max : data.max_value) * zoom_scale;
 	const float window_width = zoom_width * zoom_scale;
 	int record_index = 0;
-	if (ImGui::BeginChild("record", ImVec2(ImGui::GetContentRegionAvail().x, data.lines.size() * 25 + static_cast<float>(25)), false, ImGuiWindowFlags_HorizontalScrollbar))
+	if (ImGui::BeginChild("record", ImVec2(ImGui::GetContentRegionAvail().x, data.lines.size() * 25 + static_cast<float>(30)), false, ImGuiWindowFlags_HorizontalScrollbar))
 	{
-		if (ImGui::BeginChild("scrollArea", ImVec2(window_width, data.lines.size() * static_cast<float>(25)), false)) {
+		if (ImGui::BeginChild("scrollArea", ImVec2(window_width, data.lines.size() * static_cast<float>(25)), false, ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar)) {
 			int line_index = 0;
 			for (const auto& line : data.lines)
 			{

@@ -283,14 +283,14 @@ void PlanetRegion::render(Camera& camera) const
 	STAT_DURATION("Render planet lod " + std::to_string(current_lod));
 	// Set uniforms
 	Planet::get_landscape_material()->bind();
-	glUniform1f(
-		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "radius"),
-		planet.radius);
+	glUniform1f(3, planet.radius);
 
-
-	Planet::get_landscape_material()->bind();
-	glUniform1f(
-		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width"),
+	int id = 0; {
+		STAT_DURATION("Get Uniform location");
+		id = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width");
+	}
+	glUniform1f(id
+		,
 		planet.cell_width);
 
 	glUniform3fv(

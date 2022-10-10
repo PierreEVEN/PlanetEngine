@@ -8,6 +8,7 @@
 
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
+#include "utils/profiler.h"
 
 Material::Material(const std::string& in_name) : name(in_name)
 {
@@ -67,8 +68,6 @@ Material::~Material()
 
 void Material::bind()
 {
-	if (auto_reload)
-		check_updates();
 	if (is_dirty)
 		reload_internal();
 	glUseProgram(shader_program_id);
@@ -88,6 +87,9 @@ void Material::load_from_source(const std::string& in_vertex_path, const std::st
 
 void Material::check_updates()
 {
+	if (!auto_reload)
+		return;
+
 	vertex_source.check_update();
 	fragment_source.check_update();
 }

@@ -6,6 +6,7 @@
 
 #include "default_camera_controller.h"
 #include "world.h"
+#include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
 #include "geometry/planet.h"
@@ -64,6 +65,7 @@ int main()
 
 	while (!Engine::get().get_renderer().should_close())
 	{
+		Engine::get().get_asset_manager().refresh_dirty_assets();
 		{
 			STAT_DURATION("Game_loop");
 			Engine::get().get_renderer().initialize();

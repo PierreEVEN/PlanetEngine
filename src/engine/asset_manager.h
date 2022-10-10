@@ -15,6 +15,8 @@ public:
 	[[nodiscard]] const std::vector<Mesh*>& get_meshes() const { return meshes; }
 	[[nodiscard]] const std::vector<Material*>& get_materials() const { return materials; }
 	[[nodiscard]] const std::vector<TextureImage*>& get_textures() const { return textures; }
+
+	void refresh_dirty_assets() const;
 private:
 	AssetManager() = default;
 	std::vector<Mesh*> meshes;

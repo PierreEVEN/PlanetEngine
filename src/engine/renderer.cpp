@@ -38,7 +38,7 @@ Renderer::Renderer()
 	g_buffer_color = TextureImage::create("gbuffer-color");
 	g_buffer_color->alloc(default_window_res.x(), default_window_res.y(), GL_RGB16F, nullptr);
 	textures.push_back(g_buffer_color);
-	
+
 	// GBuffer normal
 	g_buffer_normal = TextureImage::create("gbuffer-normal");
 	g_buffer_normal->alloc(default_window_res.x(), default_window_res.y(), GL_RGB16F, nullptr);
@@ -67,17 +67,25 @@ Renderer::~Renderer()
 void Renderer::initialize() const
 {
 	STAT_DURATION("Initialize_Renderer");
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+	{
+		STAT_DURATION("ImGui new frame");
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+	}
 
-	glfwMakeContextCurrent(main_window);
+	{
+		STAT_DURATION("Switch glfw context");
+		if (glfwGetCurrentContext() != main_window)
+			glfwMakeContextCurrent(main_window);
+	}
 	{
 		STAT_DURATION("Handle_Events");
 		glfwPollEvents();
 	}
 	EZCOGL::VAO::none()->bind();
 
+	STAT_DURATION("Draw dock table");
 	int w, h;
 	glfwGetWindowSize(main_window, &w, &h);
 	ImGui::SetNextWindowPos(ImVec2(fullscreen ? -100.f : -4.f, 18));
