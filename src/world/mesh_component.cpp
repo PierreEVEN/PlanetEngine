@@ -19,7 +19,7 @@ void MeshComponent::render(Camera& camera)
 	if (Engine::get().get_renderer().wireframe)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	material->use();
+	material->bind();
 	auto transform = get_world_transform();
 	transform.translate(-camera.get_world_position());
 	material->set_model_transform(transform);

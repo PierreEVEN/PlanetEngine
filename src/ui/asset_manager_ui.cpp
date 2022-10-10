@@ -159,11 +159,13 @@ static void material_manager()
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 0.5, 0.5, 1.0));
 			if (ImGui::Button("error", ImVec2(80, 0)))
 			{
+				/*
 				const int line = parse_error_message(material->last_error);
 				if (material->last_error.length() > 0 && material->last_error[0] == 'F')
-					open_in_ide(material->get_fragment_path(), line);
+					open_in_ide(material->get_fragment_source(), line);
 				else
-					open_in_ide(material->get_vertex_path(), line);
+					open_in_ide(material->get_vertex_source(), line);
+					*/
 			}
 			ImGui::PopStyleColor();
 		}
@@ -173,7 +175,7 @@ static void material_manager()
 		ImGui::Dummy(ImVec2(std::max(field_b_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
 		if (ImGui::Button(("reload##" + std::to_string(material->program_id())).c_str(), ImVec2(120, 0)))
-			material->hot_reload();
+			material->check_updates();
 		ImGui::SameLine();
 		ImGui::Dummy(ImVec2(std::max(field_c_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
@@ -186,15 +188,15 @@ static void material_manager()
 		ImGui::Dummy(ImVec2(std::max(field_e_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
 		if (ImGui::Button(("vertex##" + std::to_string(material->program_id())).c_str(), ImVec2(80, 0)))
-			open_in_ide(material->get_vertex_path(), 0);
+			open_in_ide(material->get_vertex_source().get_path(), 0);
 		ImGui::SameLine();
 		if (ImGui::Button(("fragment##" + std::to_string(material->program_id())).c_str(), ImVec2(80, 0)))
-			open_in_ide(material->get_fragment_path(), 0);
+			open_in_ide(material->get_fragment_source().get_path(), 0);
 		ImGui::EndGroup();
 		if (!material->program_id() && ImGui::IsItemHovered())
 		{
 			ImGui::BeginTooltip();
-			ImGui::Text("%s", material->last_error.c_str());
+			//ImGui::Text("%s", material->last_error.c_str());
 			ImGui::EndTooltip();
 		}
 	}

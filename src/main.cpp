@@ -88,7 +88,7 @@ int main()
 				STAT_DURATION("Deferred_Combine");
 				Engine::get().get_renderer().bind_deferred_combine();
 
-				g_buffer_combine_material->use();
+				g_buffer_combine_material->bind();
 				const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
 				Engine::get().get_renderer().world_color().bind(color_location);
 				glUniform1i(color_location, color_location);

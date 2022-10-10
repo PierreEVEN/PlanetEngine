@@ -1,4 +1,5 @@
 #version 430
+#include "resources/shaders/deferred.shi"
 precision highp float;
 
 out vec4 oFragmentColor;
