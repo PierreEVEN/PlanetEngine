@@ -1,8 +1,9 @@
 #version 430
 precision highp float;
 
-layout (location = 0) out vec3 gColor;
-layout (location = 1) out vec3 gNormal;
+#include "resources/shaders/libs/deferred_output.shi"
+#include "resources/shaders/libs/world_data.shi"
+
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in vec3 debug_scalar;
@@ -15,20 +16,6 @@ uniform sampler2D sand;
 uniform sampler2D rock;
 uniform int fragment_normal_maps;
 uniform vec3 ground_color;
-// layout(location = 5) uniform int fragment_normals;
-
-layout (std140, binding = 0) uniform WorldData
-{
-    mat4 proj_matrix;
-    mat4 view_matrix;
-    mat4 pv_matrix;
-    mat4 proj_matrix_inv;
-    mat4 view_matrix_inv;
-    mat4 pv_matrix_inv;
-	vec3 camera_pos;
-	vec3 camera_forward;
-    float world_time;
-};
 
 void main()
 {
@@ -60,6 +47,4 @@ void main()
 	}
 
 	gNormal = normal;
-
-	//gColor = vec3(coordinates, 0);
 }

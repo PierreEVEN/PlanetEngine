@@ -1,9 +1,9 @@
 #version 430
 precision highp float;
 
-layout (location = 0) out vec3 gColor;
-layout (location = 1) out vec3 gPosition;
-layout (location = 2) out vec3 gNormal;
+#include "resources/shaders/libs/deferred_output.shi"
+#include "resources/shaders/libs/world_data.shi"
+#include "resources/shaders/libs/landscape.shi"
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in float time;
@@ -17,63 +17,6 @@ uniform sampler2D rock;
 
 uniform int fragment_normal_maps;
 layout(location = 5) uniform int fragment_normals;
-
-float PI = 3.14159265358979323846;
-float rand(vec2 c){
-	return fract(sin(dot(c.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-float noise(vec2 p, float freq ){
-	float unit = 800/freq;
-	vec2 ij = floor(p/unit);
-	vec2 xy = mod(p,unit)/unit;
-	//xy = 3.*xy*xy-2.*xy*xy*xy;
-	xy = .5*(1.-cos(PI*xy));
-	float a = rand((ij+vec2(0.,0.)));
-	float b = rand((ij+vec2(1.,0.)));
-	float c = rand((ij+vec2(0.,1.)));
-	float d = rand((ij+vec2(1.,1.)));
-	float x1 = mix(a, b, xy.x);
-	float x2 = mix(c, d, xy.x);
-	return mix(x1, x2, xy.y);
-}
-float pNoise(vec2 p, int res){
-	float persistance = .5;
-	float n = 0.;
-	float normK = 0.;
-	float f = 4.;
-	float amp = 1.;
-	int iCount = 0;
-	for (int i = 0; i<50; i++){
-		n+=amp*noise(p, f);
-		f*=2.;
-		normK+=amp;
-		amp*=persistance;
-		if (iCount == res) break;
-		iCount++;
-	}
-	float nf = n/normK;
-	return nf*nf*nf*nf;
-}
-
-
-float get_height_at_location(vec2 pos) {
-	vec2 poss = pos;
-	return pNoise(poss, 4) * 100 + pNoise(poss * 3, 4) * 15 + pNoise(poss * 20, 5) * 4 +  pNoise(poss * 0.1 + vec2(330, 100), 2) * 400 - 80;
- }
-
-
-layout (std140, binding = 0) uniform WorldData
-{
-    mat4 proj_matrix;
-    mat4 view_matrix;
-    mat4 pv_matrix;
-    mat4 proj_matrix_inv;
-    mat4 view_matrix_inv;
-    mat4 pv_matrix_inv;
-	vec3 camera_pos;
-	vec3 camera_forward;
-    float world_time;
-};
 
 void main()
 {

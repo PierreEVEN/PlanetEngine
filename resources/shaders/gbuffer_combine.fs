@@ -1,13 +1,12 @@
 #version 430
-#include "resources/shaders/deferred.shi"
 precision highp float;
+
+#include "resources/shaders/libs/deferred_input.shi"
+#include "resources/shaders/libs/world_data.shi"
 
 out vec4 oFragmentColor;
 
 layout(location = 0) in vec2 uv;
-uniform sampler2D color;
-uniform sampler2D normal;
-uniform sampler2D depth;
 
 
 int NumScatterPoints = 10;
@@ -22,108 +21,7 @@ const float epsilon = 1;
 
 vec3 light_dir = normalize(vec3(0.5, 0, 1));
 
-layout (std140, binding = 0) uniform WorldData
-{
-    mat4 proj_matrix;
-    mat4 view_matrix;
-    mat4 pv_matrix;
-    mat4 proj_matrix_inv;
-    mat4 view_matrix_inv;
-    mat4 pv_matrix_inv;
-	vec3 camera_pos;
-	vec3 camera_forward;
-    float world_time;
-};
-
-
-
-
-
-
-struct RaySphereTraceResult {
-    float atmosphereDistanceIn;
-    float atmosphereDistanceOut;
-};
-
-
-
-
-float atmosphereDistanceIn;
-float atmosphereDistanceOut;
-
-
-
-float getAtmosphereDensityAtLocation(vec3 location) {
-	float distance_from_planet_center = length(location - planetCenter);
-
-    float groundDistance = distance_from_planet_center - planetRadius;
-	float atmosphere_altitude = atmosphereRadius - planetRadius;
-    float heightFactor = clamp(groundDistance / atmosphere_altitude, 0, 1);
-    return exp(-heightFactor * atmosphereDensityFalloff) * (1 - heightFactor ) / atmosphere_altitude;
-}
-
-float opticalDepth(vec3 rayOrigin, vec3 rayDir, float rayLength) {
-    vec3 densitySamplePoint = rayOrigin;
-    float stepSize = rayLength / (float(NumOpticalDepthPoints) - 1);
-    float opticalDepthValue = 0;
-
-    for (int i = 0; i < NumOpticalDepthPoints; ++i) {
-        float localDensity = getAtmosphereDensityAtLocation(densitySamplePoint);
-        opticalDepthValue += localDensity * stepSize;
-        densitySamplePoint += rayDir * stepSize;
-    }
-    return opticalDepthValue;
-}
-
-
-RaySphereTraceResult raySphereIntersection(vec3 spherePosition, float sphereRadius, vec3 lineDirection, vec3 lineOrigin) {
-    RaySphereTraceResult res;
-    float AMdist = dot(lineDirection, spherePosition - lineOrigin);
-
-
-    float AMdistAbs = abs(AMdist);
-
-    vec3 M = lineOrigin + lineDirection * AMdist;
-    float BMdist = length(spherePosition - M);
-    float MCdist = sqrt(sphereRadius * sphereRadius - BMdist * BMdist);
-
-    float ABdist = length(lineOrigin - spherePosition);
-
-    if (ABdist <= sphereRadius) {
-        res.atmosphereDistanceIn = 0.0;
-        res.atmosphereDistanceOut = MCdist + AMdist;
-    }
-    else {
-        res.atmosphereDistanceIn = abs(AMdist - MCdist);
-        res.atmosphereDistanceOut = abs(AMdist + MCdist);
-    }
-
-    return res;
-}
-
-vec3 computeLight(vec3 cameraPosition, vec3 rayDir, float raylength, vec3 originalColor) {
-    vec3 inScatterPoint = cameraPosition;
-    float step_size = raylength / (float(NumScatterPoints - 1));
-    vec3 inScatteredLight = vec3(0);
-    float viewRayOpticalDepth = 0.0;
-
-    for (int i = 0; i < NumScatterPoints; ++i) {
-        RaySphereTraceResult rsResult = raySphereIntersection(planetCenter, atmosphereRadius, light_dir, inScatterPoint);
-        float sunRayLength = max(0.0, rsResult.atmosphereDistanceOut - rsResult.atmosphereDistanceIn);
-        float sunRayOpticalDepth = opticalDepth(inScatterPoint, light_dir, sunRayLength);
-        float viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, step_size * float(i));
-        vec3 transmittance = exp(-(sunRayOpticalDepth + viewRayOpticalDepth) * scatterCoefficients);
-        float localDensity = getAtmosphereDensityAtLocation(inScatterPoint);
-
-        inScatteredLight += localDensity * transmittance * step_size * scatterCoefficients;
-        inScatterPoint += rayDir * step_size;
-    }
-
-    float colorTransmittance = exp(-viewRayOpticalDepth);
-
-    return inScatteredLight + originalColor * colorTransmittance;
-}
-
+#include "resources/shaders/libs/atmosphere.shi"
 
 vec3 getSceneWorldPosition(float linear_depth) {
     // Get z depth

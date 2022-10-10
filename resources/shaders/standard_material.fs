@@ -1,9 +1,7 @@
 #version 430
 precision highp float;
 
-
-layout (location = 0) out vec3 gColor;
-layout (location = 2) out vec3 gNormal;
+#include "resources/shaders/libs/deferred_output.shi"
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in vec3 pos;
