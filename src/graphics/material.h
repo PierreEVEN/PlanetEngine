@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "world.h"
 #include <utils/event_manager.h>
 
@@ -18,8 +20,8 @@ public:
 	virtual std::string get_content() = 0;
 	virtual void check_update() = 0;
 	virtual ShaderSource* get_dependency() = 0;
+	virtual size_t get_line_count() = 0;
 };
-
 
 class ShaderSource final
 {
@@ -38,6 +40,8 @@ public:
 
 	std::vector<const ShaderSource*> get_dependencies() const;
 
+	[[nodiscard]] size_t get_line_count() const;
+
 private:
 	std::vector<std::shared_ptr<ISourceChunk>> content;
 
@@ -52,10 +56,12 @@ class SourceChunkText : public ISourceChunk
 {
 public:
 	std::string get_content() override { return text; }
-	SourceChunkText(std::string in_text) : text(std::move(in_text)) { return; }
+	SourceChunkText(std::string in_text, size_t line_count) : text(std::move(in_text)), line_count(line_count) { return; }
 	void check_update() override { return; }
 	ShaderSource* get_dependency() override { return nullptr; }
+	size_t get_line_count() override { return line_count; }
 private:
+	size_t line_count = 0;
 	const std::string text;
 };
 
@@ -65,6 +71,7 @@ public:
 	std::string get_content() override { return dependency.get_source_code(); }
 	void check_update() override { dependency.check_update(); }
 	ShaderSource* get_dependency() override { return &dependency; }
+	size_t get_line_count() override { return dependency.get_line_count(); }
 	ShaderSource dependency;
 };
 
@@ -92,6 +99,9 @@ public:
 
 	const std::string name;
 	bool auto_reload = false;
+
+	std::optional<std::string> compilation_error;
+
 private:
 	Material(const std::string& name);
 

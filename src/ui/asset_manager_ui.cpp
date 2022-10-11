@@ -182,13 +182,11 @@ static void material_manager()
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 0.5, 0.5, 1.0));
 			if (ImGui::Button("error", ImVec2(80, 0)))
 			{
-				/*
-				const int line = parse_error_message(material->last_error);
-				if (material->last_error.length() > 0 && material->last_error[0] == 'F')
-					open_in_ide(material->get_fragment_source(), line);
+				const int line = parse_error_message(*material->compilation_error);
+				if (material->compilation_error && (*material->compilation_error)[0] == 'F')
+					open_in_ide(material->get_fragment_source().get_path(), line);
 				else
-					open_in_ide(material->get_vertex_source(), line);
-					*/
+					open_in_ide(material->get_vertex_source().get_path(), line);
 			}
 			ImGui::PopStyleColor();
 		}

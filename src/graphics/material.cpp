@@ -19,6 +19,7 @@ Material::Material(const std::string& in_name) : name(in_name)
 
 void Material::reload_internal()
 {
+	compilation_error = "";
 	// Compile shader
 	shader_program_id = glCreateProgram();
 
@@ -42,11 +43,11 @@ void Material::reload_internal()
 		char* infoLog = new char[infologLength];
 		int charsWritten = 0;
 		glGetProgramInfoLog(shader_program_id, infologLength, &charsWritten, infoLog);
-		//last_error = infoLog;
+		compilation_error = infoLog;
 		if (infologLength > 0 && infoLog[0] == 'F')
-			;// last_error = last_error + "\nfile : " + fragment_source.get_path();
+			compilation_error = *compilation_error + "\nfile : " + fragment_source.get_path();
 		else
-			;//last_error = last_error + "\nfile : " + vertex_source.get_path();
+			compilation_error = *compilation_error + "\nfile : " + vertex_source.get_path();
 		std::cerr << "Link message :" << name << " :" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
 		shader_program_id = 0;
@@ -163,6 +164,14 @@ std::vector<const ShaderSource*> ShaderSource::get_dependencies() const
 	return dependencies;
 }
 
+size_t ShaderSource::get_line_count() const
+{
+	size_t line_count = 0;
+	for (const auto& dep : content)
+		line_count += dep->get_line_count();
+	return line_count;
+}
+
 void ShaderSource::reload_internal()
 {
 	if (!std::filesystem::exists(source_path)) {
@@ -184,6 +193,7 @@ void ShaderSource::reload_internal()
 	}
 
 	std::string shader_text_code;
+	size_t line_count = 0;
 	// Read file line by line
 	for (std::string line; std::getline(file, line);)
 	{
@@ -194,8 +204,9 @@ void ShaderSource::reload_internal()
 			{
 				// We encountered include directive. Store parsed data into new chunk.
 				if (!shader_text_code.empty())
-					content.emplace_back(std::make_shared<SourceChunkText>(shader_text_code));
+					content.emplace_back(std::make_shared<SourceChunkText>(shader_text_code, line_count));
 				shader_text_code.clear();
+				line_count = 0;
 
 				is_include = true;
 
@@ -218,13 +229,16 @@ void ShaderSource::reload_internal()
 			if (!std::isblank(line[i]))
 				break;
 		}
-		if (!is_include)
+		if (!is_include) {
 			shader_text_code += line + '\n';
+			line_count++;
+		}
 	}
 
 	if (!shader_text_code.empty())
-		content.emplace_back(std::make_shared<SourceChunkText>(shader_text_code));
+		content.emplace_back(std::make_shared<SourceChunkText>(shader_text_code, line_count));
 	shader_text_code.clear();
+	line_count = 0;
 	
 	on_data_changed.execute();
 }
