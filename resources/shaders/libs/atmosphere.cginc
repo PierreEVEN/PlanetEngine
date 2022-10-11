@@ -1,7 +1,7 @@
 #ifndef ATMOSPHERE_H_
 #define ATMOSPHERE_H_
 
-#include "resources/shaders/libs/maths.shi"
+#include "maths.cginc"
 
 float getAtmosphereDensityAtLocation(vec3 location) {
 	float distance_from_planet_center = length(location - planetCenter);

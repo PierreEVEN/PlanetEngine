@@ -1,8 +1,10 @@
- #version 430
- 
-#include "resources/shaders/libs/world_data.shi"
-#include "resources/shaders/libs/landscape.shi"
-#include "resources/shaders/libs/maths.shi"
+#version 430
+
+#include "libs/world_data.cginc"
+
+#include "libs/world_data.cginc"
+#include "libs/landscape.cginc"
+#include "libs/maths.cginc"
 
 // Inputs
 layout(location = 0) in vec3 pos;

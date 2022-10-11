@@ -1,6 +1,6 @@
-#version 430
+#version 460
 
-#include "resources/shaders/libs/world_data.shi"
+#include "libs/world_data.cginc"
 
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec3 norm;

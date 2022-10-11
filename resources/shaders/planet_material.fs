@@ -1,9 +1,9 @@
 #version 430
 precision highp float;
 
-#include "resources/shaders/libs/deferred_output.shi"
-#include "resources/shaders/libs/world_data.shi"
-#include "resources/shaders/libs/landscape.shi"
+#include "libs/deferred_output.shi"
+#include "libs/world_data.shi"
+#include "libs/landscape.shi"
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in float time;

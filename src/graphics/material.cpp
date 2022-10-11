@@ -149,6 +149,20 @@ void ShaderSource::set_source_path(const std::string& in_source_path)
 	reload_internal();
 }
 
+std::string ShaderSource::get_file_name() const
+{
+	return std::filesystem::path(source_path).filename().string();
+}
+
+std::vector<const ShaderSource*> ShaderSource::get_dependencies() const
+{
+	std::vector<const ShaderSource*> dependencies;
+	for (const auto& dep : content)
+		if (const auto* source = dep->get_dependency())
+			dependencies.emplace_back(source);
+	return dependencies;
+}
+
 void ShaderSource::reload_internal()
 {
 	if (!std::filesystem::exists(source_path)) {
@@ -192,6 +206,8 @@ void ShaderSource::reload_internal()
 				for (++i; i < line.length() && line[i] != '"'; ++i)
 					include_path += line[i];
 
+				include_path = std::filesystem::path(get_path()).parent_path().concat("/").concat(include_path).string();
+				std::cout << " #####################" << include_path << std::endl;
 				const auto new_dep = std::make_shared<SourceChunkDependency>();
 				new_dep->dependency.set_source_path(include_path);
 				new_dep->dependency.on_data_changed.add_object(this, &ShaderSource::reload_internal);

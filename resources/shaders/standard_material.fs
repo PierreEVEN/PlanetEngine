@@ -1,7 +1,7 @@
 #version 430
 precision highp float;
 
-#include "resources/shaders/libs/deferred_output.shi"
+#include "libs/deferred_output.cginc"
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in vec3 pos;

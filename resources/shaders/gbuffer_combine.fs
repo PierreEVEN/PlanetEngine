@@ -1,8 +1,8 @@
 #version 430
 precision highp float;
 
-#include "resources/shaders/libs/deferred_input.shi"
-#include "resources/shaders/libs/world_data.shi"
+#include "libs/deferred_input.cginc"
+#include "libs/world_data.cginc"
 
 out vec4 oFragmentColor;
 
@@ -21,7 +21,7 @@ const float epsilon = 1;
 
 vec3 light_dir = normalize(vec3(0.5, 0, 1));
 
-#include "resources/shaders/libs/atmosphere.shi"
+#include "libs/atmosphere.cginc"
 
 vec3 getSceneWorldPosition(float linear_depth) {
     // Get z depth

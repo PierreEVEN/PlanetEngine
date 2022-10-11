@@ -1,8 +1,8 @@
 #version 430
 precision highp float;
 
-#include "resources/shaders/libs/deferred_output.shi"
-#include "resources/shaders/libs/world_data.shi"
+#include "libs/deferred_output.cginc"
+#include "libs/world_data.cginc"
 
 
 layout(location = 0) in vec3 normal;

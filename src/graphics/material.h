@@ -3,6 +3,7 @@
 #include "world.h"
 #include <utils/event_manager.h>
 
+class ShaderSource;
 DECLARE_DELEGATE_MULTICAST(Event_ShaderFileUpdate);
 
 namespace EZCOGL
@@ -16,6 +17,7 @@ class ISourceChunk
 public:
 	virtual std::string get_content() = 0;
 	virtual void check_update() = 0;
+	virtual ShaderSource* get_dependency() = 0;
 };
 
 
@@ -32,7 +34,10 @@ public:
 	void set_source_path(const std::string& source_path);
 
 	[[nodiscard]] const std::string& get_path() const { return source_path; }
-	
+	[[nodiscard]] std::string get_file_name() const;
+
+	std::vector<const ShaderSource*> get_dependencies() const;
+
 private:
 	std::vector<std::shared_ptr<ISourceChunk>> content;
 
@@ -47,8 +52,9 @@ class SourceChunkText : public ISourceChunk
 {
 public:
 	std::string get_content() override { return text; }
-	SourceChunkText(const std::string& in_text) : text(in_text) { return; }
+	SourceChunkText(std::string in_text) : text(std::move(in_text)) { return; }
 	void check_update() override { return; }
+	ShaderSource* get_dependency() override { return nullptr; }
 private:
 	const std::string text;
 };
@@ -58,6 +64,7 @@ class SourceChunkDependency : public ISourceChunk
 public:
 	std::string get_content() override { return dependency.get_source_code(); }
 	void check_update() override { dependency.check_update(); }
+	ShaderSource* get_dependency() override { return &dependency; }
 	ShaderSource dependency;
 };
 

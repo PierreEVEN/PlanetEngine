@@ -1,7 +1,7 @@
 #ifndef NOISE_H_
 #define NOISE_H_
 
-#include "resources/shaders/libs/maths.shi"
+#include "maths.cginc"
 
 /*
  FROM https://outerra.blogspot.com/2017/06/fp64-approximations-for-sincos-for.html 

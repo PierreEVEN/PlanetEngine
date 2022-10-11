@@ -1,7 +1,7 @@
 #ifndef LANDSCAPE_H_
 #define LANDSCAPE_H_
 
-#include "resources/shaders/libs/noise.shi"
+#include "noise.cginc"
 
 
 float get_height_at_location(dvec3 pos) {

@@ -52,7 +52,7 @@ void open_in_ide(const std::string& file_path, int line)
 }
 
 static void mesh_manager()
-{ 
+{
 	const float total_width = ImGui::GetContentRegionAvail().x;
 
 	constexpr float field_a_width = 200;
@@ -113,6 +113,29 @@ static void mesh_manager()
 	}
 }
 
+void display_file_hierarchy(const ShaderSource& source)
+{
+	if (ImGui::MenuItem("open"))
+	{
+		open_in_ide(source.get_path(), 0);
+	}
+	ImGui::Separator();
+	for (const auto& file : source.get_dependencies())
+	{
+		if (file->get_dependencies().empty())
+		{
+			if (ImGui::MenuItem(file->get_file_name().c_str()))
+				open_in_ide(file->get_path(), 0);
+		}
+		else if (ImGui::BeginMenu(file->get_file_name().c_str()))
+		{
+			display_file_hierarchy(*file);
+			ImGui::EndMenu();
+		}
+	}
+}
+
+
 static void material_manager()
 {
 	const float total_width = ImGui::GetContentRegionAvail().x;
@@ -172,26 +195,40 @@ static void material_manager()
 		else
 			ImGui::Text("%s", "ready");
 		ImGui::SameLine();
+
 		ImGui::Dummy(ImVec2(std::max(field_b_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
 		if (ImGui::Button(("reload##" + std::to_string(material->program_id())).c_str(), ImVec2(120, 0)))
 			material->check_updates();
 		ImGui::SameLine();
+
 		ImGui::Dummy(ImVec2(std::max(field_c_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
 		ImGui::Text("%d", material->program_id());
 		ImGui::SameLine();
+
 		ImGui::Dummy(ImVec2(std::max(field_d_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
 		ImGui::Checkbox(("##" + std::to_string(material->program_id())).c_str(), &material->auto_reload);
 		ImGui::SameLine();
+
 		ImGui::Dummy(ImVec2(std::max(field_e_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
 		if (ImGui::Button(("vertex##" + std::to_string(material->program_id())).c_str(), ImVec2(80, 0)))
-			open_in_ide(material->get_vertex_source().get_path(), 0);
+			ImGui::OpenPopup(("dependencies_vertex##" + std::to_string(material->program_id())).c_str());
+		if (ImGui::BeginPopup(("dependencies_vertex##" + std::to_string(material->program_id())).c_str()))
+		{
+			display_file_hierarchy(material->get_vertex_source());
+			ImGui::EndPopup();
+		}
 		ImGui::SameLine();
 		if (ImGui::Button(("fragment##" + std::to_string(material->program_id())).c_str(), ImVec2(80, 0)))
-			open_in_ide(material->get_fragment_source().get_path(), 0);
+			ImGui::OpenPopup(("dependencies_fragment##" + std::to_string(material->program_id())).c_str());
+		if (ImGui::BeginPopup(("dependencies_fragment##" + std::to_string(material->program_id())).c_str()))
+		{
+			display_file_hierarchy(material->get_fragment_source());
+			ImGui::EndPopup();
+		}
 		ImGui::EndGroup();
 		if (!material->program_id() && ImGui::IsItemHovered())
 		{
