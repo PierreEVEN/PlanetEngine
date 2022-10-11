@@ -2,8 +2,9 @@
 precision highp float;
 
 #include "libs/deferred_output.cginc"
-#include "libs/world_data.cginc"
 
+
+#include "libs/world_data.cginc"
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in vec3 debug_scalar;
@@ -20,7 +21,6 @@ uniform vec3 ground_color;
 void main()
 {
 	vec3 normal_vector = normal;
-
 
 
 	vec2 uv = position.xy / 2 + camera_pos.zx;

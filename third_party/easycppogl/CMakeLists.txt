@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 project(EasyCppOGL)
 
+# Set compiler options
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	# MP build for MSVC
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /EHsc")
+endif()
+
 option(BUILD_TUTOS "Build tutos." ON)
 option(BUILD_TP_Prog_Graphique_3D "Build TP_Prog_Graphique_3D." ON)
 if (WIN32)

@@ -11,31 +11,7 @@
 #include "graphics/mesh.h"
 #include "graphics/texture_image.h"
 
-int parse_error_message(const std::string& message)
-{
-	bool record = false;
-	std::string l_str;
-	for (const auto& c : message)
-	{
-		if (c == '(')
-		{
-			record = true;
-			continue;
-		}
-		if (c == ')')
-		{
-			return std::atoi(l_str.c_str());
-		}
-
-		if (record)
-		{
-			l_str += c;
-		}
-	}
-	return 0;
-}
-
-void open_in_ide(const std::string& file_path, int line)
+void open_in_ide(const std::string& file_path, size_t line)
 {
 	std::string text = "code --goto \"" + std::filesystem::absolute(file_path).string() + ":" + std::to_string(line) +
 		":0\"";
@@ -115,7 +91,7 @@ static void mesh_manager()
 
 void display_file_hierarchy(const ShaderSource& source)
 {
-	if (ImGui::MenuItem("open"))
+	if (ImGui::MenuItem(("open (" + std::to_string(source.get_line_count()) + ")").c_str()))
 	{
 		open_in_ide(source.get_path(), 0);
 	}
@@ -124,7 +100,7 @@ void display_file_hierarchy(const ShaderSource& source)
 	{
 		if (file->get_dependencies().empty())
 		{
-			if (ImGui::MenuItem(file->get_file_name().c_str()))
+			if (ImGui::MenuItem((file->get_file_name() + " (" + std::to_string(file->get_line_count()) + ")").c_str()))
 				open_in_ide(file->get_path(), 0);
 		}
 		else if (ImGui::BeginMenu(file->get_file_name().c_str()))
@@ -177,16 +153,12 @@ static void material_manager()
 		ImGui::SameLine();
 		ImGui::Dummy(ImVec2(std::max(field_a_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
-		if (!material->program_id())
+		if (material->compilation_error)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 0.5, 0.5, 1.0));
 			if (ImGui::Button("error", ImVec2(80, 0)))
 			{
-				const int line = parse_error_message(*material->compilation_error);
-				if (material->compilation_error && (*material->compilation_error)[0] == 'F')
-					open_in_ide(material->get_fragment_source().get_path(), line);
-				else
-					open_in_ide(material->get_vertex_source().get_path(), line);
+				open_in_ide(material->compilation_error->file, material->compilation_error->line);
 			}
 			ImGui::PopStyleColor();
 		}
@@ -228,10 +200,12 @@ static void material_manager()
 			ImGui::EndPopup();
 		}
 		ImGui::EndGroup();
-		if (!material->program_id() && ImGui::IsItemHovered())
+		if (material->compilation_error && ImGui::IsItemHovered())
 		{
 			ImGui::BeginTooltip();
-			//ImGui::Text("%s", material->last_error.c_str());
+			ImGui::Text("in '%s':%d", material->compilation_error->file.c_str(), material->compilation_error->line);
+			ImGui::Separator();
+			ImGui::Text("%s", material->compilation_error->error.c_str());
 			ImGui::EndTooltip();
 		}
 	}

@@ -42,6 +42,8 @@ public:
 
 	[[nodiscard]] size_t get_line_count() const;
 
+	std::string get_file_at_line(size_t line, size_t& local_line) const;
+
 private:
 	std::vector<std::shared_ptr<ISourceChunk>> content;
 
@@ -100,9 +102,17 @@ public:
 	const std::string name;
 	bool auto_reload = false;
 
-	std::optional<std::string> compilation_error;
+	struct CompilationErrorInfo
+	{
+		std::string error;
+		size_t line;
+		std::string file;
+		bool is_fragment;
+	};
+	std::optional<CompilationErrorInfo> compilation_error;
 
 private:
+
 	Material(const std::string& name);
 
 	// GL Handles

@@ -67,7 +67,7 @@ public:
 		return id_;
 	}
 
-	void compile(const std::string& src, const std::string& name);
+	bool compile(const std::string& src, const std::string& name, std::string& error_string, size_t& error_line);
 };
 
 

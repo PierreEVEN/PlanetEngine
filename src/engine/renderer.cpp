@@ -184,6 +184,16 @@ void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 	Engine::get().get_world().get_camera()->viewport_res() = {x, y};
 }
 
+void Renderer::set_icon(const std::string& file_path)
+{
+	const EZCOGL::GLImage icon_image(file_path, false, 4);
+	GLFWimage images[1];
+	images[0].width = icon_image.width();
+	images[0].height = icon_image.height();
+	images[0].pixels = const_cast<unsigned char*>(icon_image.data());
+	glfwSetWindowIcon(main_window, 1, images);
+}
+
 void Renderer::init_context()
 {
 	glfwSetErrorCallback(glfw_error_callback);

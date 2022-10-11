@@ -24,6 +24,7 @@ const double earth_location = 0;// 149597870700;
 
 int main()
 {
+	Engine::get().get_renderer().set_icon("resources/textures/icon.png");
 	const auto g_buffer_combine_material = Material::create("g_buffer combine");
 	g_buffer_combine_material->load_from_source("resources/shaders/gbuffer_combine.vs",
 	                                            "resources/shaders/gbuffer_combine.fs");

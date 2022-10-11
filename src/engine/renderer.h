@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 
 #include "utils/event_manager.h"
 
@@ -46,6 +47,9 @@ public:
 
 	bool wireframe = false;
 	EventFullscreen on_fullscreen;
+
+	void set_icon(const std::string& file_path);
+
 private:
 	void init_context();
 

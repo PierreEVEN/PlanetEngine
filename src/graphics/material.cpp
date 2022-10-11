@@ -19,16 +19,49 @@ Material::Material(const std::string& in_name) : name(in_name)
 
 void Material::reload_internal()
 {
-	compilation_error = "";
+	compilation_error.reset();
 	// Compile shader
 	shader_program_id = glCreateProgram();
 
 	program_vertex = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
-	program_vertex->compile(vertex_source.get_source_code(), name);
+	std::string vertex_error;
+	size_t vertex_error_line;
+	if (!program_vertex->compile(vertex_source.get_source_code(), name, vertex_error, vertex_error_line))
+	{
+		std::cout << "error " << vertex_error << std::endl;
+		size_t local_line;
+		compilation_error = {
+			.error = vertex_error,
+			.line = 0,
+			.file = vertex_source.get_file_at_line(vertex_error_line, local_line),
+			.is_fragment = false,
+		};
+		compilation_error->line = local_line;
+		glDeleteProgram(shader_program_id);
+		shader_program_id = 0;
+		is_dirty = false;
+		return;
+	}
 	glAttachShader(shader_program_id, program_vertex->shaderId());
 
+	std::string fragment_error;
+	size_t fragment_error_line;
 	program_fragment = std::make_unique<EZCOGL::Shader>(GL_FRAGMENT_SHADER);
-	program_fragment->compile(fragment_source.get_source_code(), name);
+	if (!program_fragment->compile(fragment_source.get_source_code(), name, fragment_error, fragment_error_line))
+	{
+		size_t local_line;
+		compilation_error = {
+			.error = fragment_error,
+			.line = 0,
+			.file = fragment_source.get_file_at_line(fragment_error_line, local_line),
+			.is_fragment = true,
+		};
+		compilation_error->line = local_line;
+		glDeleteProgram(shader_program_id);
+		shader_program_id = 0;
+		is_dirty = false;
+		return;
+	}
 	glAttachShader(shader_program_id, program_fragment->shaderId());
 
 	glLinkProgram(shader_program_id);
@@ -43,17 +76,21 @@ void Material::reload_internal()
 		char* infoLog = new char[infologLength];
 		int charsWritten = 0;
 		glGetProgramInfoLog(shader_program_id, infologLength, &charsWritten, infoLog);
-		compilation_error = infoLog;
-		if (infologLength > 0 && infoLog[0] == 'F')
-			compilation_error = *compilation_error + "\nfile : " + fragment_source.get_path();
-		else
-			compilation_error = *compilation_error + "\nfile : " + vertex_source.get_path();
-		std::cerr << "Link message :" << name << " :" << std::endl << infoLog << std::endl;
+		compilation_error = {
+			.error = infoLog,
+			.line = 0,
+			.file = "",
+			.is_fragment = false,
+		};
 		delete[] infoLog;
+		glDeleteProgram(shader_program_id);
 		shader_program_id = 0;
+		is_dirty = false;
+		return;
 	}
+	if (compilation_error)
 
-	glUseProgram(0);
+		glUseProgram(0);
 
 	glUniformBlockBinding(shader_program_id, glGetUniformBlockIndex(shader_program_id, "WorldData"), 0);
 
@@ -71,6 +108,7 @@ void Material::bind()
 {
 	if (is_dirty)
 		reload_internal();
+
 	glUseProgram(shader_program_id);
 }
 
@@ -172,9 +210,34 @@ size_t ShaderSource::get_line_count() const
 	return line_count;
 }
 
+std::string ShaderSource::get_file_at_line(size_t line, size_t& local_line) const
+{
+	std::string file = get_path();
+
+	size_t current_start = 0;
+	size_t include_size = 0;
+	for (const auto& chunk : content)
+	{
+		if (line < current_start + chunk->get_line_count())
+		{
+			if (const auto* dep = chunk->get_dependency())
+				return dep->get_file_at_line(line - current_start, local_line);
+			local_line = line - include_size;
+			return file;
+		}
+		if (chunk->get_dependency())
+			include_size += chunk->get_line_count();
+		current_start += chunk->get_line_count();
+	}
+
+	local_line = line - include_size;
+	return file;
+}
+
 void ShaderSource::reload_internal()
 {
-	if (!std::filesystem::exists(source_path)) {
+	if (!std::filesystem::exists(source_path))
+	{
 		std::cerr << "file " << source_path.c_str() << " does not exists";
 		return;
 	}
@@ -217,7 +280,8 @@ void ShaderSource::reload_internal()
 				for (++i; i < line.length() && line[i] != '"'; ++i)
 					include_path += line[i];
 
-				include_path = std::filesystem::path(get_path()).parent_path().concat("/").concat(include_path).string();
+				include_path = std::filesystem::path(get_path()).parent_path().concat("/").concat(include_path).
+				                                                 string();
 				const auto new_dep = std::make_shared<SourceChunkDependency>();
 				new_dep->dependency.set_source_path(include_path);
 				new_dep->dependency.on_data_changed.add_object(this, &ShaderSource::reload_internal);
@@ -228,7 +292,8 @@ void ShaderSource::reload_internal()
 			if (!std::isblank(line[i]))
 				break;
 		}
-		if (!is_include) {
+		if (!is_include)
+		{
 			shader_text_code += line + '\n';
 			line_count++;
 		}
@@ -238,6 +303,6 @@ void ShaderSource::reload_internal()
 		content.emplace_back(std::make_shared<SourceChunkText>(shader_text_code, line_count));
 	shader_text_code.clear();
 	line_count = 0;
-	
+
 	on_data_changed.execute();
 }

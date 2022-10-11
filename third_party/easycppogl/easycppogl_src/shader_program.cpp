@@ -46,19 +46,21 @@ std::string load_src(const std::string& full_path_name)
 
 const ShaderProgram* ShaderProgram::current_binded_ = nullptr;
 
-void Shader::compile(const std::string& src, const std::string& name)
-{	
+bool Shader::compile(const std::string& src, const std::string& name, std::string& error_string, size_t& error_line)
+{
+	error_string.clear();
+	error_line = 0;
 #ifdef __APPLE__
 	std::string src_cp(src);
 	auto ind = src_cp.find("#version");
-	if (ind	!= std::string::npos)
+	if (ind != std::string::npos)
 	{
-		auto ind2 = src_cp.find("430",ind);
-		if ((ind2 != std::string::npos) && (ind2-ind <12))
+		auto ind2 = src_cp.find("430", ind);
+		if ((ind2 != std::string::npos) && (ind2 - ind < 12))
 		{
-			src_cp[ind2]='3';
+			src_cp[ind2] = '3';
 		}
-	}
+}
 	const char* csrc = src_cp.c_str();
 #else
 	const char* csrc = src.c_str();
@@ -68,39 +70,41 @@ void Shader::compile(const std::string& src, const std::string& name)
 	glCompileShader(id_);
 
 	int infologLength = 0;
-	int charsWritten  = 0;
-	char *infoLog;
+	int charsWritten = 0;
+	char* infoLog;
 
 	glGetShaderiv(id_, GL_INFO_LOG_LENGTH, &infologLength);
 
-	if(infologLength > 1)
+	if (infologLength > 1)
 	{
-		infoLog =  new char[infologLength];
+		infoLog = new char[infologLength];
 		glGetShaderInfoLog(id_, infologLength, &charsWritten, infoLog);
-
-		std::cerr << "----------------------------------------" << std::endl << "compilation de " << name <<  " : "<<std::endl << infoLog <<std::endl<< "--------"<< std::endl;
 
 		std::string errors(infoLog);
 		std::istringstream sserr(errors);
 		std::vector<int> error_lines;
 		std::string line;
 		std::getline(sserr, line);
-		while (! sserr.eof())
+		while (!sserr.eof())
 		{
-			std::size_t a =0;
-			while ((a<line.size()) && (line[a]!='(')) a++;
-			std::size_t b =a+1;
-			while ((b<line.size()) && (line[b]!=')')) b++;
-			if (b<line.size())
+			std::size_t a = 0;
+			while ((a < line.size()) && (line[a] != '(')) a++;
+			std::size_t b = a + 1;
+			while ((b < line.size()) && (line[b] != ')')) b++;
+			if (b < line.size())
 			{
-				int ln = std::stoi(line.substr(a+1, b-a-1));
+				int ln = std::stoi(line.substr(a + 1, b - a - 1));
 				error_lines.push_back(ln);
 			}
 			std::getline(sserr, line);
 		}
 
-		free(infoLog);
+		error_string = infoLog;
+		delete infoLog;
+		if (!error_lines.empty())
+			error_line = error_lines[0];
 
+		/*
 		char* source = new char[16*1024];
 		GLsizei length;
 		glGetShaderSource(id_,16*1024,&length,source);
@@ -141,7 +145,10 @@ void Shader::compile(const std::string& src, const std::string& name)
 		}
 		std::cout << "----------------------------------------" << std::endl;
 #endif
+*/
+		return false;
 	}
+	return true;
 }
 
 std::string string_type_of_shader(GLenum ToS)
@@ -291,7 +298,7 @@ void ShaderProgram::location_line_analyser(const char* buff, std::string& src, i
 				ubo_bindings_.push_back(std::make_pair(loc_name, bp));
 
 				size_t pos8 = line.find(")", pos7);
-				for (int i =pos7+6; i <pos8; ++i)
+				for (size_t i =pos7+6; i <pos8; ++i)
 						src[begin_of_line+i] = ' ';
 				return;
 			}
@@ -346,30 +353,37 @@ ShaderProgram::ShaderProgram(const std::vector<std::pair<GLenum, std::string>>& 
 {
 	/*name_ = name;*/
 	utranslat_.resize(256);
-	for (int i=0;i<256;++i)
+	for (int i = 0; i < 256; ++i)
 		utranslat_[i] = i;
 
 	id_ = glCreateProgram();
-////V1
+	////V1
 
 	if (Uniform_Explicit_Location_Support)
 	{
-		for (const auto& sh: sources)
-			{
-				Shader* shader = new Shader(sh.first);
-				shader->compile(sh.second, name_+"::"+string_type_of_shader(sh.first));
-				shaders_.push_back(shader);
-				glAttachShader(id_, shader->shaderId());
-			}
+		for (const auto& sh : sources)
+		{
+			Shader* shader = new Shader(sh.first);
+			std::string error_message;
+			size_t error_line;
+			if (!shader->compile(sh.second, name_ + "::" + string_type_of_shader(sh.first), error_message,
+				error_line))
+				std::cout << "shader compilation error : " << error_message << std::endl;
+			shaders_.push_back(shader);
+			glAttachShader(id_, shader->shaderId());
+		}
 	}
 	else
 	{
-		for (const auto& sh: sources)
+		for (const auto& sh : sources)
 		{
 			std::string src = sh.second;
 			location_analyser(src);
 			Shader* shader = new Shader(sh.first);
-			shader->compile(src, name_+"::"+string_type_of_shader(sh.first));
+			std::string error_message;
+			size_t error_line;
+			if (!shader->compile(src, name_ + "::" + string_type_of_shader(sh.first), error_message, error_line))
+				std::cout << "shader compilation error : " << error_message << std::endl;
 			shaders_.push_back(shader);
 			glAttachShader(id_, shader->shaderId());
 		}
@@ -378,25 +392,25 @@ ShaderProgram::ShaderProgram(const std::vector<std::pair<GLenum, std::string>>& 
 	if (!tf_outs.empty())
 	{
 		std::vector<const char*> tfo;
-		for (const auto& t: tf_outs)
+		for (const auto& t : tf_outs)
 			tfo.push_back(t.c_str());
 		glTransformFeedbackVaryings(id_, GLsizei(tf_outs.size()), tfo.data(), GL_SEPARATE_ATTRIBS);
 	}
 
 	glLinkProgram(id_);
 
-	for (auto sh: shaders_)
+	for (auto sh : shaders_)
 	{
 		glDetachShader(id_, sh->shaderId());
 	}
 
 	if (!Uniform_Explicit_Location_Support)
 	{
-		for (const auto& p: ulocations_)
+		for (const auto& p : ulocations_)
 		{
-			auto uni = glGetUniformLocation(this->id_,p.first.c_str());
+			auto uni = glGetUniformLocation(this->id_, p.first.c_str());
 			this->utranslat_[p.second] = uni;
-			std::cout << "Uniform "<<p.first<< " GL: "<< uni<< " User: "<<p.second<<std::endl;
+			std::cout << "Uniform " << p.first << " GL: " << uni << " User: " << p.second << std::endl;
 		}
 
 		glUseProgram(id_);
@@ -406,7 +420,7 @@ ShaderProgram::ShaderProgram(const std::vector<std::pair<GLenum, std::string>>& 
 			glUniform1ui(loc, p.second);
 			std::cout << "SHADER TEX bind " << p.first << " " << loc << " avec " << p.second << std::endl;
 		}
-		
+
 		for (const auto p : ubo_bindings_)
 		{
 			GLuint bi = glGetUniformBlockIndex(this->id(), p.first.c_str());
@@ -422,7 +436,7 @@ ShaderProgram::ShaderProgram(const std::vector<std::pair<GLenum, std::string>>& 
 		char* infoLog = new char[infologLength];
 		int charsWritten = 0;
 		glGetProgramInfoLog(id_, infologLength, &charsWritten, infoLog);
-		std::cerr << "Link message :" << name << " :" << std::endl<< infoLog << std::endl;
+		std::cerr << "Link message :" << name << " :" << std::endl << infoLog << std::endl;
 		delete[] infoLog;
 	}
 
