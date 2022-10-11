@@ -218,7 +218,6 @@ void ShaderSource::reload_internal()
 					include_path += line[i];
 
 				include_path = std::filesystem::path(get_path()).parent_path().concat("/").concat(include_path).string();
-				std::cout << " #####################" << include_path << std::endl;
 				const auto new_dep = std::make_shared<SourceChunkDependency>();
 				new_dep->dependency.set_source_path(include_path);
 				new_dep->dependency.on_data_changed.add_object(this, &ShaderSource::reload_internal);

@@ -9,8 +9,8 @@ out vec4 oFragmentColor;
 layout(location = 0) in vec2 uv;
 
 
-int NumScatterPoints = 10;
-int NumOpticalDepthPoints = 10;
+int NumScatterPoints = 5;
+int NumOpticalDepthPoints = 5;
 vec3 planetCenter = vec3(0,0, -6000000);
 float atmosphereRadius = 6100000;
 float planetRadius = 6000000;

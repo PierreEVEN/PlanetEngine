@@ -3,11 +3,10 @@
 
 float PI = 3.14159265358979323846;
 const float HALF_PI = 3.14159265358979323846 / 2.0;
+const dvec2 sqrt_2_2 = dvec2(double(sqrt(2.0 / 2.0)));
 
 dvec2 seamless_uv_from_sphere_normal(dvec3 sphere_norm) {
     dvec3 abs_norm = abs(sphere_norm);
-    
-    const dvec2 sqrt_2_2 = dvec2(sqrt(double(2)) / double(2));
 
     if (abs_norm.x > abs_norm.y && abs_norm.x > abs_norm.z)
         return (
@@ -52,8 +51,6 @@ dvec2 seamless_uv_from_sphere_normal(dvec3 sphere_norm) {
 dvec2 uv_from_sphere_normal(dvec3 sphere_norm) {
     dvec3 abs_norm = abs(sphere_norm);
     
-    const dvec2 sqrt_2_2 = dvec2(sqrt(double(2)) / double(2));
-
     if (abs_norm.x > abs_norm.y && abs_norm.x > abs_norm.z)
         return (
                 sphere_norm.yz * (sphere_norm.x < 0 ? dvec2(1) : dvec2(-1, 1)) /
