@@ -284,35 +284,25 @@ void PlanetRegion::render(Camera& camera) const
 	// Set uniforms
 	Planet::get_landscape_material()->bind();
 	glUniform1f(3, planet.radius);
+	
+	glUniform1f(Planet::get_landscape_material()->binding("cell_width"),  planet.cell_width);
 
-	int id = 0; {
-		STAT_DURATION("Get Uniform location");
-		id = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "cell_width");
-	}
-	glUniform1f(id
-		,
-		planet.cell_width);
+	glUniform3fv(Planet::get_landscape_material()->binding("ground_color"), 1, planet.planet_color.data());
 
-	glUniform3fv(
-		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "ground_color"), 1,
-		planet.planet_color.data());
-
-	glUniformMatrix4fv(
-		glGetUniformLocation(Planet::get_landscape_material()->program_id(), "lod_local_transform"),
-		1, false, lod_local_transform.cast<float>().matrix().data());
+	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false, lod_local_transform.cast<float>().matrix().data());
 
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind textures
-	const int grass_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "grass");
+	const int grass_location = Planet::get_landscape_material()->binding("grass");
 	glUniform1i(grass_location, grass_location);
 	grass->bind(grass_location);
 
-	const int rock_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "rock");
+	const int rock_location = Planet::get_landscape_material()->binding("rock");
 	glUniform1i(rock_location, rock_location);
 	rock->bind(rock_location);
 
-	const int sand_location = glGetUniformLocation(Planet::get_landscape_material()->program_id(), "sand");
+	const int sand_location = Planet::get_landscape_material()->binding("sand");
 	glUniform1i(sand_location, sand_location);
 	sand->bind(sand_location);
 

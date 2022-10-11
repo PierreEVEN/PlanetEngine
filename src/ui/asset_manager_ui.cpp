@@ -111,9 +111,9 @@ void display_file_hierarchy(const ShaderSource& source)
 	}
 }
 
-
 static void material_manager()
 {
+	size_t unique_id = 0;
 	const float total_width = ImGui::GetContentRegionAvail().x;
 
 	constexpr float field_a_width = 140;
@@ -160,6 +160,14 @@ static void material_manager()
 			{
 				open_in_ide(material->compilation_error->file, material->compilation_error->line);
 			}
+			if (material->compilation_error && ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				ImGui::Text("in '%s':%d", material->compilation_error->file.c_str(), material->compilation_error->line);
+				ImGui::Separator();
+				ImGui::Text("%s", material->compilation_error->error.c_str());
+				ImGui::EndTooltip();
+			}
 			ImGui::PopStyleColor();
 		}
 		else
@@ -179,12 +187,12 @@ static void material_manager()
 
 		ImGui::Dummy(ImVec2(std::max(field_d_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
-		ImGui::Checkbox(("##" + std::to_string(material->program_id())).c_str(), &material->auto_reload);
+		ImGui::Checkbox(("##" + std::to_string(unique_id++)).c_str(), &material->auto_reload);
 		ImGui::SameLine();
 
 		ImGui::Dummy(ImVec2(std::max(field_e_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 		ImGui::SameLine();
-		if (ImGui::Button(("vertex##" + std::to_string(material->program_id())).c_str(), ImVec2(80, 0)))
+		if (ImGui::Button(("vertex##" + std::to_string(unique_id++)).c_str(), ImVec2(80, 0)))
 			ImGui::OpenPopup(("dependencies_vertex##" + std::to_string(material->program_id())).c_str());
 		if (ImGui::BeginPopup(("dependencies_vertex##" + std::to_string(material->program_id())).c_str()))
 		{
@@ -192,7 +200,7 @@ static void material_manager()
 			ImGui::EndPopup();
 		}
 		ImGui::SameLine();
-		if (ImGui::Button(("fragment##" + std::to_string(material->program_id())).c_str(), ImVec2(80, 0)))
+		if (ImGui::Button(("fragment##" + std::to_string(unique_id++)).c_str(), ImVec2(80, 0)))
 			ImGui::OpenPopup(("dependencies_fragment##" + std::to_string(material->program_id())).c_str());
 		if (ImGui::BeginPopup(("dependencies_fragment##" + std::to_string(material->program_id())).c_str()))
 		{
@@ -200,14 +208,6 @@ static void material_manager()
 			ImGui::EndPopup();
 		}
 		ImGui::EndGroup();
-		if (material->compilation_error && ImGui::IsItemHovered())
-		{
-			ImGui::BeginTooltip();
-			ImGui::Text("in '%s':%d", material->compilation_error->file.c_str(), material->compilation_error->line);
-			ImGui::Separator();
-			ImGui::Text("%s", material->compilation_error->error.c_str());
-			ImGui::EndTooltip();
-		}
 	}
 }
 

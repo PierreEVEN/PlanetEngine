@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <GL/gl3w.h>
 
 #include "world.h"
 #include <utils/event_manager.h>
@@ -111,6 +112,7 @@ public:
 	};
 	std::optional<CompilationErrorInfo> compilation_error;
 
+	int binding(const std::string& binding_name) const;
 private:
 
 	Material(const std::string& name);
@@ -128,4 +130,6 @@ private:
 
 	void mark_dirty() { is_dirty = true; }
 	bool is_dirty;
+
+	std::unordered_map<std::string, int> bindings;
 };

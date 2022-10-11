@@ -92,13 +92,13 @@ int main()
 				Engine::get().get_renderer().bind_deferred_combine();
 
 				g_buffer_combine_material->bind();
-				const int color_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "color");
+				const int color_location = g_buffer_combine_material->binding("color");
 				Engine::get().get_renderer().world_color().bind(color_location);
 				glUniform1i(color_location, color_location);
-				const int normal_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "normal");
+				const int normal_location = g_buffer_combine_material->binding("normal");
 				Engine::get().get_renderer().world_normal().bind(normal_location);
 				glUniform1i(normal_location, normal_location);
-				const int depth_location = glGetUniformLocation(g_buffer_combine_material->program_id(), "depth");
+				const int depth_location = g_buffer_combine_material->binding("depth");
 				Engine::get().get_renderer().world_depth().bind(depth_location);
 				glUniform1i(depth_location, depth_location);
 				glDrawArrays(GL_TRIANGLES, 0, 3);

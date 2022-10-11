@@ -10,6 +10,14 @@
 #include "engine/engine.h"
 #include "utils/profiler.h"
 
+int Material::binding(const std::string& binding_name) const
+{
+	const auto binding = bindings.find(binding_name);
+	if (binding != bindings.end())
+		return binding->second;
+	return -1;
+}
+
 Material::Material(const std::string& in_name) : name(in_name)
 {
 	Engine::get().get_asset_manager().materials.emplace_back(this);
@@ -20,9 +28,9 @@ Material::Material(const std::string& in_name) : name(in_name)
 void Material::reload_internal()
 {
 	compilation_error.reset();
+	bindings.clear();
 	// Compile shader
 	shader_program_id = glCreateProgram();
-
 	program_vertex = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
 	std::string vertex_error;
 	size_t vertex_error_line;
@@ -94,6 +102,17 @@ void Material::reload_internal()
 
 	glUniformBlockBinding(shader_program_id, glGetUniformBlockIndex(shader_program_id, "WorldData"), 0);
 
+	int uniform_count;
+	glGetProgramiv(shader_program_id, GL_ACTIVE_UNIFORMS, &uniform_count);
+	for (int i = 0; i < uniform_count; ++i)
+	{
+		GLchar uniform_name[256];
+		int length;
+		int type_size;
+		GLenum type_type;
+		glGetActiveUniform(shader_program_id, static_cast<GLuint>(i), 256, &length, &type_size, &type_type, uniform_name);
+		bindings.insert({ uniform_name, glGetUniformLocation(shader_program_id, uniform_name) });
+	}
 	is_dirty = false;
 }
 

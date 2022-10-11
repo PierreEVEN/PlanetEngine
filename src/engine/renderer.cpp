@@ -148,8 +148,11 @@ void Renderer::submit() const
 	}
 
 	{
-		STAT_DURATION("ImGui_Render");
-		ImGui::Render();
+		STAT_DURATION("ImGui Render");
+		{
+			STAT_DURATION("ImGui pre-render");
+			ImGui::Render();
+		}
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
