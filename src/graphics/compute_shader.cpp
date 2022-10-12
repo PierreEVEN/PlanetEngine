@@ -27,6 +27,8 @@ void ComputeShader::check_updates()
 	if (!auto_reload)
 		return;
 	compute_source.check_update();
+	if (is_dirty)
+		reload_internal();
 }
 
 void ComputeShader::bind()
@@ -34,11 +36,17 @@ void ComputeShader::bind()
 	if (is_dirty)
 		reload_internal();
 
+	if (compilation_error)
+		return;
+
 	glUseProgram(compute_shader_id);
 }
 
 void ComputeShader::execute(int x, int y, int z)
 {
+	if (compilation_error)
+		return;
+
 	glDispatchCompute(x, y, z);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
@@ -53,6 +61,7 @@ ComputeShader::ComputeShader(const std::string& in_name) : name(in_name)
 
 void ComputeShader::reload_internal()
 {
+	compilation_error.reset();
 	std::string fragment_error;
 	size_t fragment_error_line;
 	program_compute = std::make_unique<EZCOGL::Shader>(GL_COMPUTE_SHADER);

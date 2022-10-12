@@ -4,20 +4,19 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 #include "camera.h"
-#include "engine/engine.h"
 #include "utils/profiler.h"
 
-struct WorldDataStructure
+struct alignas(16) WorldDataStructure
 {
-	alignas(16) Eigen::Matrix4f proj_matrix;
-	alignas(16) Eigen::Matrix4f view_matrix;
-	alignas(16) Eigen::Matrix4f vp_matrix;
-	alignas(16) Eigen::Matrix4f proj_matrix_inv;
-	alignas(16) Eigen::Matrix4f view_matrix_inv;
-	alignas(16) Eigen::Matrix4f vp_matrix_inv;
-	alignas(16) Eigen::Vector3f camera_pos;
-	alignas(16) Eigen::Vector3f camera_forward;
-	alignas(16) float world_time;
+	Eigen::Matrix4f proj_matrix;
+	Eigen::Matrix4f view_matrix;
+	Eigen::Matrix4f vp_matrix;
+	Eigen::Matrix4f proj_matrix_inv;
+	Eigen::Matrix4f view_matrix_inv;
+	Eigen::Matrix4f vp_matrix_inv;
+	Eigen::Vector3f camera_pos;
+	Eigen::Vector3f camera_forward;
+	float world_time;
 };
 
 World::World() : camera(std::make_shared<Camera>()), root_component(std::make_unique<SceneComponent>("root"))

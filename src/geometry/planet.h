@@ -3,6 +3,7 @@
 #include "ui/ui.h"
 #include "world/scene_component.h"
 
+class TextureImage;
 class Mesh;
 class Material;
 class PlanetRegion;
@@ -49,6 +50,8 @@ public:
 	void tick(double delta_time, int num_lods);
 	void render(Camera& camera) const;
 
+	void rebuild_maps();
+
 private:
 	const Planet& planet;
 	Eigen::Vector3d chunk_position;
@@ -60,6 +63,8 @@ private:
 	std::shared_ptr<PlanetRegion> child;
 
 	Eigen::Affine3d lod_local_transform;
+	std::shared_ptr<TextureImage> height_map;
+	std::shared_ptr<TextureImage> normal_map;
 };
 
 class PlanetInformations : public ImGuiWindow

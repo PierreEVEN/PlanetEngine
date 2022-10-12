@@ -1,4 +1,4 @@
-#include <GL/gl3w.h>
+﻿#include <GL/gl3w.h>
 
 #include "camera.h"
 #include "planet.h"
@@ -11,6 +11,7 @@
 #include "graphics/compute_shader.h"
 #include "graphics/mesh.h"
 #include "graphics/material.h"
+#include "graphics/storage_buffer.h"
 #include "graphics/texture_image.h"
 #include "utils/profiler.h"
 
@@ -109,6 +110,7 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 
 void Planet::regenerate()
 {
+	STAT_DURATION("regenerate planet mesh");
 	std::vector<Eigen::Vector3f> positions_root;
 	std::vector<uint32_t> indices_root;
 
@@ -218,9 +220,19 @@ PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint3
 
 void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 {
-	STAT_DURATION("regenerate planet LOD" + std::to_string(current_lod));
 	cell_number = in_cell_number;
 	cell_size = in_width; // in_width;
+
+	if (!height_map || height_map->width() != cell_number * 4 + 4) {
+		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod));
+		height_map->alloc(cell_number * 4 + 4, cell_number * 4 + 4, GL_R32F, nullptr);
+	}
+	if (!normal_map || normal_map->width() != cell_number * 4 + 4) {
+		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod));
+		normal_map->alloc(cell_number * 4 + 4, cell_number * 4 + 4, GL_RG16F, nullptr);
+	}
+
+	rebuild_maps();
 
 	if (child)
 		child->regenerate(cell_number, cell_size * 2);
@@ -286,6 +298,8 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 			rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY());
 		lod_local_transform.rotate(rotation);
 	}
+
+	rebuild_maps();
 }
 
 void PlanetRegion::render(Camera& camera) const
@@ -336,6 +350,42 @@ void PlanetRegion::render(Camera& camera) const
 		glFrontFace(GL_CCW);
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+struct alignas(16) LandscapeChunkData
+{
+	Eigen::Matrix4f Chunk_LocalTransform;
+	Eigen::Matrix4f Chunk_PlanetTransform;
+	float Chunk_PlanetRadius;
+	float Chunk_CellWidth;
+	int32_t Chunk_CellCount;
+};
+
+void PlanetRegion::rebuild_maps()
+{
+	STAT_DURATION("rebuild landscape map");
+
+	const LandscapeChunkData chunk_data{
+		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
+		.Chunk_PlanetTransform = planet.planet_global_transform.cast<float>().matrix(),
+		.Chunk_PlanetRadius = planet.radius,
+		.Chunk_CellWidth = static_cast<float>(cell_size),
+		.Chunk_CellCount = cell_number,
+	};
+
+	const auto ssbo = StorageBuffer::create("test");
+	ssbo->set_data(chunk_data);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo->id());
+
+	planet.get_landscape_material();
+	height_map->bind_compute_out(0);
+	compute_positions->bind();
+	compute_positions->execute(cell_number * 4 + 4, cell_number * 4 + 4, 1);
+
+	normal_map->bind_compute_out(0);
+	compute_normals->bind();
+	compute_normals->execute(cell_number * 4 + 4, cell_number * 4 + 4, 1);
+
 }
 
 void PlanetInformations::draw()

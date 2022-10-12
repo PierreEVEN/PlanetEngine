@@ -42,7 +42,7 @@ void main()
 
 	float depth_scale = clamp(-altitude / 300, 0, 1);
 
-	if (altitude < 1) {
+	if (altitude < 0.001) {
 		gColor = mix(vec3(97, 130, 223) / 256, vec3(97, 130, 223) / 350 , depth_scale);
 	}
 

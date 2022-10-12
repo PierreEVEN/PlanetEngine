@@ -40,31 +40,18 @@ void main()
 
 	vec2 vertex_pos = (lod_local_transform * vec4(scaled_pos, 1)).xz;
 	vec3 planet_pos = to_3d_v4(vertex_pos, radius);
-    dmat3 rot = dmat3(model);
-    dvec3 norm_f64 = normalize(rot * (planet_pos + dvec3(radius, 0, 0)));
-    out_norm = vec3(norm_f64);
-
-    coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));
-    
+    mat3 rot = mat3(model);
+    vec3 norm_f64 = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
 
 
-    debug_scalar = vec3(coordinates, 0);
+    //dvec3 norm_f64 = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
+    //float h0 = get_height_at_locationd(norm_f64);
 
-    dvec3 t_1 = cross(out_norm, vec3(1, 0, 0));
-    dvec3 t_2 = cross(out_norm, vec3(0, 1, 0));
+    float h0 = get_height_at_location_int(norm_f64);
 
-    dvec3 n_1 = norm_f64 + t_1 * 0.00001;
-
-    double h0 = get_height_at_location(norm_f64);
+    coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));    
     altitude = float(h0);
-
-    dvec3 p0 = norm_f64 * h0;
-    dvec3 p1 = norm_f64 * 0;//get_height_at_location(norm_f64 + t_1 * 0.000001) + t_1;
-    dvec3 p2 = norm_f64 * 0;//get_height_at_location(norm_f64 + t_2 * 0.000001) + t_2;
-
-    dvec3 final_norm = cross(p1 - p0, p2 - p0);
-
-
+    out_norm = vec3(norm_f64);
     vec4 world_pos = model * vec4(planet_pos, 1.0);
     world_pos.xyz += out_norm * altitude_with_water(altitude);
 	out_position = world_pos.xyz;

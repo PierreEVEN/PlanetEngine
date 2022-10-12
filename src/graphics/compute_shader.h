@@ -28,7 +28,6 @@ public:
 	void check_updates();
 
 	[[nodiscard]] uint32_t program_id() const { return compute_shader_id; }
-
 	[[nodiscard]] ShaderSource& get_program_source() { return compute_source; }
 
 	const std::string name;

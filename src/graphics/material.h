@@ -40,7 +40,7 @@ public:
 
 	std::optional<CompilationErrorInfo> compilation_error;
 
-	int binding(const std::string& binding_name) const;
+	[[nodiscard]] int binding(const std::string& binding_name) const;
 private:
 
 	Material(const std::string& name);

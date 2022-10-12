@@ -131,6 +131,9 @@ void Material::bind()
 	if (is_dirty)
 		reload_internal();
 
+	if (compilation_error)
+		return;
+
 	glUseProgram(shader_program_id);
 }
 
@@ -153,5 +156,7 @@ void Material::check_updates()
 
 	vertex_source.check_update();
 	fragment_source.check_update();
-}
 
+	if (is_dirty)
+		reload_internal();
+}
