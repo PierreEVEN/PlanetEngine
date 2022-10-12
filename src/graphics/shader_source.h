@@ -6,6 +6,14 @@
 class ShaderSource;
 DECLARE_DELEGATE_MULTICAST(Event_ShaderFileUpdate);
 
+struct CompilationErrorInfo
+{
+	std::string error;
+	size_t line;
+	std::string file;
+	bool is_fragment;
+};
+
 class ISourceChunk
 {
 public:

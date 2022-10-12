@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <iostream>
 
+#include "graphics/compute_shader.h"
 #include "graphics/material.h"
 #include "graphics/mesh.h"
 #include "graphics/texture_image.h"
@@ -205,6 +206,63 @@ static void material_manager()
 		if (ImGui::BeginPopup(("dependencies_fragment##" + std::to_string(material->program_id())).c_str()))
 		{
 			display_file_hierarchy(material->get_fragment_source());
+			ImGui::EndPopup();
+		}
+		ImGui::EndGroup();
+	}
+
+	ImGui::Separator();
+	for (const auto& compute_shader : Engine::get().get_asset_manager().get_computes())
+	{
+		ImGui::BeginGroup();
+		ImGui::Text("%s", compute_shader->name.c_str());
+		ImGui::SameLine();
+		ImGui::Dummy(ImVec2(std::max(field_a_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
+		ImGui::SameLine();
+		if (compute_shader->compilation_error)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 0.5, 0.5, 1.0));
+			if (ImGui::Button("error", ImVec2(80, 0)))
+			{
+				open_in_ide(compute_shader->compilation_error->file, compute_shader->compilation_error->line);
+			}
+			if (compute_shader->compilation_error && ImGui::IsItemHovered())
+			{
+				ImGui::BeginTooltip();
+				ImGui::Text("in '%s':%d", compute_shader->compilation_error->file.c_str(), compute_shader->compilation_error->line);
+				ImGui::Separator();
+				ImGui::Text("%s", compute_shader->compilation_error->error.c_str());
+				ImGui::EndTooltip();
+			}
+			ImGui::PopStyleColor();
+		}
+		else
+			ImGui::Text("%s", "ready");
+		ImGui::SameLine();
+
+		ImGui::Dummy(ImVec2(std::max(field_b_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
+		ImGui::SameLine();
+		if (ImGui::Button(("reload##" + std::to_string(compute_shader->program_id())).c_str(), ImVec2(120, 0)))
+			compute_shader->check_updates();
+		ImGui::SameLine();
+
+		ImGui::Dummy(ImVec2(std::max(field_c_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
+		ImGui::SameLine();
+		ImGui::Text("%d", compute_shader->program_id());
+		ImGui::SameLine();
+
+		ImGui::Dummy(ImVec2(std::max(field_d_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
+		ImGui::SameLine();
+		ImGui::Checkbox(("##" + std::to_string(unique_id++)).c_str(), &compute_shader->auto_reload);
+		ImGui::SameLine();
+
+		ImGui::Dummy(ImVec2(std::max(field_e_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
+		ImGui::SameLine();
+		if (ImGui::Button(("compute##" + std::to_string(unique_id++)).c_str(), ImVec2(80, 0)))
+			ImGui::OpenPopup(("dependencies_compute##" + std::to_string(compute_shader->program_id())).c_str());
+		if (ImGui::BeginPopup(("dependencies_compute##" + std::to_string(compute_shader->program_id())).c_str()))
+		{
+			display_file_hierarchy(compute_shader->get_program_source());
 			ImGui::EndPopup();
 		}
 		ImGui::EndGroup();

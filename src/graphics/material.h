@@ -38,13 +38,6 @@ public:
 	const std::string name;
 	bool auto_reload = false;
 
-	struct CompilationErrorInfo
-	{
-		std::string error;
-		size_t line;
-		std::string file;
-		bool is_fragment;
-	};
 	std::optional<CompilationErrorInfo> compilation_error;
 
 	int binding(const std::string& binding_name) const;

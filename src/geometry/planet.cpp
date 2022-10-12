@@ -8,6 +8,7 @@
 
 #include "engine/engine.h"
 #include "engine/renderer.h"
+#include "graphics/compute_shader.h"
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
@@ -17,6 +18,9 @@ static std::shared_ptr<Material> planet_material = nullptr;
 static std::shared_ptr<TextureImage> grass = nullptr;
 static std::shared_ptr<TextureImage> rock = nullptr;
 static std::shared_ptr<TextureImage> sand = nullptr;
+static std::shared_ptr<ComputeShader> compute_positions = nullptr;
+static std::shared_ptr<ComputeShader> compute_normals = nullptr;
+
 
 static double snap(double value, double delta) { return round(value / delta) * delta; }
 
@@ -41,6 +45,13 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	rock->load("resources/textures/terrain/rock_diffuse.jpg");
 	sand = TextureImage::create("terrain sand", {GL_REPEAT});
 	sand->load("resources/textures/terrain/sand_diffuse.jpg");
+
+
+	compute_positions = ComputeShader::create("Planet compute position");
+	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
+
+	compute_normals = ComputeShader::create("Planet compute normals");
+	compute_normals->load_from_source("resources/shaders/compute/planet_compute_normals.cs");
 
 	return planet_material;
 }

@@ -27,6 +27,9 @@ Material::Material(const std::string& in_name) : name(in_name)
 
 void Material::reload_internal()
 {
+	if (shader_program_id != 0)
+		glDeleteProgram(shader_program_id);
+
 	compilation_error.reset();
 	bindings.clear();
 	// Compile shader

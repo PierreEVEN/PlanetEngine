@@ -10,6 +10,7 @@
 #include "engine/engine.h"
 #include "engine/renderer.h"
 #include "geometry/planet.h"
+#include "graphics/compute_shader.h"
 #include "graphics/primitives.h"
 #include "ui/asset_manager_ui.h"
 #include "ui/graphic_debugger.h"
@@ -76,7 +77,7 @@ int main()
 			Engine::get().get_world().tick_world();
 			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.02;
 			secondary_planet->set_local_position(
-				Eigen::Vector3d(std::cos(planet_rotation), 0, std::sin(planet_rotation)) * 300000000 + Eigen::Vector3d(
+				Eigen::Vector3d(std::cos(planet_rotation), 0, std::sin(planet_rotation)) * 30000000 + Eigen::Vector3d(
 					earth_location, 0, 0));
 
 			// G_buffers
