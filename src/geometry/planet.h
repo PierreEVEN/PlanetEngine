@@ -9,6 +9,7 @@ class PlanetRegion;
 
 class Planet : public SceneComponent
 {
+	friend class PlanetRegion;
 public:
 	Planet(const World& world);
 
@@ -32,6 +33,8 @@ protected:
 
 
 private:
+	std::shared_ptr<Mesh> root_mesh;
+	std::shared_ptr<Mesh> child_mesh;
 	std::shared_ptr<PlanetRegion> root;
 	const World& world;
 };
@@ -54,9 +57,7 @@ private:
 	int32_t cell_number;
 	uint32_t current_lod;
 	uint32_t num_lods;
-	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<PlanetRegion> child;
-
 
 	Eigen::Affine3d lod_local_transform;
 };

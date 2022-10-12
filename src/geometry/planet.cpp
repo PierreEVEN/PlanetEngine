@@ -4,6 +4,7 @@
 #include "planet.h"
 
 #include <imgui.h>
+#include <iostream>
 
 #include "engine/engine.h"
 #include "engine/renderer.h"
@@ -44,8 +45,111 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	return planet_material;
 }
 
+static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
+                                    int32_t x_min, int32_t x_max, int32_t z_min, int32_t z_max,
+                                    int32_t cell_min, int32_t cell_max)
+{
+	// Requirement for Y val
+	const float distance_max = static_cast<float>(cell_max);
+	float min_global = static_cast<float>(cell_min);
+
+	// Handle LOD 0 case
+	if (min_global == distance_max)
+		min_global = 0;
+
+	const auto current_index_offset = static_cast<uint32_t>(positions.size());
+	for (int32_t z = z_min; z <= z_max; ++z)
+		for (int32_t x = x_min; x <= x_max; ++x)
+		{
+			// The Y val is used to store the progression from previous LOD to the next one
+			const float Linf_distance = static_cast<float>(std::max(std::abs(x), std::abs(z))); // Tchebychev distance
+			const float y_val_weight = (Linf_distance - min_global) / (distance_max - min_global);
+			const bool x_aligned = std::abs(x) > std::abs(z);
+			const int mask = std::abs(x) % 2 == 0 && !x_aligned || std::abs(z) % 2 == 0 && x_aligned;
+			positions.emplace_back(Eigen::Vector3f(static_cast<float>(x), mask * y_val_weight, static_cast<float>(z)));
+		}
+
+	const uint32_t x_width = std::abs(x_max - x_min);
+	const uint32_t z_width = std::abs(z_max - z_min);
+	for (uint32_t z = 0; z < z_width; ++z)
+		for (uint32_t x = 0; x < x_width; ++x)
+		{
+			uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
+			if (positions[base_index].x() * positions[base_index].z() > 0)
+			{
+				indices.emplace_back(base_index);
+				indices.emplace_back(base_index + x_width + 2);
+				indices.emplace_back(base_index + x_width + 1);
+				indices.emplace_back(base_index);
+				indices.emplace_back(base_index + 1);
+				indices.emplace_back(base_index + x_width + 2);
+			}
+			else
+			{
+				indices.emplace_back(base_index);
+				indices.emplace_back(base_index + 1);
+				indices.emplace_back(base_index + x_width + 1);
+				indices.emplace_back(base_index + 1);
+				indices.emplace_back(base_index + x_width + 2);
+				indices.emplace_back(base_index + x_width + 1);
+			}
+		}
+}
+
 void Planet::regenerate()
 {
+	std::vector<Eigen::Vector3f> positions_root;
+	std::vector<uint32_t> indices_root;
+
+	generate_rectangle_area(indices_root, positions_root,
+	                        -cell_count * 2 - 1,
+	                        cell_count * 2 + 1,
+	                        -cell_count * 2 - 1,
+	                        cell_count * 2 + 1,
+	                        0, cell_count * 2);
+
+	root_mesh = Mesh::create("planet root mesh");
+	root_mesh->set_positions(positions_root, 0, true);
+	root_mesh->set_indices(indices_root);
+
+	std::vector<Eigen::Vector3f> positions_child;
+	std::vector<uint32_t> indices_child;
+	// TOP side (larger)
+	generate_rectangle_area(indices_child, positions_child,
+	                        cell_count,
+	                        cell_count * 2 + 1,
+	                        -cell_count - 1,
+	                        cell_count * 2 + 1,
+	                        cell_count, cell_count * 2 + 1);
+
+	// RIGHT side (larger)
+	generate_rectangle_area(indices_child, positions_child,
+	                        -cell_count * 2 - 1,
+	                        cell_count,
+	                        cell_count,
+	                        cell_count * 2 + 1,
+	                        cell_count, cell_count * 2 + 1);
+
+	// BOTTOM side
+	generate_rectangle_area(indices_child, positions_child,
+	                        -cell_count * 2 - 1,
+	                        -cell_count - 1,
+	                        -cell_count * 2 - 1,
+	                        cell_count,
+	                        cell_count + 1, cell_count * 2 + 1);
+
+	// LEFT side
+	generate_rectangle_area(indices_child, positions_child,
+	                        -cell_count - 1,
+	                        cell_count * 2 + 1,
+	                        -cell_count * 2 - 1,
+	                        -cell_count - 1,
+	                        cell_count + 1, cell_count * 2 + 1);
+
+	child_mesh = Mesh::create("planet child mesh");
+	child_mesh->set_positions(positions_child, 0, true);
+	child_mesh->set_indices(indices_child);
+
 	root->regenerate(cell_count, cell_width);
 }
 
@@ -98,62 +202,6 @@ PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint3
                            uint32_t in_my_level) :
 	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), planet(in_parent)
 {
-	mesh = Mesh::create("planet_lod:" + std::to_string(current_lod));
-}
-
-static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
-                                    int32_t x_min, int32_t x_max, int32_t z_min, int32_t z_max, double scale,
-                                    int32_t cell_min, int32_t cell_max)
-{
-	// Requirement for Y val
-	const float distance_max = static_cast<float>(cell_max);
-	float min_global = static_cast<float>(cell_min);
-
-	// Handle LOD 0 case
-	if (min_global == distance_max)
-		min_global = 0;
-
-	const auto current_index_offset = static_cast<uint32_t>(positions.size());
-	for (int32_t z = z_min; z <= z_max; ++z)
-		for (int32_t x = x_min; x <= x_max; ++x)
-		{
-			// The Y val is used to store the progression from previous LOD to the next one
-			const float Linf_distance = static_cast<float>(std::max(std::abs(x), std::abs(z))); // Tchebychev distance
-			const float y_val_weight = (Linf_distance - min_global) / (distance_max - min_global);
-			const bool x_aligned = std::abs(x) > std::abs(z);
-			const int mask = std::abs(x) % 2 == 0 && !x_aligned || std::abs(z) % 2 == 0 && x_aligned;
-			positions.emplace_back(Eigen::Vector3f(
-					x * static_cast<float>(scale), // X
-					mask * y_val_weight, // Y
-					z * static_cast<float>(scale)) // Z
-			);
-		}
-
-	const uint32_t x_width = std::abs(x_max - x_min);
-	const uint32_t z_width = std::abs(z_max - z_min);
-	for (uint32_t z = 0; z < z_width; ++z)
-		for (uint32_t x = 0; x < x_width; ++x)
-		{
-			uint32_t base_index = x + z * (x_width + 1) + current_index_offset;
-			if (positions[base_index].x() * positions[base_index].z() > 0)
-			{
-				indices.emplace_back(base_index);
-				indices.emplace_back(base_index + x_width + 2);
-				indices.emplace_back(base_index + x_width + 1);
-				indices.emplace_back(base_index);
-				indices.emplace_back(base_index + 1);
-				indices.emplace_back(base_index + x_width + 2);
-			}
-			else
-			{
-				indices.emplace_back(base_index);
-				indices.emplace_back(base_index + 1);
-				indices.emplace_back(base_index + x_width + 1);
-				indices.emplace_back(base_index + 1);
-				indices.emplace_back(base_index + x_width + 2);
-				indices.emplace_back(base_index + x_width + 1);
-			}
-		}
 }
 
 
@@ -161,57 +209,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 {
 	STAT_DURATION("regenerate planet LOD" + std::to_string(current_lod));
 	cell_number = in_cell_number;
-	cell_size = in_width;
-
-	std::vector<Eigen::Vector3f> positions;
-	std::vector<uint32_t> indices;
-
-	if (current_lod == 0)
-	{
-		generate_rectangle_area(indices, positions,
-		                        -cell_number * 2 - 1,
-		                        cell_number * 2 + 1,
-		                        -cell_number * 2 - 1,
-		                        cell_number * 2 + 1,
-		                        cell_size, 0, cell_number * 2);
-	}
-	else
-	{
-		// TOP side (larger)
-		generate_rectangle_area(indices, positions,
-		                        cell_number,
-		                        cell_number * 2 + 1,
-		                        -cell_number - 1,
-		                        cell_number * 2 + 1,
-		                        cell_size, cell_number, cell_number * 2 + 1);
-
-		// RIGHT side (larger)
-		generate_rectangle_area(indices, positions,
-		                        -cell_number * 2 - 1,
-		                        cell_number,
-		                        cell_number,
-		                        cell_number * 2 + 1,
-		                        cell_size, cell_number, cell_number * 2 + 1);
-
-		// BOTTOM side
-		generate_rectangle_area(indices, positions,
-		                        -cell_number * 2 - 1,
-		                        -cell_number - 1,
-		                        -cell_number * 2 - 1,
-		                        cell_number,
-		                        cell_size, cell_number + 1, cell_number * 2 + 1);
-
-		// LEFT side
-		generate_rectangle_area(indices, positions,
-		                        -cell_number - 1,
-		                        cell_number * 2 + 1,
-		                        -cell_number * 2 - 1,
-		                        -cell_number - 1,
-		                        cell_size, cell_number + 1, cell_number * 2 + 1);
-	}
-
-	mesh->set_positions(positions, 0, true);
-	mesh->set_indices(indices);
+	cell_size = in_width; // in_width;
 
 	if (child)
 		child->regenerate(cell_number, cell_size * 2);
@@ -236,14 +234,16 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 	STAT_DURATION("Planet Tick LOD :" + std::to_string(current_lod));
 
 	// Compute camera position in local space
-	const Eigen::Vector3d camera_local_position = planet.planet_inverse_rotation * (world.get_camera()->get_world_position() - planet.get_world_position());
+	const Eigen::Vector3d camera_local_position = planet.planet_inverse_rotation * (world.get_camera()->
+		get_world_position() - planet.get_world_position());
 
 
 	const Eigen::Vector3d temp = Eigen::Vector3d(
 		0,
 		Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), 0).normalized().y(),
-		Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), camera_local_position.z()).normalized().z()
-		);
+		Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), camera_local_position.z()).normalized().
+		z()
+	);
 
 
 	// Convert linear position to position on sphere // @TODO Minor fix required here
@@ -261,6 +261,7 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 
 	lod_local_transform = Eigen::Affine3d::Identity();
 	lod_local_transform.translate(chunk_position);
+	lod_local_transform.scale(cell_size);
 
 	Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
 
@@ -284,12 +285,13 @@ void PlanetRegion::render(Camera& camera) const
 	// Set uniforms
 	Planet::get_landscape_material()->bind();
 	glUniform1f(3, planet.radius);
-	
-	glUniform1f(Planet::get_landscape_material()->binding("cell_width"),  planet.cell_width);
+
+	glUniform1f(Planet::get_landscape_material()->binding("cell_width"), planet.cell_width);
 
 	glUniform3fv(Planet::get_landscape_material()->binding("ground_color"), 1, planet.planet_color.data());
 
-	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false, lod_local_transform.cast<float>().matrix().data());
+	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
+	                   lod_local_transform.cast<float>().matrix().data());
 
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
@@ -308,12 +310,18 @@ void PlanetRegion::render(Camera& camera) const
 
 	glEnable(GL_CULL_FACE);
 	glPolygonMode(GL_FRONT_AND_BACK, Engine::get().get_renderer().wireframe ? GL_LINE : GL_FILL);
-	mesh->draw();
+	if (current_lod == 0)
+		planet.root_mesh->draw();
+	else
+		planet.child_mesh->draw();
 	if (planet.double_sided)
 	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glFrontFace(GL_CW);
-		mesh->draw();
+		if (current_lod == 0)
+			planet.root_mesh->draw();
+		else
+			planet.child_mesh->draw();
 		glFrontFace(GL_CCW);
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

@@ -22,8 +22,10 @@ layout(location = 3) uniform float radius;
 layout(location = 4) uniform float cell_width;
 
 void main()
-{
-	vec2 local_dir = normalize(mat3(lod_local_transform) * pos).xz;
+{   
+    vec3 scaled_pos = pos;
+
+	vec2 local_dir = normalize(mat3(lod_local_transform) * scaled_pos).xz;
 	vec2 grid_tangent = vec2(
         abs(local_dir.x) < abs(local_dir.y) ? 
 			local_dir.y < 0 ? -1 : 1 :
@@ -36,7 +38,7 @@ void main()
 	// float h_right = altitude_with_water(get_height_at_location(final_pos.xy - normalized_direction * cell_width * 1));
 	// float h_mean = (h_left + h_right) / 2;
 
-	vec2 vertex_pos = (lod_local_transform * vec4(pos, 1)).xz;
+	vec2 vertex_pos = (lod_local_transform * vec4(scaled_pos, 1)).xz;
 	vec3 planet_pos = to_3d_v4(vertex_pos, radius);
     dmat3 rot = dmat3(model);
     dvec3 norm_f64 = normalize(rot * (planet_pos + dvec3(radius, 0, 0)));
