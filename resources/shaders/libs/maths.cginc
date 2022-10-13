@@ -185,6 +185,7 @@ vec3 grid_to_sphere(vec2 pos, float rho) {
     vec2 dpos = pos;
 	vec2 norm_pos = clamp(dpos / rho, -HALF_PI, HALF_PI);
     float cos_y = scaled_cos(norm_pos.y, 1);
+
     return vec3(
         (cos_minus_one(norm_pos.y)) * rho - cos_y * one_minus_cos(norm_pos.x, rho),
         cos_minus_one(norm_pos.y) * sin_2(norm_pos.x, rho) + sin_2(norm_pos.x, rho),

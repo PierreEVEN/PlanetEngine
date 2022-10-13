@@ -26,20 +26,20 @@ void GraphicDebugger::draw()
 	ImGui::DragInt("Framerate limit", &Engine::get().get_world().framerate_limit);
 	if (Engine::get().get_world().framerate_limit < 0) Engine::get().get_world().framerate_limit = 0;
 
-	auto& framebuffer = Engine::get().get_renderer().framebuffer();
+	const auto framebuffer = Engine::get().get_renderer().framebuffer();
 	const float available_width = ImGui::GetContentRegionAvail().x;
-	for (int i = 0; i < framebuffer.nb_textures(); ++i)
+	for (int i = 0; i < framebuffer->nb_textures(); ++i)
 	{
-		const float ratio = available_width / framebuffer.width();
-		ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<size_t>(framebuffer.texture(i)->id())),
-		             ImVec2(framebuffer.width() * ratio, framebuffer.height() * ratio), ImVec2(0, 1),
+		const float ratio = available_width / framebuffer->width();
+		ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<size_t>(framebuffer->texture(i)->id())),
+		             ImVec2(framebuffer->width() * ratio, framebuffer->height() * ratio), ImVec2(0, 1),
 		             ImVec2(1, 0));
 	}
-	if (framebuffer.depth_texture())
+	if (framebuffer->depth_texture())
 	{
-		const float ratio = available_width / framebuffer.width();
-		ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<size_t>(framebuffer.depth_texture()->id())),
-		             ImVec2(framebuffer.width() * ratio, framebuffer.height() * ratio), ImVec2(0, 1),
+		const float ratio = available_width / framebuffer->width();
+		ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<size_t>(framebuffer->depth_texture()->id())),
+		             ImVec2(framebuffer->width() * ratio, framebuffer->height() * ratio), ImVec2(0, 1),
 		             ImVec2(1, 0));
 	}
 }

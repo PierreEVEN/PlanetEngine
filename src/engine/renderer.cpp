@@ -5,7 +5,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <iostream>
-#include <texture2d.h>
 #include <vao.h>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -14,6 +13,7 @@
 #include "engine.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
+#include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
 static bool initialized_opengl = false;
@@ -32,6 +32,7 @@ Renderer::Renderer()
 		initialized_opengl = true;
 		init_context();
 	}
+	GL_CHECK_ERROR();
 
 	std::vector<std::shared_ptr<EZCOGL::Texture2D>> textures;
 	// GBuffer color
@@ -56,6 +57,7 @@ Renderer::Renderer()
 	resolve_framebuffer = EZCOGL::FBO::create({resolve_texture});
 
 	Engine::get().on_framebuffer_resized.add_object(this, &Renderer::resize_framebuffer_internal);
+	GL_CHECK_ERROR();
 }
 
 Renderer::~Renderer()
@@ -66,6 +68,7 @@ Renderer::~Renderer()
 
 void Renderer::initialize() const
 {
+	GL_CHECK_ERROR();
 	STAT_DURATION("Initialize_Renderer");
 	{
 		STAT_DURATION("ImGui new frame");
@@ -97,10 +100,12 @@ void Renderer::initialize() const
 		ImGui::DockSpace(ImGui::GetID("Master dockSpace"), ImVec2(0.f, 0.f), ImGuiDockNodeFlags_PassthruCentralNode);
 	}
 	ImGui::End();
+	GL_CHECK_ERROR();
 }
 
 void Renderer::bind_g_buffers() const
 {
+	GL_CHECK_ERROR();
 	g_buffer->bind();
 	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glEnable(GL_CULL_FACE);
@@ -112,10 +117,12 @@ void Renderer::bind_g_buffers() const
 	glClearDepth(0.0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	EZCOGL::VAO::none()->bind();
+	GL_CHECK_ERROR();
 }
 
 void Renderer::bind_deferred_combine() const
 {
+	GL_CHECK_ERROR();
 	if (fullscreen)
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	else
@@ -130,10 +137,12 @@ void Renderer::bind_deferred_combine() const
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 	EZCOGL::VAO::none()->bind();
+	GL_CHECK_ERROR();
 }
 
 void Renderer::submit() const
 {
+	GL_CHECK_ERROR();
 	if (!fullscreen)
 	{
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -158,6 +167,7 @@ void Renderer::submit() const
 
 	STAT_DURATION("Swap_buffers");
 	glfwSwapBuffers(main_window);
+	GL_CHECK_ERROR();
 }
 
 bool Renderer::should_close() const
@@ -181,10 +191,12 @@ void Renderer::switch_fullscreen()
 
 void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 {
-	framebuffer().resize(x, y);
+	GL_CHECK_ERROR();
+	framebuffer()->resize(x, y);
 	resolve_framebuffer->resize(x, y);
 
 	Engine::get().get_world().get_camera()->viewport_res() = {x, y};
+	GL_CHECK_ERROR();
 }
 
 void Renderer::set_icon(const std::string& file_path)
@@ -319,4 +331,6 @@ void Renderer::init_context()
 		std::cerr << "glClipControl is required but not supported" << std::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	GL_CHECK_ERROR();
 }

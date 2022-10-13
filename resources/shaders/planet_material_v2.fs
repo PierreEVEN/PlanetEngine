@@ -1,4 +1,5 @@
-#version 430
+#version 430 core
+#extension GL_ARB_explicit_uniform_location : enable
 precision highp float;
 
 #include "libs/deferred_output.cginc"
@@ -12,11 +13,9 @@ layout(location = 2) in vec3 position;
 layout(location = 3) in float altitude;
 layout(location = 4) in vec2 coordinates;
 
-uniform sampler2D grass;
-uniform sampler2D sand;
-uniform sampler2D rock;
-uniform int fragment_normal_maps;
-uniform vec3 ground_color;
+layout(location = 8) uniform sampler2D grass;
+layout(location = 9) uniform sampler2D sand;
+layout(location = 10) uniform sampler2D rock;
 
 void main()
 {
@@ -47,4 +46,5 @@ void main()
 	}
 
 	gNormal = normal;
+	//gColor = debug_scalar;
 }

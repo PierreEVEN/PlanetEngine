@@ -118,6 +118,9 @@ void ShaderSource::reload_internal()
 	*static_cast<std::filesystem::file_time_type*>(last_file_update) = std::filesystem::last_write_time(source_path);
 
 	// Unlink dependencies
+	for (const auto& dep : content)
+		if (dep->get_dependency())
+			dep->get_dependency()->on_data_changed.clear();
 	content.clear();
 
 	// Open file
@@ -176,5 +179,6 @@ void ShaderSource::reload_internal()
 	shader_text_code.clear();
 	line_count = 0;
 
+	//@TODO Crash sometime here
 	on_data_changed.execute();
 }

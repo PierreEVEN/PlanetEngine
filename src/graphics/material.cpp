@@ -6,8 +6,10 @@
 
 #include <shader_program.h>
 
+#include "texture_image.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
+#include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
 int Material::binding(const std::string& binding_name) const
@@ -18,7 +20,21 @@ int Material::binding(const std::string& binding_name) const
 	return -1;
 }
 
-Material::Material(const std::string& in_name) : name(in_name)
+int Material::bind_texture(const std::shared_ptr<TextureImage>& texture, const std::string& binding_name)
+{
+	GL_CHECK_ERROR();
+	const int binding_location = binding(binding_name);
+	if (binding_location > 0)
+	{
+		glUniform1i(binding_location, binding_location);
+		glActiveTexture(GL_TEXTURE0 + binding_location);
+		glBindTexture(GL_TEXTURE_2D, texture->id());
+	}
+	GL_CHECK_ERROR();
+	return binding_location;
+}
+
+Material::Material(const std::string& in_name) : name(in_name), shader_program_id(0)
 {
 	Engine::get().get_asset_manager().materials.emplace_back(this);
 	vertex_source.on_data_changed.add_object(this, &Material::mark_dirty);
@@ -27,9 +43,11 @@ Material::Material(const std::string& in_name) : name(in_name)
 
 void Material::reload_internal()
 {
+	GL_CHECK_ERROR();
 	if (shader_program_id != 0)
 		glDeleteProgram(shader_program_id);
 
+	GL_CHECK_ERROR();
 	compilation_error.reset();
 	bindings.clear();
 	// Compile shader
@@ -53,6 +71,7 @@ void Material::reload_internal()
 		is_dirty = false;
 		return;
 	}
+	GL_CHECK_ERROR();
 	glAttachShader(shader_program_id, program_vertex->shaderId());
 
 	std::string fragment_error;
@@ -80,6 +99,7 @@ void Material::reload_internal()
 	glDetachShader(shader_program_id, program_vertex->shaderId());
 	glDetachShader(shader_program_id, program_fragment->shaderId());
 
+	GL_CHECK_ERROR();
 	int infologLength = 0;
 	glGetProgramiv(shader_program_id, GL_INFO_LOG_LENGTH, &infologLength);
 	if (infologLength > 1)
@@ -100,11 +120,18 @@ void Material::reload_internal()
 		return;
 	}
 	if (compilation_error)
-
+	{
+		glDeleteProgram(shader_program_id);
+		shader_program_id = 0;
 		glUseProgram(0);
+	}
+	GL_CHECK_ERROR();
 
-	glUniformBlockBinding(shader_program_id, glGetUniformBlockIndex(shader_program_id, "WorldData"), 0);
+	const int world_data_id = glGetUniformBlockIndex(shader_program_id, "WorldData");
+	if (world_data_id >= 0)
+		glUniformBlockBinding(shader_program_id, world_data_id, 0);
 
+	GL_CHECK_ERROR();
 	int uniform_count;
 	glGetProgramiv(shader_program_id, GL_ACTIVE_UNIFORMS, &uniform_count);
 	for (int i = 0; i < uniform_count; ++i)
@@ -113,10 +140,12 @@ void Material::reload_internal()
 		int length;
 		int type_size;
 		GLenum type_type;
-		glGetActiveUniform(shader_program_id, static_cast<GLuint>(i), 256, &length, &type_size, &type_type, uniform_name);
-		bindings.insert({ uniform_name, glGetUniformLocation(shader_program_id, uniform_name) });
+		glGetActiveUniform(shader_program_id, static_cast<GLuint>(i), 256, &length, &type_size, &type_type,
+		                   uniform_name);
+		bindings.insert({uniform_name, glGetUniformLocation(shader_program_id, uniform_name)});
 	}
 	is_dirty = false;
+	GL_CHECK_ERROR();
 }
 
 Material::~Material()
@@ -128,6 +157,7 @@ Material::~Material()
 
 void Material::bind()
 {
+	GL_CHECK_ERROR();
 	if (is_dirty)
 		reload_internal();
 
@@ -135,11 +165,14 @@ void Material::bind()
 		return;
 
 	glUseProgram(shader_program_id);
+	GL_CHECK_ERROR();
 }
 
 void Material::set_model_transform(const Eigen::Affine3d& transformation)
 {
-	glUniformMatrix4fv(1, 1, false, transformation.cast<float>().matrix().data());
+	const int model_location = binding("model");
+	if (model_location)
+		glUniformMatrix4fv(model_location, 1, false, transformation.cast<float>().matrix().data());
 }
 
 void Material::load_from_source(const std::string& in_vertex_path, const std::string& in_fragment_path)

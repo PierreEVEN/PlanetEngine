@@ -13,6 +13,7 @@
 #include "graphics/material.h"
 #include "graphics/storage_buffer.h"
 #include "graphics/texture_image.h"
+#include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
 static std::shared_ptr<Material> planet_material = nullptr;
@@ -110,6 +111,7 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 
 void Planet::regenerate()
 {
+	GL_CHECK_ERROR();
 	STAT_DURATION("regenerate planet mesh");
 	std::vector<Eigen::Vector3f> positions_root;
 	std::vector<uint32_t> indices_root;
@@ -124,6 +126,8 @@ void Planet::regenerate()
 	root_mesh = Mesh::create("planet root mesh");
 	root_mesh->set_positions(positions_root, 0, true);
 	root_mesh->set_indices(indices_root);
+
+	GL_CHECK_ERROR();
 
 	std::vector<Eigen::Vector3f> positions_child;
 	std::vector<uint32_t> indices_child;
@@ -163,7 +167,10 @@ void Planet::regenerate()
 	child_mesh->set_positions(positions_child, 0, true);
 	child_mesh->set_indices(indices_child);
 
+	GL_CHECK_ERROR();
+
 	root->regenerate(cell_count, cell_width);
+	GL_CHECK_ERROR();
 }
 
 void Planet::tick(double delta_time)
@@ -223,13 +230,23 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 	cell_number = in_cell_number;
 	cell_size = in_width; // in_width;
 
-	if (!height_map || height_map->width() != cell_number * 4 + 4) {
-		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod));
+	if (!height_map || height_map->width() != cell_number * 4 + 4)
+	{
+		GL_CHECK_ERROR();
+		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod), {
+			                                  GL_NEAREST, GL_CLAMP_TO_EDGE
+		                                  });
 		height_map->alloc(cell_number * 4 + 4, cell_number * 4 + 4, GL_R32F, nullptr);
+		GL_CHECK_ERROR();
 	}
-	if (!normal_map || normal_map->width() != cell_number * 4 + 4) {
-		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod));
+	if (!normal_map || normal_map->width() != cell_number * 4 + 4)
+	{
+		GL_CHECK_ERROR();
+		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod), {
+			                                  GL_NEAREST, GL_CLAMP_TO_EDGE
+		                                  });
 		normal_map->alloc(cell_number * 4 + 4, cell_number * 4 + 4, GL_RG16F, nullptr);
+		GL_CHECK_ERROR();
 	}
 
 	rebuild_maps();
@@ -306,12 +323,14 @@ void PlanetRegion::render(Camera& camera) const
 {
 	if (child)
 		child->render(camera);
+	GL_CHECK_ERROR();
 	STAT_DURATION("Render planet lod " + std::to_string(current_lod));
 	// Set uniforms
 	Planet::get_landscape_material()->bind();
-	glUniform1f(3, planet.radius);
+	glUniform1f(Planet::get_landscape_material()->binding("radius"), planet.radius);
 
 	glUniform1f(Planet::get_landscape_material()->binding("cell_width"), planet.cell_width);
+	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"), planet.cell_count * 4 + 2);
 
 	glUniform3fv(Planet::get_landscape_material()->binding("ground_color"), 1, planet.planet_color.data());
 
@@ -320,18 +339,14 @@ void PlanetRegion::render(Camera& camera) const
 
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
+	// Bind maps
+	Planet::get_landscape_material()->bind_texture(height_map, "height_map");
+	Planet::get_landscape_material()->bind_texture(normal_map, "normal_map");
+
 	// Bind textures
-	const int grass_location = Planet::get_landscape_material()->binding("grass");
-	glUniform1i(grass_location, grass_location);
-	grass->bind(grass_location);
-
-	const int rock_location = Planet::get_landscape_material()->binding("rock");
-	glUniform1i(rock_location, rock_location);
-	rock->bind(rock_location);
-
-	const int sand_location = Planet::get_landscape_material()->binding("sand");
-	glUniform1i(sand_location, sand_location);
-	sand->bind(sand_location);
+	Planet::get_landscape_material()->bind_texture(grass, "grass");
+	Planet::get_landscape_material()->bind_texture(rock, "rock");
+	Planet::get_landscape_material()->bind_texture(sand, "sand");
 
 	glEnable(GL_CULL_FACE);
 	glPolygonMode(GL_FRONT_AND_BACK, Engine::get().get_renderer().wireframe ? GL_LINE : GL_FILL);
@@ -363,6 +378,7 @@ struct alignas(16) LandscapeChunkData
 
 void PlanetRegion::rebuild_maps()
 {
+	GL_CHECK_ERROR();
 	STAT_DURATION("rebuild landscape map");
 
 	const LandscapeChunkData chunk_data{
@@ -377,15 +393,22 @@ void PlanetRegion::rebuild_maps()
 	ssbo->set_data(chunk_data);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo->id());
 
+	GL_CHECK_ERROR();
 	planet.get_landscape_material();
+	GL_CHECK_ERROR();
 	height_map->bind_compute_out(0);
+	GL_CHECK_ERROR();
 	compute_positions->bind();
+	GL_CHECK_ERROR();
 	compute_positions->execute(cell_number * 4 + 4, cell_number * 4 + 4, 1);
+	GL_CHECK_ERROR();
 
 	normal_map->bind_compute_out(0);
 	compute_normals->bind();
 	compute_normals->execute(cell_number * 4 + 4, cell_number * 4 + 4, 1);
+	GL_CHECK_ERROR();
 
+	GL_CHECK_ERROR();
 }
 
 void PlanetInformations::draw()

@@ -1,5 +1,3 @@
-
-
 #include "compute_shader.h"
 
 #include <shader_program.h>
@@ -8,6 +6,7 @@
 #include "texture_image.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
+#include "utils/gl_tools.h"
 
 ComputeShader::~ComputeShader()
 {
@@ -33,6 +32,7 @@ void ComputeShader::check_updates()
 
 void ComputeShader::bind()
 {
+	GL_CHECK_ERROR();
 	if (is_dirty)
 		reload_internal();
 
@@ -40,6 +40,7 @@ void ComputeShader::bind()
 		return;
 
 	glUseProgram(compute_shader_id);
+	GL_CHECK_ERROR();
 }
 
 void ComputeShader::execute(int x, int y, int z)
@@ -51,20 +52,25 @@ void ComputeShader::execute(int x, int y, int z)
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
-ComputeShader::ComputeShader(const std::string& in_name) : name(in_name)
+ComputeShader::ComputeShader(const std::string& in_name) : name(in_name), compute_shader_id(0)
 {
 	Engine::get().get_asset_manager().compute_shaders.emplace_back(this);
 	compute_source.on_data_changed.add_object(this, &ComputeShader::mark_dirty);
-
-	compute_shader_id = glCreateProgram();
 }
 
 void ComputeShader::reload_internal()
 {
+	GL_CHECK_ERROR();
+	if (compute_shader_id)
+		glDeleteProgram(compute_shader_id);
+	GL_CHECK_ERROR();
+	compute_shader_id = glCreateProgram();
+	GL_CHECK_ERROR();
 	compilation_error.reset();
 	std::string fragment_error;
 	size_t fragment_error_line;
 	program_compute = std::make_unique<EZCOGL::Shader>(GL_COMPUTE_SHADER);
+	GL_CHECK_ERROR();
 	if (!program_compute->compile(compute_source.get_source_code(), name, fragment_error, fragment_error_line))
 	{
 		size_t local_line;
@@ -78,10 +84,12 @@ void ComputeShader::reload_internal()
 		is_dirty = false;
 		return;
 	}
+	GL_CHECK_ERROR();
 	glAttachShader(compute_shader_id, program_compute->shaderId());
 	glLinkProgram(compute_shader_id);
 	glDetachShader(compute_shader_id, program_compute->shaderId());
 
+	GL_CHECK_ERROR();
 	int infologLength = 0;
 	glGetProgramiv(compute_shader_id, GL_INFO_LOG_LENGTH, &infologLength);
 	if (infologLength > 1)
@@ -101,12 +109,19 @@ void ComputeShader::reload_internal()
 		is_dirty = false;
 		return;
 	}
-	if (compilation_error)
-
+	if (compilation_error) {
+		glDeleteProgram(compute_shader_id);
+		compute_shader_id = 0;
 		glUseProgram(0);
+		return;
+	}
 
-	glUniformBlockBinding(compute_shader_id, glGetUniformBlockIndex(compute_shader_id, "WorldData"), 0);
+	GL_CHECK_ERROR();
+	const int world_data_id = glGetUniformBlockIndex(compute_shader_id, "WorldData");
+	if (world_data_id >= 0)
+		glUniformBlockBinding(compute_shader_id, world_data_id, 0);
 
+	GL_CHECK_ERROR();
 	int uniform_count;
 	glGetProgramiv(compute_shader_id, GL_ACTIVE_UNIFORMS, &uniform_count);
 	for (int i = 0; i < uniform_count; ++i)
@@ -115,8 +130,10 @@ void ComputeShader::reload_internal()
 		int length;
 		int type_size;
 		GLenum type_type;
-		glGetActiveUniform(compute_shader_id, static_cast<GLuint>(i), 256, &length, &type_size, &type_type, uniform_name);
-		bindings.insert({ uniform_name, glGetUniformLocation(compute_shader_id, uniform_name) });
+		glGetActiveUniform(compute_shader_id, static_cast<GLuint>(i), 256, &length, &type_size, &type_type,
+		                   uniform_name);
+		bindings.insert({uniform_name, glGetUniformLocation(compute_shader_id, uniform_name)});
 	}
 	is_dirty = false;
+	GL_CHECK_ERROR();
 }

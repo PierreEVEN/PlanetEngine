@@ -1,5 +1,5 @@
 #include <camera.h>
-#include <texture2d.h>
+#include <imgui.h>
 #include <GL/gl3w.h>
 
 #include "graphics/material.h"
@@ -121,15 +121,9 @@ int main()
 				Engine::get().get_renderer().bind_deferred_combine();
 
 				g_buffer_combine_material->bind();
-				const int color_location = g_buffer_combine_material->binding("color");
-				Engine::get().get_renderer().world_color().bind(color_location);
-				glUniform1i(color_location, color_location);
-				const int normal_location = g_buffer_combine_material->binding("normal");
-				Engine::get().get_renderer().world_normal().bind(normal_location);
-				glUniform1i(normal_location, normal_location);
-				const int depth_location = g_buffer_combine_material->binding("depth");
-				Engine::get().get_renderer().world_depth().bind(depth_location);
-				glUniform1i(depth_location, depth_location);
+				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_color(), "GBUFFER_color");
+				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_normal(), "GBUFFER_normal");
+				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_depth(), "GBUFFER_depth");
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 			// UI

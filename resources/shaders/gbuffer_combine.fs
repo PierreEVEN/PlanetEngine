@@ -57,14 +57,14 @@ vec3 getSceneWorldDirection() {
 
 void main()
 {
-	float depth = texture(depth, uv).r;
+	float depth = texture(GBUFFER_depth, uv).r;
 	float linear_depth = 1 / depth;
 	if (depth <= 0) {
 		oFragmentColor = vec4(0);
 	}
 	else {
-		vec3 col = texture(color, uv).rgb;
-		vec3 norm = normalize(texture(normal, uv).rgb);
+		vec3 col = texture(GBUFFER_color, uv).rgb;
+		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
 		oFragmentColor = vec4(col * max(0, dot(norm, light_dir)), 1);
 	}
 

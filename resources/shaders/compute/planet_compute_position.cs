@@ -20,18 +20,13 @@ vec3 grid_to_sphere_old(vec2 pos, float rho) {
 }
 
 void main() {
-
-
-  vec2 world_coordinates = vec2(gl_GlobalInvocationID.xy) - vec2(Chunk_CellCount) * 2;
-
+  vec2 world_coordinates = vec2(gl_GlobalInvocationID.xy) - vec2(Chunk_CellCount) * 2 - 1.5;
   
-	vec2 vertex_pos = (Chunk_LocalTransform * vec4(world_coordinates.x, 0, world_coordinates.y, 1)).xz;
-	vec3 planet_pos = grid_to_sphere(vertex_pos, Chunk_PlanetRadius);
-  mat3 rot = mat3(Chunk_PlanetTransform);
-  vec3 norm_f64 = normalize(rot * (planet_pos + vec3(Chunk_PlanetRadius, 0, 0)));
-  vec3 out_norm = vec3(norm_f64);
+	vec2 vertex_2d_pos = (Chunk_LocalTransform * vec4(world_coordinates.x, 0, world_coordinates.y, 1)).xz;
+	vec3 vertex_3d_pos = grid_to_sphere(vertex_2d_pos, Chunk_PlanetRadius);
+  vec3 world_normal = normalize(mat3(Chunk_PlanetTransform) * (vertex_3d_pos + vec3(Chunk_PlanetRadius, 0, 0)));
 
-  float h0 = 0;//float(get_height_at_location(norm_f64)) / 1000;//cnoise(norm_f64 * 2000) * 5;
+  float h0 = float(get_height_at_location(world_normal));
 
   imageStore(img_output, ivec2(gl_GlobalInvocationID), vec4(h0, 0, 0, 1));
 }

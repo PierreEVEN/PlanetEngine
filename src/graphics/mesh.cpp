@@ -7,6 +7,7 @@
 
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
+#include "utils/gl_tools.h"
 
 Mesh::~Mesh()
 {
@@ -66,11 +67,13 @@ void Mesh::set_indices(std::vector<uint32_t> in_indices, bool no_update)
 
 void Mesh::draw() const
 {
+	GL_CHECK_ERROR();
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+	GL_CHECK_ERROR();
 }
 
 Mesh::Mesh(const std::string& in_name) : name(in_name)
@@ -87,6 +90,7 @@ Mesh::Mesh(const std::string& in_name, const std::string& path) : Mesh(in_name)
 
 void Mesh::rebuild_mesh_data() const
 {
+	GL_CHECK_ERROR();
 	glBindVertexArray(vao);
 
 	size_t structure_size = 0;
@@ -151,11 +155,9 @@ void Mesh::rebuild_mesh_data() const
 			*reinterpret_cast<Eigen::Vector3f*>(&vertex_begin[current_offset]) = colors[i];
 		}
 	}
-
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, vertex_count * structure_size, vertex_data_memory, GL_STATIC_DRAW);
-
-
+	
 	uint32_t current_offset = 0;
 	if (att_pos >= 0)
 	{
@@ -164,7 +166,7 @@ void Mesh::rebuild_mesh_data() const
 		                      reinterpret_cast<void*>(static_cast<size_t>(current_offset)));
 		current_offset += sizeof(Eigen::Vector3f);
 	}
-	if (att_text_coords)
+	if (att_text_coords >= 0)
 	{
 		glEnableVertexAttribArray(att_text_coords);
 		glVertexAttribPointer(att_text_coords, 3, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(structure_size),
@@ -191,10 +193,11 @@ void Mesh::rebuild_mesh_data() const
 		glVertexAttribPointer(att_colors, 3, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(structure_size),
 		                      reinterpret_cast<void*>(static_cast<size_t>(current_offset)));
 	}
-
+	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size()) * sizeof(uint32_t), indices.data(),
 	             GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
+	GL_CHECK_ERROR();
 }
