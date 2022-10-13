@@ -161,7 +161,6 @@ float cos_minus_one(float x_f) {
 }
 
 float sin_2(float x_f, float rho_f) {
-
     if (abs(x_f) > HALF_PI / 5)
         return sin(float(x_f)) * rho_f;
 
@@ -188,9 +187,8 @@ vec3 grid_to_sphere(vec2 pos, float rho) {
     float cos_y = scaled_cos(norm_pos.y, 1);
     return vec3(
         (cos_minus_one(norm_pos.y)) * rho - cos_y * one_minus_cos(norm_pos.x, rho),
-
-        sin_2(norm_pos.y, rho) * cos_minus_one(norm_pos.y) + sin_2(norm_pos.x, rho),//cos_minus_one(norm_pos.y) * rho - sin(norm_pos.x) * rho, 
-        sin_2 (norm_pos.y, rho)
+        cos_minus_one(norm_pos.y) * sin_2(norm_pos.x, rho) + sin_2(norm_pos.x, rho),
+        sin_2(norm_pos.y, rho)
     );
 }
 
