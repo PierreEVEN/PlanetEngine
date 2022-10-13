@@ -39,7 +39,7 @@ void main()
 	// float h_mean = (h_left + h_right) / 2;
 
 	vec2 vertex_pos = (lod_local_transform * vec4(scaled_pos, 1)).xz;
-	vec3 planet_pos = to_3d_v4(vertex_pos, radius);
+	vec3 planet_pos = grid_to_sphere(vertex_pos, radius);
     mat3 rot = mat3(model);
     vec3 norm_f64 = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
 

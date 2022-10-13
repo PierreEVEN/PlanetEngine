@@ -95,8 +95,11 @@ float get_height_at_location_int(vec3 pos) {
             // Compute transition between ocean and ground
             float transition_scale = (float(cnoise(pos * 1000)) * 0.5 + 0.5) * pow(float(1 - large_hill), 2);
             float transition = float(clamp(glob_height * transition_scale, 0, 1));
+            float transition_beach = float(clamp(glob_height * 20, 0, 1));
 
 
+            float local_noise = float(cnoised(pos * 20000)) * 0.5 + 0.5;
+            float mini_noise = float(cnoised(pos * 100000)) * 0.5 + 0.5;
 
             return float(
                 mix(glob_height, 
@@ -105,7 +108,11 @@ float get_height_at_location_int(vec3 pos) {
                     hill * 500 +
                     highlands * 10000
                 , 
-                transition)
+                transition)  + 
+                mix (0,
+                    local_noise * 30 +
+                    mini_noise * 5,
+                transition_beach)
             );
         }
 

@@ -7,7 +7,7 @@ layout (local_size_x = 16, local_size_y = 16) in;
 
 layout (r32f, binding = 0) uniform image2D img_output;
 
-vec3 to_3d_v42(vec2 pos, float rho) {
+vec3 grid_to_sphere(vec2 pos, float rho) {
     vec2 dpos = pos;
 	vec2 norm_pos = clamp(pos / rho, -HALF_PI, HALF_PI);
 
@@ -26,7 +26,7 @@ void main() {
 
   
 	vec2 vertex_pos = (Chunk_LocalTransform * vec4(world_coordinates.x, 0, world_coordinates.y, 1)).xz;
-	vec3 planet_pos = to_3d_v4(vertex_pos, Chunk_PlanetRadius);
+	vec3 planet_pos = grid_to_sphere(vertex_pos, Chunk_PlanetRadius);
   mat3 rot = mat3(Chunk_PlanetTransform);
   vec3 norm_f64 = normalize(rot * (planet_pos + vec3(Chunk_PlanetRadius, 0, 0)));
   vec3 out_norm = vec3(norm_f64);

@@ -107,8 +107,25 @@ double dcos(double x)
     return dsin(x + 1.57079632679489661923LF);
 }
 
+float scaled_cos(float x_f, float rho_f) {
 
-float cos_2(float x_f, float rho_f) {
+    if (abs(x_f) > HALF_PI / 5)
+        return cos(float(x_f)) * rho_f;
+
+    float rho = float(rho_f);
+    float x = float(x_f);
+    float x_2 = x * x;
+    float x_4 = x_2 * x_2;
+    float x_6 = x_4 * x_4;
+    float x_8 = x_6 * x_6;
+    float x_10 = x_8 * x_8;
+
+    return float(
+        rho_f - x_2 / 2 * rho + x_4 / 24 * rho - x_6 / 720 * rho + x_8 / 40320 * rho - x_10 / 3628800 * rho
+    );
+}
+
+float one_minus_cos(float x_f, float rho_f) {
 
     if (abs(x_f) > HALF_PI / 5)
         return rho_f - cos(float(x_f)) * rho_f;
@@ -126,7 +143,7 @@ float cos_2(float x_f, float rho_f) {
     );
 }
 
-float cos_3(float x_f) {
+float cos_minus_one(float x_f) {
 
     if (abs(x_f) > HALF_PI / 5)
         return cos(float(x_f)) - 1;
@@ -162,14 +179,18 @@ float sin_2(float x_f, float rho_f) {
     );
 }
 
-vec3 to_3d_v4(vec2 pos, float rho) {
+// Cos = 1 - dv2;
+// Sin = dv3
+
+vec3 grid_to_sphere(vec2 pos, float rho) {
     vec2 dpos = pos;
 	vec2 norm_pos = clamp(dpos / rho, -HALF_PI, HALF_PI);
-    float cos_y = cos(norm_pos.y);
+    float cos_y = scaled_cos(norm_pos.y, 1);
     return vec3(
-        (cos_3(norm_pos.y)) * rho - cos_y * cos_2(norm_pos.x, rho),
-        cos_y * sin(norm_pos.x) * rho, 
-        sin (norm_pos.y) * rho
+        (cos_minus_one(norm_pos.y)) * rho - cos_y * one_minus_cos(norm_pos.x, rho),
+
+        sin_2(norm_pos.y, rho) * cos_minus_one(norm_pos.y) + sin_2(norm_pos.x, rho),//cos_minus_one(norm_pos.y) * rho - sin(norm_pos.x) * rho, 
+        sin_2 (norm_pos.y, rho)
     );
 }
 

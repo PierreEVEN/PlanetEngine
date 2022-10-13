@@ -75,7 +75,7 @@ float square_distance(vec3 a, vec3 b) {
 	));
 }
 
-vec3 to_3d_v4(vec2 pos, float rho) {
+vec3 grid_to_sphere(vec2 pos, float rho) {
 	vec2 norm_pos = clamp(pos / rho, -PI / 2, PI / 2);
 
     return rho * vec3(
@@ -135,7 +135,7 @@ void main()
 	float planet_radius = radius;
 	if (morph_to_sphere != 0) {
 		float d = clamp(length(final_pos.xy), 0, planet_radius);
-		final_pos = to_3d_v4(final_pos.xy, planet_radius);
+		final_pos = grid_to_sphere(final_pos.xy, planet_radius);
 		final_pos += normalize(final_pos) * altitude_with_water - vec3(0, 0, planet_radius);
 	}
 	
