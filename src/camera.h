@@ -28,6 +28,7 @@ public:
 
 	void set_pitch(double pitch);
 	void set_yaw(double yaw);
+	void set_roll(double roll);
 
 	[[nodiscard]] double get_pitch() const
 	{
@@ -37,6 +38,11 @@ public:
 	[[nodiscard]] double get_yaw() const
 	{
 		return yaw;
+	}
+
+	[[nodiscard]] double get_roll() const
+	{
+		return roll;
 	}
 
 	void tick(double delta_time) override;
@@ -50,4 +56,5 @@ private:
 
 	double pitch;
 	double yaw;
+	double roll;
 };

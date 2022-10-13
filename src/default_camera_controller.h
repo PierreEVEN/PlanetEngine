@@ -31,6 +31,9 @@ private:
 	double input_sub_x = 0;
 	double input_sub_y = 0;
 	double input_sub_z = 0;
+	double input_add_roll = 0;
+	double input_sub_roll = 0;
+	double target_roll = 0;
 	Eigen::Vector3d camera_desired_position = Eigen::Vector3d(0, 0, 0);
 	double movement_speed = 100;
 	bool capture_input = false;

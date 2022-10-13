@@ -1,6 +1,6 @@
 #include "camera.h"
 
-Camera::Camera() : SceneComponent("camera"), res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0)
+Camera::Camera() : SceneComponent("camera"), res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0), roll(0)
 {
 	update_rotation();
 }
@@ -59,6 +59,12 @@ void Camera::set_yaw(double in_yaw)
 	update_rotation();
 }
 
+void Camera::set_roll(double in_roll)
+{
+	roll = in_roll;
+	update_rotation();
+}
+
 void Camera::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
@@ -68,5 +74,6 @@ void Camera::update_rotation()
 {
 	const auto p = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
 	const auto y = Eigen::AngleAxisd(-yaw, Eigen::Vector3d::UnitZ());
-	set_local_rotation(y * p);
+	const auto r = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+	set_local_rotation(y * r * p);
 }

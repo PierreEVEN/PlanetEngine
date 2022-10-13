@@ -55,6 +55,12 @@ void DefaultCameraController::process_key(GLFWwindow* window, int key, int scan_
 		case GLFW_KEY_LEFT_SHIFT:
 			input_sub_z = 1;
 			break;
+		case GLFW_KEY_Q:
+			input_sub_roll = 1;
+			break;
+		case GLFW_KEY_E:
+			input_add_roll = 1;
+			break;
 		default:
 			break;
 		}
@@ -80,6 +86,12 @@ void DefaultCameraController::process_key(GLFWwindow* window, int key, int scan_
 			break;
 		case GLFW_KEY_LEFT_SHIFT:
 			input_sub_z = 0;
+			break;
+		case GLFW_KEY_Q:
+			input_sub_roll = 0;
+			break;
+		case GLFW_KEY_E:
+			input_add_roll = 0;
 			break;
 		default:
 			break;
@@ -118,6 +130,9 @@ void DefaultCameraController::process_mouse_wheel(GLFWwindow* window, double x_p
 void DefaultCameraController::tick(double delta_time)
 {
 	STAT_DURATION("CameraController_update");
+
+	target_roll = target_roll += (input_add_roll - input_sub_roll) * delta_time;
+	camera->set_roll(target_roll);
 	camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (
 		input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
 	camera->set_local_position(Maths::lerp(camera->get_local_position(), camera_desired_position, 15 * delta_time));
