@@ -3,7 +3,7 @@
 #include "../libs/planet_chunk_data.cginc"
 #include "../libs/landscape.cginc"
 
-layout (local_size_x = 16, local_size_y = 16) in;
+layout (local_size_x = 1, local_size_y = 1) in;
 
 layout (r32f, binding = 0) uniform image2D img_output;
 
@@ -20,7 +20,11 @@ vec3 grid_to_sphere_old(vec2 pos, float rho) {
 }
 
 void main() {
+
   vec2 world_coordinates = vec2(gl_GlobalInvocationID.xy) - vec2(Chunk_CellCount) * 2 - 1.5;
+
+  if (abs(world_coordinates) < Chunk_CellCount - 1 && abs(world_coordinates.y) < Chunk_CellCount - 1)
+    return;
   
 	vec2 vertex_2d_pos = (Chunk_LocalTransform * vec4(world_coordinates.x, 0, world_coordinates.y, 1)).xz;
 	vec3 vertex_3d_pos = grid_to_sphere(vertex_2d_pos, Chunk_PlanetRadius);

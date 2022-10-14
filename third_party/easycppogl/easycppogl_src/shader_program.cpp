@@ -93,8 +93,12 @@ bool Shader::compile(const std::string& src, const std::string& name, std::strin
 			while ((b < line.size()) && (line[b] != ')')) b++;
 			if (b < line.size())
 			{
-				int ln = std::stoi(line.substr(a + 1, b - a - 1));
-				error_lines.push_back(ln);
+				char* end = nullptr;
+				const auto sub_str = line.substr(a + 1, b - a - 1);
+				if (strtol(sub_str.c_str(), &end, 10), *end == 0) {
+					int ln = std::stoi(sub_str);
+					error_lines.push_back(ln);
+				}
 			}
 			std::getline(sserr, line);
 		}
