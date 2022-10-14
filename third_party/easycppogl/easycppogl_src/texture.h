@@ -64,18 +64,12 @@ public:
         return width_;
     }
 
-    inline GLuint bind_compute_in(GLuint img_binding)
+    inline GLuint bind_compute(GLuint img_binding, GLenum in_out)
     {
-        glBindImageTexture(img_binding, id_, 0, GL_FALSE, 0, GL_READ_ONLY, internal_);
+        glBindImageTexture(img_binding, id_, 0, GL_FALSE, 0, in_out, internal_);
         return img_binding;
     }
-
-    inline GLuint bind_compute_out(GLuint img_binding)
-    {
-        glBindImageTexture(img_binding, id_, 0, GL_FALSE, 0, GL_WRITE_ONLY, internal_);
-        return img_binding;
-    }
-
+    
     inline static void unbind_compute_in(GLuint img_binding)
     {
         glBindImageTexture(img_binding, 0, 0, GL_FALSE, 0, GL_READ_ONLY, 0);

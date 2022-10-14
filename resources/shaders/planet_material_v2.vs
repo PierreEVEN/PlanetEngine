@@ -30,13 +30,19 @@ void main()
     mat3 rot = mat3(model);
     vec3 norm_f64 = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
 
-	out_norm = normalize(vec3(texture(normal_map, vec2(0.5)).xy, 1));
-    altitude = texture(height_map, (pos.xz + grid_cell_count / 2) / (grid_cell_count + 2)).r;
+    vec2 coords = (pos.xz + (grid_cell_count) / 2) / (grid_cell_count + 2);
+
+    vec2 packed_normal = texture(normal_map, coords).xy;
+
+	out_norm = normalize(vec3(packed_normal, 1 - length(packed_normal)));
+    altitude = texture(height_map, coords).r;
+
+    debug_scalar = out_norm;
 
     coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));
-    out_norm = vec3(norm_f64);
+    //out_norm = vec3(norm_f64);
     vec4 world_pos = model * vec4(planet_pos, 1.0);
-    world_pos.xyz += out_norm * altitude;
+    world_pos.xyz += norm_f64 * altitude;
 	out_position = world_pos.xyz;
 	gl_Position = pv_matrix * world_pos;
     // out_norm = vec3(final_norm);

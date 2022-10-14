@@ -224,7 +224,6 @@ PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint3
 {
 }
 
-
 void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 {
 	cell_number = in_cell_number;
@@ -234,18 +233,15 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 	if (!height_map || height_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
-		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod), {
-			                                  GL_NEAREST, GL_CLAMP_TO_EDGE
-		                                  });
+		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod),
+		                                  {GL_NEAREST, GL_CLAMP_TO_EDGE});
 		height_map->alloc(map_size, map_size, GL_R32F, nullptr);
 		GL_CHECK_ERROR();
 	}
 	if (!normal_map || normal_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
-		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod), {
-			                                  GL_NEAREST, GL_CLAMP_TO_EDGE
-		                                  });
+		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod), {GL_NEAREST, GL_CLAMP_TO_EDGE});
 		normal_map->alloc(map_size, map_size, GL_RG16F, nullptr);
 		GL_CHECK_ERROR();
 	}
@@ -331,7 +327,8 @@ void PlanetRegion::render(Camera& camera) const
 	glUniform1f(Planet::get_landscape_material()->binding("radius"), planet.radius);
 
 	glUniform1f(Planet::get_landscape_material()->binding("cell_width"), planet.cell_width);
-	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"), planet.cell_count * 4 + 2);
+	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
+	            static_cast<float>(planet.cell_count * 4 + 2));
 
 	glUniform3fv(Planet::get_landscape_material()->binding("ground_color"), 1, planet.planet_color.data());
 
@@ -398,15 +395,13 @@ void PlanetRegion::rebuild_maps()
 
 	GL_CHECK_ERROR();
 	planet.get_landscape_material();
-	GL_CHECK_ERROR();
-	height_map->bind_compute_out(0);
-	GL_CHECK_ERROR();
+	height_map->bind_compute(0, GL_WRITE_ONLY);
 	compute_positions->bind();
-	GL_CHECK_ERROR();
 	compute_positions->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 	GL_CHECK_ERROR();
 
-	normal_map->bind_compute_out(0);
+	normal_map->bind_compute(0, GL_WRITE_ONLY);
+	height_map->bind_compute(1, GL_READ_WRITE);
 	compute_normals->bind();
 	compute_normals->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 	GL_CHECK_ERROR();
