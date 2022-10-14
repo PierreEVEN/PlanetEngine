@@ -156,14 +156,19 @@ void Renderer::submit() const
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	}
 
+	GL_CHECK_ERROR();
 	{
 		STAT_DURATION("ImGui Render");
 		{
 			STAT_DURATION("ImGui pre-render");
 			ImGui::Render();
 		}
+		GL_CHECK_ERROR();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		while (glGetError() != GL_NO_ERROR);
+		GL_CHECK_ERROR();
 	}
+	GL_CHECK_ERROR();
 
 	STAT_DURATION("Swap_buffers");
 	glfwSwapBuffers(main_window);
@@ -237,6 +242,7 @@ void Renderer::init_context()
 	glfwSwapInterval(1); // Enable vsync
 	glfwSetWindowUserPointer(main_window, this);
 
+	GL_CHECK_ERROR();
 	IMGUI_CHECKVERSION();
 	imgui_context = ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -290,14 +296,23 @@ void Renderer::init_context()
 	}
 #endif
 
+	GL_CHECK_ERROR();
 	ImGui::StyleColorsDark(); //ImGui::StyleColorsClassic();
+
+	GL_CHECK_ERROR();
 	ImGui_ImplGlfw_InitForOpenGL(main_window, true);
+
+	GL_CHECK_ERROR();
 	ImGui_ImplOpenGL3_Init(glsl_version);
+	while (glGetError() != GL_NO_ERROR);
+
+	GL_CHECK_ERROR();
 
 	std::cout << glGetString(GL_VENDOR) << std::endl;
 	std::cout << glGetString(GL_RENDERER) << std::endl;
 	std::cout << glGetString(GL_VERSION) << std::endl;
 
+	GL_CHECK_ERROR();
 	int nb_ext;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &nb_ext);
 	uniform_explicit_location_support = false;
@@ -307,6 +322,7 @@ void Renderer::init_context()
 		if (std::string(name) == "GL_ARB_explicit_uniform_location")
 			uniform_explicit_location_support = true;
 	}
+	GL_CHECK_ERROR();
 
 	//necessary for non mutiple of 4 width image loading into texture
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -314,6 +330,7 @@ void Renderer::init_context()
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
+	GL_CHECK_ERROR();
 
 	if (!glfwExtensionSupported("GL_ARB_gpu_shader_fp64"))
 	{
