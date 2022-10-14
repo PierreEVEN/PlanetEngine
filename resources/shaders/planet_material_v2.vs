@@ -2,9 +2,6 @@
 #extension GL_ARB_explicit_uniform_location : enable
 
 #include "libs/world_data.cginc"
-
-#include "libs/world_data.cginc"
-#include "libs/landscape.cginc"
 #include "libs/maths.cginc"
 
 // Inputs
@@ -34,13 +31,12 @@ void main()
     vec3 norm_f64 = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
 
 	out_norm = normalize(vec3(texture(normal_map, vec2(0.5)).xy, 1));
-    altitude = texture(height_map, (pos.xz + grid_cell_count / 2 + 1) / (grid_cell_count + 2)).r;
-	altitude = get_height_at_location_int(norm_f64);
+    altitude = texture(height_map, (pos.xz + grid_cell_count / 2) / (grid_cell_count + 2)).r;
 
     coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));
     out_norm = vec3(norm_f64);
     vec4 world_pos = model * vec4(planet_pos, 1.0);
-    world_pos.xyz += out_norm * altitude_with_water(altitude);
+    world_pos.xyz += out_norm * altitude;
 	out_position = world_pos.xyz;
 	gl_Position = pv_matrix * world_pos;
     // out_norm = vec3(final_norm);

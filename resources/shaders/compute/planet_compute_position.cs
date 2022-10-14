@@ -21,16 +21,19 @@ vec3 grid_to_sphere_old(vec2 pos, float rho) {
 
 void main() {
 
-  vec2 world_coordinates = vec2(gl_GlobalInvocationID.xy) - vec2(Chunk_CellCount) * 2 - 1.5;
+  ivec2 texture_coordinates = ivec2(gl_GlobalInvocationID.xy);
+  ivec2 vertex_pos_2D = ivec2(vec2(gl_GlobalInvocationID.xy) - (vec2(Chunk_CellCount) * 2 + 1));
 
-  if (abs(world_coordinates) < Chunk_CellCount - 1 && abs(world_coordinates.y) < Chunk_CellCount - 1)
+  if (Chunk_CurrentLOD != 0 && abs(vertex_pos_2D.x) < Chunk_CellCount - 1 && abs(vertex_pos_2D.y) < Chunk_CellCount - 1) {
+    imageStore(img_output, ivec2(gl_GlobalInvocationID), vec4(0, 0, 0, 1));
     return;
+  }
   
-	vec2 vertex_2d_pos = (Chunk_LocalTransform * vec4(world_coordinates.x, 0, world_coordinates.y, 1)).xz;
+	vec2 vertex_2d_pos = (Chunk_LocalTransform * vec4(vertex_pos_2D.x, 0, vertex_pos_2D.y, 1)).xz;
 	vec3 vertex_3d_pos = grid_to_sphere(vertex_2d_pos, Chunk_PlanetRadius);
   vec3 world_normal = normalize(mat3(Chunk_PlanetTransform) * (vertex_3d_pos + vec3(Chunk_PlanetRadius, 0, 0)));
 
-  float h0 = float(get_height_at_location(world_normal));
-
+  float h0 = 0;
+  h0 = float(get_height_at_location_int(world_normal));
   imageStore(img_output, ivec2(gl_GlobalInvocationID), vec4(h0, 0, 0, 1));
 }

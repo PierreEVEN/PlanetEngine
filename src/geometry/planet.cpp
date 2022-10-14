@@ -230,22 +230,23 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 	cell_number = in_cell_number;
 	cell_size = in_width; // in_width;
 
-	if (!height_map || height_map->width() != cell_number * 4 + 4)
+	const int map_size = cell_number * 4 + 5;
+	if (!height_map || height_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
 		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod), {
 			                                  GL_NEAREST, GL_CLAMP_TO_EDGE
 		                                  });
-		height_map->alloc(cell_number * 4 + 4, cell_number * 4 + 4, GL_R32F, nullptr);
+		height_map->alloc(map_size, map_size, GL_R32F, nullptr);
 		GL_CHECK_ERROR();
 	}
-	if (!normal_map || normal_map->width() != cell_number * 4 + 4)
+	if (!normal_map || normal_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
 		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod), {
 			                                  GL_NEAREST, GL_CLAMP_TO_EDGE
 		                                  });
-		normal_map->alloc(cell_number * 4 + 4, cell_number * 4 + 4, GL_RG16F, nullptr);
+		normal_map->alloc(map_size, map_size, GL_RG16F, nullptr);
 		GL_CHECK_ERROR();
 	}
 
@@ -374,6 +375,7 @@ struct alignas(16) LandscapeChunkData
 	float Chunk_PlanetRadius;
 	float Chunk_CellWidth;
 	int32_t Chunk_CellCount;
+	int32_t Chunk_CurrentLOD;
 };
 
 void PlanetRegion::rebuild_maps()
@@ -387,6 +389,7 @@ void PlanetRegion::rebuild_maps()
 		.Chunk_PlanetRadius = planet.radius,
 		.Chunk_CellWidth = static_cast<float>(cell_size),
 		.Chunk_CellCount = cell_number,
+		.Chunk_CurrentLOD = static_cast<int32_t>(current_lod),
 	};
 
 	const auto ssbo = StorageBuffer::create("test");
@@ -400,12 +403,12 @@ void PlanetRegion::rebuild_maps()
 	GL_CHECK_ERROR();
 	compute_positions->bind();
 	GL_CHECK_ERROR();
-	compute_positions->execute(cell_number * 4 + 4, cell_number * 4 + 4, 1);
+	compute_positions->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 	GL_CHECK_ERROR();
 
 	normal_map->bind_compute_out(0);
 	compute_normals->bind();
-	compute_normals->execute(cell_number * 4 + 4, cell_number * 4 + 4, 1);
+	compute_normals->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 	GL_CHECK_ERROR();
 
 	GL_CHECK_ERROR();
