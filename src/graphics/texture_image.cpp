@@ -79,8 +79,7 @@ TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) 
 	case TextureWrapping::ClampToBorder: wrapping = GL_CLAMP_TO_BORDER;
 		break;
 	}
-
-
+	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
 

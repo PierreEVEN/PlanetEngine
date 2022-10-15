@@ -251,7 +251,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		                               {
 			                               .wrapping = TextureWrapping::ClampToEdge,
 			                               .filtering_mag = TextureMagFilter::Nearest,
-			                               .filtering_min = TextureMinFilter::MipMap_NearestNearest
+			                               .filtering_min = TextureMinFilter::Nearest
 		                               });
 		height_map->set_data(map_size, map_size, GL_R32F);
 		GL_CHECK_ERROR();
@@ -262,7 +262,7 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 		normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
 			                               .wrapping = TextureWrapping::ClampToEdge,
 			                               .filtering_mag = TextureMagFilter::Nearest,
-			                               .filtering_min = TextureMinFilter::MipMap_NearestNearest
+			                               .filtering_min = TextureMinFilter::Nearest
 		                               });
 		normal_map->set_data(map_size, map_size, GL_RG16F);
 		GL_CHECK_ERROR();
