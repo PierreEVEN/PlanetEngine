@@ -9,7 +9,7 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
-#include "camera.h"
+#include "graphics/camera.h"
 #include "engine.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"

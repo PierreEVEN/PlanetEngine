@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "world.h"
+#include "world/world.h"
 
 static size_t node_index = 0;
 

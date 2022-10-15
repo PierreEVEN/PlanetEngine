@@ -1,16 +1,15 @@
-#include <camera.h>
+#include "graphics/camera.h"
 #include <imgui.h>
 #include <GL/gl3w.h>
 
 #include "graphics/material.h"
 
 #include "default_camera_controller.h"
-#include "world.h"
+#include "world/world.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
-#include "geometry/planet.h"
-#include "graphics/compute_shader.h"
+#include "world/planet.h"
 #include "graphics/primitives.h"
 #include "ui/asset_manager_ui.h"
 #include "ui/graphic_debugger.h"
@@ -38,23 +37,25 @@ int main()
 	ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
 
 	// Create planet
-	const auto main_planet = std::make_shared<Planet>("earth");
-	main_planet->radius = 6000000;
-	main_planet->num_lods = 19;
-	main_planet->cell_count = 40;
-	main_planet->regenerate();
-	main_planet->set_local_position({earth_location, 0, 0});
-	Engine::get().get_world().get_scene_root().add_child(main_planet);
+	const auto earth = std::make_shared<Planet>("earth");
+	earth->radius = 6000000;
+	earth->num_lods = 19;
+	earth->cell_count = 40;
+	earth->regenerate();
+	earth->set_local_position({earth_location, 0, 0});
+	Engine::get().get_world().get_scene_root().add_child(earth);
 
-	const auto secondary_planet = std::make_shared<Planet>("moon");
-	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
-	secondary_planet->radius = 1700000;
-	secondary_planet->num_lods = 18;
-	secondary_planet->cell_count = 40;
-	secondary_planet->regenerate();
-	double planet_rotation = 0;
+	const auto moon = std::make_shared<Planet>("moon");
+	Engine::get().get_world().get_scene_root().add_child(moon);
+	moon->radius = 1700000;
+	moon->num_lods = 18;
+	moon->cell_count = 40;
+	moon->regenerate();
+	double moon_orbit = 0;
+	double moon_rotation = 0;
+	double hearth_rotation = 0;
 
-	main_planet->add_child(Engine::get().get_world().get_camera());
+	earth->add_child(Engine::get().get_world().get_camera());
 
 	const auto default_material = Material::create("standard_material");
 	default_material->load_from_source("resources/shaders/standard_material.vs",
@@ -62,12 +63,12 @@ int main()
 	const auto cube = std::make_shared<MeshComponent>("cube");
 	cube->set_material(default_material);
 	cube->set_mesh(primitives::cube());
-	cube->set_local_position({0, 0, main_planet->radius});
-	main_planet->add_child(cube);
+	cube->set_local_position({0, 0, earth->radius});
+	earth->add_child(cube);
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	camera_controller.teleport_to({0, 0, main_planet->radius + 20});
+	camera_controller.teleport_to({0, 0, earth->radius + 20});
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -79,13 +80,19 @@ int main()
 			// Gameplay
 			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
-			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.0002;
-			secondary_planet->set_local_position(
-				Eigen::Vector3d(std::cos(planet_rotation), 0, std::sin(planet_rotation)) * 30000000 + Eigen::Vector3d(
+			moon_orbit += Engine::get().get_world().get_delta_seconds() * 0.02;
+			moon_rotation += Engine::get().get_world().get_delta_seconds() * 0.2;
+			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.05;
+
+			moon->set_local_position(
+				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000 + Eigen::Vector3d(
 					earth_location, 0, 0));
 
-			main_planet->set_local_rotation(
-				Eigen::Quaterniond(Eigen::AngleAxisd(planet_rotation, Eigen::Vector3d::UnitY())));
+			moon->set_local_rotation(
+				Eigen::Quaterniond(Eigen::AngleAxisd(moon_rotation, Eigen::Vector3d::UnitY())));
+
+			earth->set_local_rotation(
+				Eigen::Quaterniond(Eigen::AngleAxisd(hearth_rotation, Eigen::Vector3d::UnitY())));
 
 			// G_buffers
 			{

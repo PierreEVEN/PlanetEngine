@@ -5,6 +5,7 @@
 
 #include "camera.h"
 #include "engine/engine.h"
+#include "graphics/camera.h"
 #include "utils/maths.h"
 #include "utils/profiler.h"
 

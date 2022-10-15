@@ -4,7 +4,7 @@
 #include <imgui.h>
 #include <GLFW/glfw3.h>
 
-#include "world.h"
+#include "world/world.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
 

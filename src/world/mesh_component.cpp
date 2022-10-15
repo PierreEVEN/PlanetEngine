@@ -4,9 +4,9 @@
 #include <GL/gl3w.h>
 
 
-#include "camera.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
+#include "graphics/camera.h"
 #include "graphics/mesh.h"
 #include "graphics/material.h"
 

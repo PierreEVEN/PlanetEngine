@@ -1,10 +1,9 @@
 ﻿#include <GL/gl3w.h>
 
-#include "camera.h"
+#include "graphics/camera.h"
 #include "planet.h"
 
 #include <imgui.h>
-#include <iostream>
 
 #include "engine/engine.h"
 #include "engine/renderer.h"
@@ -38,16 +37,17 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	if (planet_material)
 		return planet_material;
 	planet_material = Material::create("planet material");
-	planet_material->load_from_source("resources/shaders/planet_material_v2.vs",
-	                                  "resources/shaders/planet_material_v2.fs");
+	planet_material->load_from_source("resources/shaders/planet_material.vs",
+	                                  "resources/shaders/planet_material.fs");
 
 	grass = TextureImage::create("terrain grass", {GL_REPEAT});
 	grass->load("resources/textures/terrain/grass.jpg");
+
 	rock = TextureImage::create("terrain rock", {GL_REPEAT});
 	rock->load("resources/textures/terrain/rock_diffuse.jpg");
+
 	sand = TextureImage::create("terrain sand", {GL_REPEAT});
 	sand->load("resources/textures/terrain/sand_diffuse.jpg");
-
 
 	compute_positions = ComputeShader::create("Planet compute position");
 	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
@@ -377,7 +377,7 @@ void PlanetRegion::render(Camera& camera)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-struct alignas(16) LandscapeChunkData
+struct LandscapeChunkData
 {
 	Eigen::Matrix4f Chunk_LocalTransform;
 	Eigen::Matrix4f Chunk_PlanetTransform;

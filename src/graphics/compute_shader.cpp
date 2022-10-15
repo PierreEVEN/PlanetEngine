@@ -3,7 +3,6 @@
 #include <shader_program.h>
 #include <GL/gl3w.h>
 
-#include "texture_image.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "utils/gl_tools.h"

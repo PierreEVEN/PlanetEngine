@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <cmath>
 
-#include "world.h"
+#include "world/world.h"
 #include "engine/engine.h"
 #include "utils/profiler.h"
 

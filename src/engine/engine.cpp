@@ -7,7 +7,7 @@
 
 #include "asset_manager.h"
 #include "renderer.h"
-#include "world.h"
+#include "world/world.h"
 
 static std::unique_ptr<Engine> engine;
 

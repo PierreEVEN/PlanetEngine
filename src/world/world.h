@@ -15,7 +15,7 @@ public:
 
 	void render_world() const;
 
-	[[nodiscard]] const std::shared_ptr<Camera>& get_camera() const { return camera; }
+	[[nodiscard]] std::shared_ptr<Camera> get_camera() const;
 
 	[[nodiscard]] SceneComponent& get_scene_root() const
 	{

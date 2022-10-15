@@ -3,7 +3,7 @@
 #include <optional>
 #include <GL/gl3w.h>
 
-#include "world.h"
+#include "world/world.h"
 #include <utils/event_manager.h>
 
 #include "shader_source.h"

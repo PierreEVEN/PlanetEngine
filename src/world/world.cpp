@@ -3,20 +3,20 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <thread>
-#include "camera.h"
+#include "graphics/camera.h"
 #include "utils/profiler.h"
 
-struct alignas(16) WorldDataStructure
+struct WorldDataStructure
 {
-	Eigen::Matrix4f proj_matrix;
-	Eigen::Matrix4f view_matrix;
-	Eigen::Matrix4f vp_matrix;
-	Eigen::Matrix4f proj_matrix_inv;
-	Eigen::Matrix4f view_matrix_inv;
-	Eigen::Matrix4f vp_matrix_inv;
-	Eigen::Vector3f camera_pos;
-	Eigen::Vector3f camera_forward;
-	float world_time;
+	alignas(16) Eigen::Matrix4f proj_matrix;
+	alignas(16) Eigen::Matrix4f view_matrix;
+	alignas(16) Eigen::Matrix4f vp_matrix;
+	alignas(16) Eigen::Matrix4f proj_matrix_inv;
+	alignas(16) Eigen::Matrix4f view_matrix_inv;
+	alignas(16) Eigen::Matrix4f vp_matrix_inv;
+	alignas(16) Eigen::Vector3f camera_pos;
+	alignas(16) Eigen::Vector3f camera_forward;
+	alignas(16) float world_time;
 };
 
 World::World() : camera(std::make_shared<Camera>()), root_component(std::make_unique<SceneComponent>("root"))
@@ -41,12 +41,15 @@ void World::tick_world()
 	const double required_delta_s = 1.0 / framerate_limit;
 	{
 		STAT_DURATION("Framerate limiter");
-		do {
+		do
+		{
 			delta_seconds = std::min(glfwGetTime() - last_time, 1.0);
 			if (framerate_limit > 1)
-				std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>(std::max(0.0, required_delta_s - delta_seconds) * 1000000)));
-
-		} while (framerate_limit > 1 && delta_seconds < required_delta_s);
+				std::this_thread::sleep_for(
+					std::chrono::microseconds(
+						static_cast<size_t>(std::max(0.0, required_delta_s - delta_seconds) * 1000000)));
+		}
+		while (framerate_limit > 1 && delta_seconds < required_delta_s);
 	}
 	last_time = glfwGetTime();
 
@@ -59,7 +62,7 @@ void World::tick_world()
 		.view_matrix = view_matrix.cast<float>(),
 		.vp_matrix = pv_matrix.cast<float>(),
 		.proj_matrix_inv = proj_matrix.cast<float>().inverse(),
-		.view_matrix_inv  = view_matrix.cast<float>().inverse(),
+		.view_matrix_inv = view_matrix.cast<float>().inverse(),
 		.vp_matrix_inv = pv_matrix.cast<float>().inverse(),
 		.camera_pos = camera->get_world_position().cast<float>(),
 		.camera_forward = camera->world_forward().cast<float>(),
@@ -77,4 +80,9 @@ void World::render_world() const
 {
 	STAT_DURATION("World render");
 	root_component->render_internal(*camera);
+}
+
+std::shared_ptr<Camera> World::get_camera() const
+{
+	return camera;
 }
