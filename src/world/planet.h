@@ -3,7 +3,7 @@
 #include "ui/ui.h"
 #include "world/scene_component.h"
 
-class TextureImage;
+class Texture2D;
 class Mesh;
 class Material;
 class PlanetRegion;
@@ -63,6 +63,6 @@ private:
 	std::shared_ptr<PlanetRegion> child;
 
 	Eigen::Affine3d lod_local_transform;
-	std::shared_ptr<TextureImage> height_map;
-	std::shared_ptr<TextureImage> normal_map;
+	std::shared_ptr<Texture2D> height_map;
+	std::shared_ptr<Texture2D> normal_map;
 };

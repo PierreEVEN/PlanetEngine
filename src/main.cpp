@@ -9,6 +9,7 @@
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
+#include "graphics/easycppogl_texture.h"
 #include "world/planet.h"
 #include "graphics/primitives.h"
 #include "ui/asset_manager_ui.h"
@@ -109,9 +110,9 @@ int main()
 				g_buffer_combine_material->bind();
 				glUniform1f(g_buffer_combine_material->binding("z_near"),
 				            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
-				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_color(), "GBUFFER_color");
-				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_normal(), "GBUFFER_normal");
-				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_depth(), "GBUFFER_depth");
+				g_buffer_combine_material->bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_color()), "GBUFFER_color");
+				g_buffer_combine_material->bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_normal()), "GBUFFER_normal");
+				g_buffer_combine_material->bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_depth()), "GBUFFER_depth");
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 			// UI

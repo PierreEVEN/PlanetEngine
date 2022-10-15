@@ -3,6 +3,7 @@
 #include <shader_program.h>
 #include <GL/gl3w.h>
 
+#include "texture_image.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "utils/gl_tools.h"
@@ -49,6 +50,22 @@ void ComputeShader::execute(int x, int y, int z)
 
 	glDispatchCompute(x, y, z);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+}
+
+void ComputeShader::bind_texture(const std::shared_ptr<TextureBase>& texture, BindingMode mode, int32_t binding)
+{
+	int in_out = 0;
+	switch (mode) { case BindingMode::In:
+		in_out = GL_READ_ONLY;
+		break;
+	case BindingMode::Out:
+		in_out = GL_WRITE_ONLY;
+		break;
+	case BindingMode::InOut:
+		in_out = GL_READ_WRITE;
+		break;
+	}
+	glBindImageTexture(binding, texture->id(), 0, GL_FALSE, 0, in_out, texture->internal_format());
 }
 
 ComputeShader::ComputeShader(const std::string& in_name) : name(in_name), compute_shader_id(0)

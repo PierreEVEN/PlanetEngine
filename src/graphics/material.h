@@ -8,7 +8,7 @@
 
 #include "shader_source.h"
 
-class TextureImage;
+class Texture2D;
 
 namespace EZCOGL
 {
@@ -44,7 +44,7 @@ public:
 
 	[[nodiscard]] int binding(const std::string& binding_name) const;
 
-	int bind_texture(const std::shared_ptr<TextureImage>& texture, const std::string& binding_name);
+	int bind_texture(const std::shared_ptr<Texture2D>& texture, const std::string& binding_name);
 
 private:
 

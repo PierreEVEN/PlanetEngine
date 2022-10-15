@@ -56,6 +56,8 @@ mesh.h
 mesh_assimp_importer.h
 ubo.h
 ssbo.h
+
+texture_interface.h
 )
 
 set(SOURCE_FILES

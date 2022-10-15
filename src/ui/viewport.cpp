@@ -1,6 +1,7 @@
 #include "viewport.h"
 
 #include <imgui.h>
+#include <texture_interface.h>
 
 #include "engine/engine.h"
 #include "engine/renderer.h"
@@ -26,7 +27,7 @@ void Viewport::draw()
 		Engine::get().get_renderer().resize_framebuffer_internal(nullptr, static_cast<int>(new_res.x), static_cast<int>(new_res.y));
 	}
 	ImGui::Image(
-		reinterpret_cast<ImTextureID>(static_cast<size_t>(Engine::get().get_renderer().get_resolve_texture()->id())),
+		reinterpret_cast<ImTextureID>(static_cast<size_t>(Engine::get().get_renderer().get_resolve_texture()->id_interface())),
 		ImGui::GetContentRegionAvail(), ImVec2(0, 1), ImVec2(1, 0));
 }
 

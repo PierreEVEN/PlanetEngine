@@ -16,9 +16,9 @@
 #include "utils/profiler.h"
 
 static std::shared_ptr<Material> planet_material = nullptr;
-static std::shared_ptr<TextureImage> grass = nullptr;
-static std::shared_ptr<TextureImage> rock = nullptr;
-static std::shared_ptr<TextureImage> sand = nullptr;
+static std::shared_ptr<Texture2D> grass = nullptr;
+static std::shared_ptr<Texture2D> rock = nullptr;
+static std::shared_ptr<Texture2D> sand = nullptr;
 static std::shared_ptr<ComputeShader> compute_positions = nullptr;
 static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 static std::shared_ptr<ComputeShader> fix_seams = nullptr;
@@ -40,14 +40,14 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
 	                                  "resources/shaders/planet_material.fs");
 
-	grass = TextureImage::create("terrain grass", {GL_REPEAT});
-	grass->load("resources/textures/terrain/grass.jpg");
+	grass = Texture2D::create("terrain grass");
+	grass->from_file("resources/textures/terrain/grass.jpg");
 
-	rock = TextureImage::create("terrain rock", {GL_REPEAT});
-	rock->load("resources/textures/terrain/rock_diffuse.jpg");
+	rock = Texture2D::create("terrain rock");
+	rock->from_file("resources/textures/terrain/rock_diffuse.jpg");
 
-	sand = TextureImage::create("terrain sand", {GL_REPEAT});
-	sand->load("resources/textures/terrain/sand_diffuse.jpg");
+	sand = Texture2D::create("terrain sand");
+	sand->from_file("resources/textures/terrain/sand_diffuse.jpg");
 
 	compute_positions = ComputeShader::create("Planet compute position");
 	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
@@ -198,7 +198,8 @@ void Planet::tick(double delta_time)
 	{
 		STAT_DURATION("compute planet global transform");
 		// Get camera direction from planet center
-		const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->get_world_position() -
+		const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->
+			get_world_position() -
 			get_world_position()).normalized();
 
 		// Compute global rotation snapping step
@@ -208,14 +209,15 @@ void Planet::tick(double delta_time)
 		const auto pitch = asin(camera_direction.z());
 		const auto yaw = atan2(camera_direction.y(), camera_direction.x());
 		const auto planet_orientation = get_world_rotation() * Eigen::Affine3d(
-				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
-				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
-			);
+			Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
+			Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
+		);
 		planet_inverse_rotation = planet_orientation.inverse();
 
 		// Compute global planet transformation (ensure ground is always close to origin)
 		planet_global_transform = Eigen::Affine3d::Identity();
-		planet_global_transform.translate(get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
+		planet_global_transform.translate(
+			get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
 		planet_global_transform = planet_global_transform * planet_orientation;
 		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
 	}
@@ -245,16 +247,24 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 	if (!height_map || height_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
-		height_map = TextureImage::create("heightmap_LOD_" + std::to_string(current_lod),
-		                                  {GL_NEAREST, GL_CLAMP_TO_EDGE});
-		height_map->alloc(map_size, map_size, GL_R32F, nullptr);
+		height_map = Texture2D::create("heightmap_LOD_" + std::to_string(current_lod),
+		                               {
+			                               .wrapping = TextureWrapping::ClampToEdge,
+			                               .filtering_mag = TextureMagFilter::Nearest,
+			                               .filtering_min = TextureMinFilter::MipMap_NearestNearest
+		                               });
+		height_map->set_data(map_size, map_size, GL_R32F);
 		GL_CHECK_ERROR();
 	}
 	if (!normal_map || normal_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
-		normal_map = TextureImage::create("normal_LOD_" + std::to_string(current_lod), {GL_NEAREST, GL_CLAMP_TO_EDGE});
-		normal_map->alloc(map_size, map_size, GL_RG16F, nullptr);
+		normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
+			                               .wrapping = TextureWrapping::ClampToEdge,
+			                               .filtering_mag = TextureMagFilter::Nearest,
+			                               .filtering_min = TextureMinFilter::MipMap_NearestNearest
+		                               });
+		normal_map->set_data(map_size, map_size, GL_RG16F);
 		GL_CHECK_ERROR();
 	}
 
@@ -346,7 +356,7 @@ void PlanetRegion::render(Camera& camera)
 
 	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 	                   lod_local_transform.cast<float>().matrix().data());
-	
+
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind maps
@@ -394,7 +404,8 @@ void PlanetRegion::rebuild_maps()
 
 	const LandscapeChunkData chunk_data{
 		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
-		.Chunk_PlanetTransform = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>().matrix(),
+		.Chunk_PlanetTransform = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>()
+		.matrix(),
 		.Chunk_PlanetRadius = planet.radius,
 		.Chunk_CellWidth = static_cast<float>(cell_size),
 		.Chunk_CellCount = cell_number,
@@ -404,19 +415,19 @@ void PlanetRegion::rebuild_maps()
 	const auto ssbo = StorageBuffer::create("test");
 	ssbo->set_data(chunk_data);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo->id());
-	
+
 	planet.get_landscape_material();
-	height_map->bind_compute(0, GL_WRITE_ONLY);
 	compute_positions->bind();
+	compute_positions->bind_texture(height_map, BindingMode::Out, 0);
 	compute_positions->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 
-	height_map->bind_compute(0, GL_READ_WRITE);
 	fix_seams->bind();
+	compute_positions->bind_texture(height_map, BindingMode::InOut, 0);
 	fix_seams->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 
-	height_map->bind_compute(0, GL_READ_ONLY);
-	normal_map->bind_compute(1, GL_WRITE_ONLY);
 	compute_normals->bind();
+	compute_positions->bind_texture(height_map, BindingMode::In, 0);
+	compute_positions->bind_texture(normal_map, BindingMode::Out, 1);
 	compute_normals->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
 
 	GL_CHECK_ERROR();

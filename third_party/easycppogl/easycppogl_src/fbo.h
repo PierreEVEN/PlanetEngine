@@ -37,15 +37,12 @@ class FBO;
 class FBO
 {
 protected:
-	FBO(const std::vector<Texture2D::SP>& textures);
+	FBO(const std::vector<TextureInterface::SP>& textures);
 
 public:
 	using SP = std::shared_ptr<FBO>;
 
-	static inline FBO::SP create(const std::vector<Texture2D::SP>& textures)
-	{
-		return std::shared_ptr<FBO>(new FBO(textures));
-	}
+	static FBO::SP create(const std::vector<TextureInterface::SP>& textures);
 
 	~FBO();
 
@@ -63,19 +60,19 @@ public:
 
 	virtual void resize(int w, int h);
 
-	inline GLint width() const { return tex_.front()->width(); }
+	inline GLint width() const { return tex_.front()->width_interface(); }
 
-	inline GLint height() const { return tex_.front()->height(); }
+	inline GLint height() const { return tex_.front()->height_interface(); }
 
-	inline Texture2D::SP texture(std::size_t i) const { return tex_[i]; }
+	inline TextureInterface::SP texture(std::size_t i) const { return tex_[i]; }
 
 	inline std::size_t nb_textures() const { return tex_.size(); }
 
-	inline virtual Texture2D::SP depth_texture() { return nullptr; }
+	inline virtual TextureInterface::SP depth_texture() { return nullptr; }
 
 protected:
 	GLuint id_;
-	std::vector<Texture2D::SP> tex_;
+	std::vector<TextureInterface::SP> tex_;
 	std::vector<GLenum> attach_;
 
 	static std::vector<std::array<GLint, 5>> stack_viewport_fbo_;
@@ -87,9 +84,9 @@ class FBO_Depth : public FBO
 public:
 	using SP = std::shared_ptr<FBO_Depth>;
 protected:
-	FBO_Depth(const std::vector<Texture2D::SP>& textures, FBO_Depth::SP from = nullptr);
+	FBO_Depth(const std::vector<TextureInterface::SP>& textures, FBO_Depth::SP from = nullptr);
 public:
-	static inline FBO_Depth::SP create(const std::vector<Texture2D::SP>& textures, FBO_Depth::SP from = nullptr)
+	static inline FBO_Depth::SP create(const std::vector<TextureInterface::SP>& textures, FBO_Depth::SP from = nullptr)
 	{
 		return std::shared_ptr<FBO_Depth>(new FBO_Depth(textures,from));
 	}
@@ -104,24 +101,21 @@ protected:
 class FBO_DepthTexture : public FBO
 {
 protected:
-	FBO_DepthTexture(const std::vector<Texture2D::SP>& textures, Texture2D::SP from = nullptr);
+	FBO_DepthTexture(const std::vector<TextureInterface::SP>& textures, TextureInterface::SP from = nullptr);
 
-	FBO_DepthTexture(const std::vector<Texture2D::SP>& textures, std::shared_ptr<FBO_DepthTexture> from = nullptr);
+	FBO_DepthTexture(const std::vector<TextureInterface::SP>& textures, std::shared_ptr<FBO_DepthTexture> from = nullptr);
 
 public:
 	using SP = std::shared_ptr<FBO_DepthTexture>;
 
-	static inline FBO_DepthTexture::SP create(const std::vector<Texture2D::SP>& textures, Texture2D::SP from = nullptr)
-	{
-		return std::shared_ptr<FBO_DepthTexture>(new FBO_DepthTexture(textures,from));
-	}
+	static FBO_DepthTexture::SP create(const std::vector<TextureInterface::SP>& textures, TextureInterface::SP from = nullptr);
 
 	void resize(int w, int h) override;
 
-	inline Texture2D::SP depth_texture() override { return depth_tex_; }
+	inline TextureInterface::SP depth_texture() override { return depth_tex_; }
 
 protected:
-	Texture2D::SP depth_tex_;
+	TextureInterface::SP depth_tex_;
 };
 
 }

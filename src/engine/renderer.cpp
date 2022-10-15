@@ -11,6 +11,7 @@
 
 #include "graphics/camera.h"
 #include "engine.h"
+#include "graphics/easycppogl_texture.h"
 #include "graphics/material.h"
 #include "graphics/texture_image.h"
 #include "utils/gl_tools.h"
@@ -34,25 +35,25 @@ Renderer::Renderer()
 	}
 	GL_CHECK_ERROR();
 
-	std::vector<std::shared_ptr<EZCOGL::Texture2D>> textures;
+	std::vector<std::shared_ptr<EZCOGL::TextureInterface>> textures;
 	// GBuffer color
-	g_buffer_color = TextureImage::create("gbuffer-color");
-	g_buffer_color->alloc(default_window_res.x(), default_window_res.y(), GL_RGB16F, nullptr);
+	g_buffer_color = EasyCppOglTexture::create("gbuffer-color");
+	g_buffer_color->set_data_interface(default_window_res.x(), default_window_res.y(), GL_RGB16F);
 	textures.push_back(g_buffer_color);
 
 	// GBuffer normal
-	g_buffer_normal = TextureImage::create("gbuffer-normal");
-	g_buffer_normal->alloc(default_window_res.x(), default_window_res.y(), GL_RGB16F, nullptr);
+	g_buffer_normal = EasyCppOglTexture::create("gbuffer-normal");
+	g_buffer_normal->set_data_interface(default_window_res.x(), default_window_res.y(), GL_RGB16F);
 	textures.push_back(g_buffer_normal);
 
 	// GBuffer depth
-	g_buffer_depth = TextureImage::create("gbuffer-depths");
-	g_buffer_depth->alloc(default_window_res.x(), default_window_res.y(), GL_DEPTH_COMPONENT32F, nullptr);
+	g_buffer_depth = EasyCppOglTexture::create("gbuffer-depths");
+	g_buffer_depth->set_data_interface(default_window_res.x(), default_window_res.y(), GL_DEPTH_COMPONENT32F);
 	g_buffer = EZCOGL::FBO_DepthTexture::create(textures, g_buffer_depth);
 
 	// Resolve buffer
-	resolve_texture = TextureImage::create("resolve");
-	resolve_texture->alloc(default_window_res.x(), default_window_res.y(), GL_RGB8, nullptr);
+	resolve_texture = EasyCppOglTexture::create("resolve");
+	resolve_texture->set_data_interface(default_window_res.x(), default_window_res.y(), GL_RGB8);
 	textures.push_back(g_buffer_normal);
 	resolve_framebuffer = EZCOGL::FBO::create({resolve_texture});
 

@@ -6,12 +6,19 @@
 
 #include "shader_source.h"
 
-class TextureImage;
+class TextureBase;
 
 namespace EZCOGL
 {
 	class Shader;
 }
+
+enum class BindingMode
+{
+	In,
+	Out,
+	InOut
+};
 
 class ComputeShader
 {
@@ -36,6 +43,9 @@ public:
 
 	void bind();
 	void execute(int x, int y, int z);
+
+	void bind_texture(const std::shared_ptr<TextureBase>& texture, BindingMode mode, int32_t binding);
+
 private:
 
 	ComputeShader(const std::string& in_name);

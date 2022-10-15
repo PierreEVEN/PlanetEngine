@@ -1,16 +1,104 @@
 #pragma once
 #include <memory>
 #include <string>
-#include <texture2d.h>
 
-class TextureImage : public EZCOGL::Texture2D
+enum class TextureWrapping
+{
+	Repeat,
+	MirroredRepeat,
+	ClampToEdge,
+	ClampToBorder
+};
+
+enum class TextureMagFilter
+{
+	Nearest,
+	Linear
+};
+
+enum class TextureMinFilter
+{
+	Nearest,
+	Linear,
+	MipMap_NearestNearest,
+	MipMap_LinearNearest,
+	MipMap_NearestLinear,
+	MipMap_LinearLinear
+};
+
+struct TextureCreateInfos
+{
+	TextureWrapping wrapping = TextureWrapping::Repeat;
+	TextureMagFilter filtering_mag = TextureMagFilter::Linear;
+	TextureMinFilter filtering_min = TextureMinFilter::MipMap_LinearLinear;
+};
+
+class TextureBase
 {
 public:
-	virtual ~TextureImage();
+	virtual ~TextureBase();
 
-	static std::shared_ptr<TextureImage> create(const std::string& name, const std::vector<GLenum>& params = {});
+	static std::shared_ptr<TextureBase> create(const std::string& name, const TextureCreateInfos& params = {});
 
+	[[nodiscard]] int32_t width() const { return image_width; }
+	[[nodiscard]] int32_t height() const { return image_height; }
+	[[nodiscard]] virtual int32_t depth() const { return image_depth; }
+	[[nodiscard]] uint32_t id() const { return texture_id; }
+	[[nodiscard]] uint32_t internal_format() const { return image_format; }
 	const std::string name;
-private:
-	TextureImage(std::string name, const std::vector<GLenum>& params = {});
+	void bind(uint32_t unit = 0) const;
+	bool is_depth() const;
+protected:
+	TextureBase(std::string name, const TextureCreateInfos& params = {});
+	int32_t image_width;
+	int32_t image_height;
+	int32_t image_depth;
+	uint32_t texture_id;
+	uint32_t image_format;
+	uint32_t external_format;
+	uint32_t data_format;
 };
+
+class Texture2D : public TextureBase
+{
+public:
+	virtual ~Texture2D() = default;
+
+	static std::shared_ptr<Texture2D> create(const std::string& name, const TextureCreateInfos& params = {})
+	{
+		return std::shared_ptr<Texture2D>(new Texture2D(name, params));
+	}
+
+	[[nodiscard]] int32_t depth() const override { return 1; }
+	bool from_file(const std::string& filename, int force_nb_channel = 0);
+	void set_data(int32_t w, int32_t h, uint32_t image_format, const void* data_ptr = nullptr);
+
+protected:
+	Texture2D(std::string name, const TextureCreateInfos& params = {}) : TextureBase(name, params)
+	{
+	}
+};
+
+class TextureCube : public TextureBase
+{
+public:
+	virtual ~TextureCube() = default;
+
+	static std::shared_ptr<TextureCube> create(const std::string& name, const TextureCreateInfos& params = {})
+	{
+		return std::shared_ptr<TextureCube>(new TextureCube(name, params));
+	}
+
+	[[nodiscard]] int32_t depth() const override { return 6; }
+
+	bool from_file(const std::string& file_x, const std::string& file_y, const std::string& file_z,
+	               const std::string& file_mx, const std::string& file_my, const std::string& file_mz,
+	               int force_nb_channel = 0);
+
+	void set_data(int32_t w, int32_t h, uint32_t image_format, const void* data_ptr = nullptr);
+protected:
+	TextureCube(std::string name, const TextureCreateInfos& params = {}) : TextureBase(name, params)
+	{
+	}
+};
+

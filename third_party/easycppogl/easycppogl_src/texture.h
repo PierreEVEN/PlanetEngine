@@ -28,59 +28,68 @@
 #include <vector>
 #include <memory>
 
-namespace EZCOGL {
+#include "texture_interface.h"
 
-class Texture
+namespace EZCOGL
 {
-protected:
-    GLuint id_;
-    GLint internal_;
-    GLenum external_;
-    GLenum data_type_;
-    GLsizei width_;
-    bool depth_;
 
-protected:
-    inline Texture() :
-        id_(0),
-        internal_(0),
-        external_(0),
-        data_type_(0),
-        width_(0),
-        depth_(false)
-    {}
+	class Texture : public TextureInterface
+	{
+	protected:
+		GLuint id_;
+		GLint internal_;
+		GLenum external_;
+		GLenum data_type_;
+		GLsizei width_;
+		bool depth_;
 
-public:
-	static bool flip_y_on_load;
-    static std::map<GLint, std::pair<GLenum, GLenum>> texture_formats;
+	protected:
+		inline Texture() :
+			id_(0),
+			internal_(0),
+			external_(0),
+			data_type_(0),
+			width_(0),
+			depth_(false)
+		{
+		}
 
-    inline GLuint id()
-    {
-        return id_;
-    }
+	public:
+		static bool flip_y_on_load;
+		static std::map<GLint, std::pair<GLenum, GLenum>> texture_formats;
 
-    inline GLsizei width() const
-    {
-        return width_;
-    }
+		inline virtual GLuint id()
+		{
+			return id_;
+		}
 
-    inline GLuint bind_compute(GLuint img_binding, GLenum in_out)
-    {
-        glBindImageTexture(img_binding, id_, 0, GL_FALSE, 0, in_out, internal_);
-        return img_binding;
-    }
-    
-    inline static void unbind_compute_in(GLuint img_binding)
-    {
-        glBindImageTexture(img_binding, 0, 0, GL_FALSE, 0, GL_READ_ONLY, 0);
-    }
+		int id_interface() override { return id(); }
 
-    inline static void unbind_compute_out(GLuint img_binding)
-    {
-        glBindImageTexture(img_binding, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, 0);
-    }
+		inline virtual GLsizei width() const
+		{
+			return width_;
+		}
+		GLsizei width_interface() const override
+		{
+			return width();
+		}
 
-};
+		inline GLuint bind_compute(GLuint img_binding, GLenum in_out)
+		{
+			glBindImageTexture(img_binding, id_, 0, GL_FALSE, 0, in_out, internal_);
+			return img_binding;
+		}
+
+		inline static void unbind_compute_in(GLuint img_binding)
+		{
+			glBindImageTexture(img_binding, 0, 0, GL_FALSE, 0, GL_READ_ONLY, 0);
+		}
+
+		inline static void unbind_compute_out(GLuint img_binding)
+		{
+			glBindImageTexture(img_binding, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, 0);
+		}
+	};
 }
 
 #endif

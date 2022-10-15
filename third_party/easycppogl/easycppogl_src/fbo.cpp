@@ -27,18 +27,23 @@ namespace EZCOGL
 {
 	std::vector<std::array<GLint, 5>> FBO::stack_viewport_fbo_ = {};
 
-	FBO::FBO(const std::vector<Texture2D::SP>& textures)
+	FBO::FBO(const std::vector<TextureInterface::SP>& textures)
 	{
 		glGenFramebuffers(1, &id_);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id_);
 		GLenum att = GL_COLOR_ATTACHMENT0;
 		for (auto t : textures)
 		{
-			glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, att, GL_TEXTURE_2D, t->id(), 0);
+			glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, att, GL_TEXTURE_2D, t->id_interface(), 0);
 			tex_.push_back(t);
 			attach_.push_back(att++);
 		}
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	}
+
+	FBO::SP FBO::create(const std::vector<TextureInterface::SP>& textures)
+	{
+		return std::shared_ptr<FBO>(new FBO(textures));
 	}
 
 	FBO::~FBO()
@@ -50,7 +55,7 @@ namespace EZCOGL
 	void FBO::bind()
 	{
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id_);
-		glViewport(0, 0, tex_[0]->width(), tex_[0]->height());
+		glViewport(0, 0, tex_[0]->width_interface(), tex_[0]->height_interface());
 		glDrawBuffers(GLsizei(attach_.size()), attach_.data());
 	}
 
@@ -85,11 +90,11 @@ namespace EZCOGL
 	void FBO::resize(int w, int h)
 	{
 		for (auto t : tex_)
-			t->resize(w, h);
+			t->resize_interface(w, h);
 	}
 
 
-	FBO_Depth::FBO_Depth(const std::vector<Texture2D::SP>& textures, FBO_Depth::SP from):
+	FBO_Depth::FBO_Depth(const std::vector<TextureInterface::SP>& textures, FBO_Depth::SP from):
 		FBO(textures)
 	{
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id_);
@@ -106,7 +111,7 @@ namespace EZCOGL
 			glGenRenderbuffers(1, &depth_render_buffer_);
 			local_depth_storage_ = true;
 			glBindRenderbuffer(GL_RENDERBUFFER, depth_render_buffer_);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, tex_[0]->width(), tex_[0]->height());
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, tex_[0]->width_interface(), tex_[0]->height_interface());
 			glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_render_buffer_);
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		}
@@ -128,7 +133,7 @@ namespace EZCOGL
 	}
 
 
-	FBO_DepthTexture::FBO_DepthTexture(const std::vector<Texture2D::SP>& textures, Texture2D::SP dt):
+	FBO_DepthTexture::FBO_DepthTexture(const std::vector<TextureInterface::SP>& textures, TextureInterface::SP dt):
 		FBO(textures)
 	{
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id_);
@@ -139,13 +144,13 @@ namespace EZCOGL
 		else
 		{
 			depth_tex_ = Texture2D::create({GL_NEAREST});
-			depth_tex_->init(GL_DEPTH_COMPONENT32F);
+			depth_tex_->init_interface(GL_DEPTH_COMPONENT32F);
 		}
-		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex_->id(), 0);
+		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex_->id_interface(), 0);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	}
 
-	FBO_DepthTexture::FBO_DepthTexture(const std::vector<Texture2D::SP>& textures,
+	FBO_DepthTexture::FBO_DepthTexture(const std::vector<TextureInterface::SP>& textures,
 	                                   std::shared_ptr<FBO_DepthTexture> from):
 		FBO(textures)
 	{
@@ -156,16 +161,22 @@ namespace EZCOGL
 		else
 		{
 			depth_tex_ = Texture2D::create({GL_NEAREST});
-			depth_tex_->init(GL_DEPTH_COMPONENT32F);
+			depth_tex_->init_interface(GL_DEPTH_COMPONENT32F);
 		}
-		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex_->id(), 0);
+		glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_tex_->id_interface(), 0);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	}
+
+	FBO_DepthTexture::SP FBO_DepthTexture::create(const std::vector<TextureInterface::SP>& textures,
+		TextureInterface::SP from)
+	{
+		return std::shared_ptr<FBO_DepthTexture>(new FBO_DepthTexture(textures, from));
 	}
 
 
 	void FBO_DepthTexture::resize(int w, int h)
 	{
 		FBO::resize(w, h);
-		depth_tex_->resize(w, h);
+		depth_tex_->resize_interface(w, h);
 	}
 }

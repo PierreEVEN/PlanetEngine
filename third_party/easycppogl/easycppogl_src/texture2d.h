@@ -27,98 +27,104 @@
 
 namespace EZCOGL
 {
-
-
 	class GLImage
-    {
-        GLubyte* data_;
-        GLint width_;
-        GLint height_;
-        GLint bpp_;
+	{
+		GLubyte* data_;
+		GLint width_;
+		GLint height_;
+		GLint bpp_;
 
-    public:
-    inline GLImage() :
-            data_(nullptr), width_(0), height_(0), bpp_(0)
-        {}
-    GLImage(const std::string& filename, bool yinvert = true, int force_channels = 0);
-    ~GLImage();
-    inline GLint depth() const { return bpp_;}
-    inline GLint width() const { return width_;}
-    inline GLint height() const { return height_;}
-    inline const GLubyte* data() const { return data_;}
-};
+	public:
+		inline GLImage() :
+			data_(nullptr), width_(0), height_(0), bpp_(0)
+		{
+		}
 
-class Texture2D:public Texture
-{
-protected:
-
-    GLsizei height_;
-    bool depth_;
-
-    Texture2D(const std::vector<GLenum>& params = {});
-
-public:
-    using SP = std::shared_ptr<Texture2D>;
-
-    ~Texture2D();
-
-    static Texture2D::SP create(const std::vector<GLenum>& params = {})
-    {
-        return Texture2D::SP(new Texture2D(params));
-    }
-
-    Texture2D(const Texture2D&) = delete ;
+		GLImage(const std::string& filename, bool yinvert = true, int force_channels = 0);
+		~GLImage();
+		inline GLint depth() const { return bpp_; }
+		inline GLint width() const { return width_; }
+		inline GLint height() const { return height_; }
+		inline const GLubyte* data() const { return data_; }
+	};
 
 
+	class Texture2D : public Texture
+	{
+	protected:
+		GLsizei height_;
+		bool depth_;
 
-    void simple_params(const std::vector<GLenum>& params);
+		Texture2D(const std::vector<GLenum>& params = {});
 
-    void alloc(GLsizei w, GLsizei h, GLint internal, const GLubyte* ptr=nullptr);
+	public:
+		using SP = std::shared_ptr<Texture2D>;
 
-    void init(GLint internal);
+		~Texture2D();
 
-	bool load(const std::string& filename, GLint force_nb_channel = 0);
+		static Texture2D::SP create(const std::vector<GLenum>& params = {})
+		{
+			return Texture2D::SP(new Texture2D(params));
+		}
 
-    void resize(GLsizei w, GLsizei h);
-
-    template <typename T>
-    void update(GLint x, GLint y, GLint w, GLint h, const T* data);
-
-
-
-    inline GLsizei height() const
-    {
-        return height_;
-    }
-
-    inline void bind()
-    {
-        glBindTexture(GL_TEXTURE_2D, id());
-    }
-
-    inline GLint bind(GLint unit)
-    {
-        glActiveTexture(GL_TEXTURE0 + unit);
-        glBindTexture(GL_TEXTURE_2D, id());
-        return unit;
-    }
-
-    inline static void unbind()
-    {
-        glBindTexture(GL_TEXTURE_2D,0);
-    }
+		Texture2D(const Texture2D&) = delete ;
 
 
-};
+		void simple_params(const std::vector<GLenum>& params);
 
-template <typename T>
-void Texture2D::update(GLint x, GLint y,GLint w, GLint h, const T* data)
-{
-    bind();
-    glTexSubImage2D(GL_TEXTURE_2D, 0, x,y,w,h, external_, data_type_, reinterpret_cast<const void*>(data));
-    unbind();
-}
+		virtual void alloc(GLsizei w, GLsizei h, GLint internal, const GLubyte* ptr = nullptr);
+
+		virtual void init(GLint internal);
+
+		void init_interface(GLint internal) override
+		{
+			init(internal);
+		}
+
+		virtual bool load(const std::string& filename, GLint force_nb_channel = 0);
+
+		virtual void resize(GLsizei w, GLsizei h);
+
+		void resize_interface(GLsizei w, GLsizei h) override
+		{
+			resize(w, h);
+		}
+
+		template <typename T>
+		void update(GLint x, GLint y, GLint w, GLint h, const T* data);
 
 
+		inline GLsizei height() const
+		{
+			return height_;
+		}
+
+		GLsizei height_interface() const override { return height(); }
+
+		inline virtual void bind()
+		{
+			glBindTexture(GL_TEXTURE_2D, id());
+		}
+
+		inline virtual GLint bind(GLint unit)
+		{
+			glActiveTexture(GL_TEXTURE0 + unit);
+			glBindTexture(GL_TEXTURE_2D, id());
+			return unit;
+		}
+
+		inline static void unbind()
+		{
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+	};
+
+	template <typename T>
+	void Texture2D::update(GLint x, GLint y, GLint w, GLint h, const T* data)
+	{
+		bind();
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, external_, data_type_, reinterpret_cast<const void*>(data));
+		unbind();
+	}
 }
 #endif
