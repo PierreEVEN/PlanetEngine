@@ -26,11 +26,10 @@ static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 
 static double snap(double value, double delta) { return round(value / delta) * delta; }
 
-Planet::Planet(const World& in_world) : SceneComponent("planet"), world(in_world)
+Planet::Planet(const std::string& name) : SceneComponent(name), world(Engine::get().get_world())
 {
-	root = std::make_shared<PlanetRegion>(*this, in_world, 16, 0);
+	root = std::make_shared<PlanetRegion>(*this, world, 16, 0);
 	regenerate();
-	ImGuiWindow::create_window<PlanetInformations>(this);
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -56,6 +55,20 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	compute_normals->load_from_source("resources/shaders/compute/planet_compute_normals.cs");
 
 	return planet_material;
+}
+
+void Planet::draw_ui()
+{
+	SceneComponent::draw_ui();
+	ImGui::Checkbox("Double sided", &double_sided);
+	ImGui::Checkbox("Fragment Normals", &fragment_normals);
+	ImGui::SliderInt("num LODs : ", &num_lods, 1, 40);
+	ImGui::DragFloat("radius : ", &radius, 10);
+	if (ImGui::SliderInt("cell number", &cell_count, 1, 40) ||
+		ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
+		regenerate();
+	ImGui::Separator();
+	ImGui::ColorPicker3("color", planet_color.data());
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
@@ -407,17 +420,4 @@ void PlanetRegion::rebuild_maps()
 	GL_CHECK_ERROR();
 
 	GL_CHECK_ERROR();
-}
-
-void PlanetInformations::draw()
-{
-	ImGui::Checkbox("Double sided", &planet->double_sided);
-	ImGui::Checkbox("Fragment Normals", &planet->fragment_normals);
-	ImGui::SliderInt("num LODs : ", &planet->num_lods, 1, 40);
-	ImGui::DragFloat("radius : ", &planet->radius, 10);
-	if (ImGui::SliderInt("cell number", &planet->cell_count, 1, 40) ||
-		ImGui::SliderFloat("cell_width : ", &planet->cell_width, 0.05f, 10))
-		planet->regenerate();
-	ImGui::Separator();
-	ImGui::ColorPicker3("color", planet->planet_color.data());
 }

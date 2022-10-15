@@ -73,7 +73,7 @@ public:
 			world_transform = Eigen::Affine3d::Identity();
 			world_transform.translate(local_position);
 			world_transform.rotate(local_rotation);
-			world_transform.scale(local_scale);
+			world_transform.scale(local_scale); //@TODO : fix scale
 			if (parent)
 				world_transform = parent->get_world_transform() * world_transform;
 
@@ -97,31 +97,17 @@ public:
 		return get_world_transform().rotation() * Eigen::Vector3d(0, 0, 1);
 	}
 
-	void add_child(const std::shared_ptr<SceneComponent>& new_child)
-	{
-		if (!new_child)
-			return;
+	void add_child(const std::shared_ptr<SceneComponent>& new_child);
 
-		if (new_child->parent == this)
-			return;
-
-		new_child->detach();
-		new_child->parent = this;
-		children.push_back(new_child);
-	}
-
-	void detach()
-	{
-		if (parent)
-			for (size_t i = 0; i < parent->children.size(); ++i)
-				if (parent->children[i].get() == this)
-					parent->children.erase(parent->children.begin() + i);
-		parent = nullptr;
-	}
+	void detach();
 
 	[[nodiscard]] const std::vector<std::shared_ptr<SceneComponent>>& get_children() const { return children; }
 
+	[[nodiscard]] SceneComponent* get_parent() const { return parent; }
+
 	const std::string name;
+
+	virtual void draw_ui();
 
 protected:
 	virtual void tick(double delta_time)

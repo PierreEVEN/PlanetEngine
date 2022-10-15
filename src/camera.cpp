@@ -1,5 +1,7 @@
 #include "camera.h"
 
+#include <imgui.h>
+
 Camera::Camera() : SceneComponent("camera"), res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0), roll(0)
 {
 	update_rotation();
@@ -24,7 +26,7 @@ Eigen::Matrix4d Camera::projection_matrix() const
 
 Eigen::Matrix4d Camera::reversed_z_projection_matrix() const
 {
-	const auto tan_h_fov = 1.0 / std::tan(camera_fov / 2.0);
+	const auto tan_h_fov = 1.0 / std::tan(camera_fov / 360 * M_PI);
 	const auto aspect_ratio = res.x() / res.y();
 
 	Eigen::Matrix4d m;
@@ -68,6 +70,19 @@ void Camera::set_roll(double in_roll)
 void Camera::tick(double delta_time)
 {
 	SceneComponent::tick(delta_time);
+}
+
+void Camera::draw_ui()
+{
+	SceneComponent::draw_ui();
+	auto fov = static_cast<float>(camera_fov);
+	if (ImGui::SliderFloat("FOV", &fov, 1, 179))
+		camera_fov = fov;
+	auto near = static_cast<float>(camera_near);
+	if (ImGui::DragFloat("Z near", &near, 0.01f))
+		camera_near = near;
+	if (camera_near < 0.001)
+		camera_near = 0.001;
 }
 
 void Camera::update_rotation()

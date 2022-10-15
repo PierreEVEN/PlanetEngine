@@ -8,7 +8,7 @@ float getAtmosphereDensityAtLocation(vec3 location) {
 
     float groundDistance = distance_from_planet_center - planetRadius;
 	float atmosphere_altitude = atmosphereRadius - planetRadius;
-    float heightFactor = clamp(groundDistance / atmosphere_altitude, 0, 1);
+    float heightFactor = groundDistance / atmosphere_altitude;
     return exp(-heightFactor * atmosphereDensityFalloff) * (1 - heightFactor ) / atmosphere_altitude;
 }
 

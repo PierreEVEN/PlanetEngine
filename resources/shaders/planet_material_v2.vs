@@ -13,6 +13,7 @@ layout(location = 1) out vec3 debug_scalar;
 layout(location = 2) out vec3 out_position;
 layout(location = 3) out float altitude;
 layout(location = 4) out vec2 coordinates;
+layout(location = 5) out float planet_radius;
 
 layout(location = 1) uniform mat4 model;
 layout(location = 2) uniform mat4 lod_local_transform;
@@ -40,10 +41,11 @@ void main()
     debug_scalar = out_norm;
 
     coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));
-    //out_norm = vec3(norm_f64);
+    out_norm = vec3(norm_f64);
     vec4 world_pos = model * vec4(planet_pos, 1.0);
     world_pos.xyz += norm_f64 * altitude;
 	out_position = world_pos.xyz;
 	gl_Position = pv_matrix * world_pos;
+    planet_radius = radius;
     // out_norm = vec3(final_norm);
 }

@@ -7,15 +7,15 @@ precision highp float;
 out vec4 oFragmentColor;
 
 layout(location = 0) in vec2 uv;
-
+uniform float z_near;
 
 int NumScatterPoints = 5;
 int NumOpticalDepthPoints = 5;
 vec3 planetCenter = vec3(0,0, -6000000);
-float atmosphereRadius = 6100000;
+float atmosphereRadius = 6400000;
 float planetRadius = 6000000;
-float atmosphereDensityFalloff = 0.5;
-float scatter_strength = 1;
+float atmosphereDensityFalloff = 3;
+float scatter_strength = 2;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
 
@@ -58,14 +58,15 @@ vec3 getSceneWorldDirection() {
 void main()
 {
 	float depth = texture(GBUFFER_depth, uv).r;
-	float linear_depth = 1 / depth;
+	float linear_depth = z_near / depth;
+
 	if (depth <= 0) {
 		oFragmentColor = vec4(0);
 	}
 	else {
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
-		oFragmentColor = vec4(col * max(0, dot(norm, light_dir)), 1);
+		oFragmentColor = vec4(col * pow(max(0, dot(norm, light_dir)), 0.7), 1) * 1.2;
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());

@@ -1,5 +1,6 @@
 #include "mesh_component.h"
 
+#include <imgui.h>
 #include <GL/gl3w.h>
 
 
@@ -25,4 +26,11 @@ void MeshComponent::render(Camera& camera)
 	material->set_model_transform(transform);
 	mesh->draw();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void MeshComponent::draw_ui()
+{
+	SceneComponent::draw_ui();
+	ImGui::Text("mesh : %s", mesh ? mesh->name.c_str() : "none");
+	ImGui::Text("material : %s", material ? material->name.c_str() : "none");
 }

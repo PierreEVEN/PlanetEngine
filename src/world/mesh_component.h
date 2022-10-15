@@ -31,6 +31,7 @@ public:
 
 	virtual void render(Camera& camera) override;
 
+	void draw_ui() override;
 private:
 	std::shared_ptr<Material> material;
 	std::shared_ptr<Mesh> mesh;

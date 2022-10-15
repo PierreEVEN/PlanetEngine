@@ -46,6 +46,14 @@ public:
 	}
 
 	void tick(double delta_time) override;
+	void draw_ui() override;
+
+	[[nodiscard]] Eigen::Vector3d get_world_position() const override
+	{
+		if (get_parent())
+			return get_parent()->get_world_transform().translation() + get_local_position(); //@TODO : fix rotation
+		return get_local_position();
+	}
 private:
 
 	void update_rotation();

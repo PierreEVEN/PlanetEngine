@@ -21,37 +21,10 @@
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
 
-const double earth_location = 0;// 149597870700;
-
-void printWorkGroupsCapabilities() {
-	int workgroup_count[3];
-	int workgroup_size[3];
-	int workgroup_invocations;
-
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &workgroup_count[0]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &workgroup_count[1]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &workgroup_count[2]);
-
-	printf("Taille maximale des workgroups:\n\tx:%u\n\ty:%u\n\tz:%u\n",
-		workgroup_size[0], workgroup_size[1], workgroup_size[2]);
-
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workgroup_size[0]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workgroup_size[1]);
-	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workgroup_size[2]);
-
-	printf("Nombre maximal d'invocation locale:\n\tx:%u\n\ty:%u\n\tz:%u\n",
-		workgroup_size[0], workgroup_size[1], workgroup_size[2]);
-
-	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &workgroup_invocations);
-	printf("Nombre maximum d'invocation de workgroups:\n\t%u\n", workgroup_invocations);
-}
+const double earth_location = 0; // 149597870700;
 
 int main()
 {
-
-
-
-
 	Engine::get().get_renderer().set_icon("resources/textures/icon.png");
 	const auto g_buffer_combine_material = Material::create("g_buffer combine");
 	g_buffer_combine_material->load_from_source("resources/shaders/gbuffer_combine.vs",
@@ -60,26 +33,26 @@ int main()
 	ImGuiWindow::create_window<GraphicDebugger>();
 	ImGuiWindow::create_window<MaterialManagerUi>();
 	ImGuiWindow::create_window<TextureManagerUi>();
-	ImGuiWindow::create_window<MeshManagerUi>();
 	ImGuiWindow::create_window<Viewport>();
 	ImGuiWindow::create_window<SessionFrontend>();
 	ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
 
-	printWorkGroupsCapabilities();
 	// Create planet
-	const auto main_planet = std::make_shared<Planet>(Engine::get().get_world());
+	const auto main_planet = std::make_shared<Planet>("earth");
 	main_planet->radius = 6000000;
 	main_planet->num_lods = 20;
 	main_planet->regenerate();
-	main_planet->set_local_position({earth_location, 0, -main_planet->radius });
+	main_planet->set_local_position({earth_location, 0, -main_planet->radius});
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
 
-	const auto secondary_planet = std::make_shared<Planet>(Engine::get().get_world());
+	const auto secondary_planet = std::make_shared<Planet>("moon");
 	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
 	secondary_planet->radius = 1700000;
 	secondary_planet->num_lods = 19;
 	secondary_planet->regenerate();
 	double planet_rotation = 0;
+
+	main_planet->add_child(Engine::get().get_world().get_camera());
 
 	const auto default_material = Material::create("standard_material");
 	default_material->load_from_source("resources/shaders/standard_material.vs",
@@ -91,7 +64,7 @@ int main()
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	camera_controller.teleport_to({ earth_location , 0, 0 });
+	camera_controller.teleport_to({0, 0, main_planet->radius + 20});
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -108,6 +81,8 @@ int main()
 				Eigen::Vector3d(std::cos(planet_rotation), 0, std::sin(planet_rotation)) * 30000000 + Eigen::Vector3d(
 					earth_location, 0, 0));
 
+			//main_planet->set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(planet_rotation, Eigen::Vector3d::UnitY())));
+
 			// G_buffers
 			{
 				STAT_DURATION("Deferred_GBuffers");
@@ -121,6 +96,8 @@ int main()
 				Engine::get().get_renderer().bind_deferred_combine();
 
 				g_buffer_combine_material->bind();
+				glUniform1f(g_buffer_combine_material->binding("z_near"),
+				            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
 				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_color(), "GBUFFER_color");
 				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_normal(), "GBUFFER_normal");
 				g_buffer_combine_material->bind_texture(Engine::get().get_renderer().world_depth(), "GBUFFER_depth");

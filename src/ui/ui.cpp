@@ -8,7 +8,9 @@
 #include "asset_manager_ui.h"
 #include "camera.h"
 #include "graphic_debugger.h"
+#include "session_frontend.h"
 #include "world.h"
+#include "world_outliner.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
 #include "utils/profiler.h"
@@ -50,11 +52,14 @@ namespace ui
 			}
 			if (ImGui::BeginMenu("Window"))
 			{
+				if (ImGui::MenuItem("World outliner")) ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
+				ImGui::Separator();
 				if (ImGui::MenuItem("Texture view")) ImGuiWindow::create_window<TextureManagerUi>();
 				if (ImGui::MenuItem("Material view")) ImGuiWindow::create_window<MaterialManagerUi>();
 				if (ImGui::MenuItem("Mesh view")) ImGuiWindow::create_window<MeshManagerUi>();
 				ImGui::Separator();
 				if (ImGui::MenuItem("Graphic debugger")) ImGuiWindow::create_window<GraphicDebugger>();
+				if (ImGui::MenuItem("Session frontend")) ImGuiWindow::create_window<SessionFrontend>();
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Debug"))

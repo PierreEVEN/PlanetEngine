@@ -12,10 +12,11 @@ class Planet : public SceneComponent
 {
 	friend class PlanetRegion;
 public:
-	Planet(const World& world);
+	Planet(const std::string& name);
 
 	static std::shared_ptr<Material> get_landscape_material();
 
+	void draw_ui() override;
 	bool fragment_normals = false;
 
 	float radius = 80000;
@@ -31,7 +32,6 @@ public:
 protected:
 	void tick(double delta_time) override;
 	void render(Camera& camera) override;
-
 
 private:
 	std::shared_ptr<Mesh> root_mesh;
@@ -65,18 +65,4 @@ private:
 	Eigen::Affine3d lod_local_transform;
 	std::shared_ptr<TextureImage> height_map;
 	std::shared_ptr<TextureImage> normal_map;
-};
-
-class PlanetInformations : public ImGuiWindow
-{
-public:
-	PlanetInformations(Planet* in_planet) : planet(in_planet)
-	{
-		window_name = "planet editor";
-	}
-
-	void draw() override;
-
-private:
-	Planet* planet;
 };
