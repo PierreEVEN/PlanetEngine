@@ -11,7 +11,7 @@ uniform float z_near;
 
 int NumScatterPoints = 5;
 int NumOpticalDepthPoints = 5;
-vec3 planetCenter = vec3(0,0, -6000000);
+vec3 planetCenter = vec3(0,0, 0);
 float atmosphereRadius = 6400000;
 float planetRadius = 6000000;
 float atmosphereDensityFalloff = 3;

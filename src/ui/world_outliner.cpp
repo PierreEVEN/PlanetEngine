@@ -8,46 +8,51 @@ static size_t node_index = 0;
 
 static std::shared_ptr<SceneComponent> selected_node = nullptr;
 
-static void draw_node(const std::shared_ptr<SceneComponent>& parent)
+static bool draw_node(const std::shared_ptr<SceneComponent>& node)
 {
+	bool ok = true;
 	int flags = ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
-	if (parent->get_children().empty())
+	if (node->get_children().empty())
 		flags |= ImGuiTreeNodeFlags_Leaf;
 
 
-	const bool expand = ImGui::TreeNodeEx((parent->name + "##" + std::to_string(node_index++)).c_str(), flags);
+	const bool expand = ImGui::TreeNodeEx((node->name + "##" + std::to_string(node_index++)).c_str(), flags);
 	if (ImGui::BeginDragDropSource())
 	{
-		ImGui::Text("%s", parent->name.c_str());
-		ImGui::SetDragDropPayload("scene_component", &parent, sizeof(parent), ImGuiCond_Once);
+		ImGui::Text("%s", node->name.c_str());
+		ImGui::SetDragDropPayload("scene_component", &*selected_node, sizeof(SceneComponent*), ImGuiCond_Once);
 		ImGui::EndDragDropSource();
 	}
 	if (ImGui::BeginDragDropTarget())
 	{
 		if (ImGui::AcceptDragDropPayload("scene_component"))
+		{
 			if (selected_node)
-				if (selected_node->get_parent() != &*parent)
-					parent->add_child(selected_node);
+				if (selected_node->get_parent() != &*node)
+					node->add_child(selected_node);
 				else
-					if(parent->get_parent())
-					parent->get_parent()->add_child(selected_node);
+				{
+					if (selected_node->get_parent() && selected_node->get_parent()->get_parent())
+						selected_node->get_parent()->get_parent()->add_child(selected_node);
+				}
+			ok = false;
+		}
 		ImGui::EndDragDropTarget();
 	}
-
-
 	if (ImGui::IsItemClicked())
 	{
-		selected_node = parent;
+		selected_node = node;
 	}
 	if (expand)
 	{
-		for (const auto& child : parent->get_children())
-		{
-			draw_node(child);
-		}
+		if (ok)
+			for (int64_t i = node->get_children().size() - 1; i >= 0; --i)
+				if (!draw_node(node->get_children()[i]))
+					break;
 		ImGui::TreePop();
 	}
+	return ok;
 }
 
 
@@ -55,8 +60,9 @@ void WorldOutliner::draw()
 {
 	node_index = 0;
 	ImGui::Separator();
-	for (const auto& item : world->get_scene_root().get_children())
-		draw_node(item);
+	for (int64_t i = world->get_scene_root().get_children().size() - 1; i >= 0; --i)
+		if (!draw_node(world->get_scene_root().get_children()[i]))
+			break;
 	ImGui::Separator();
 	if
 	(selected_node)

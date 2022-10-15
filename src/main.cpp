@@ -40,15 +40,17 @@ int main()
 	// Create planet
 	const auto main_planet = std::make_shared<Planet>("earth");
 	main_planet->radius = 6000000;
-	main_planet->num_lods = 20;
+	main_planet->num_lods = 19;
+	main_planet->cell_count = 40;
 	main_planet->regenerate();
-	main_planet->set_local_position({earth_location, 0, -main_planet->radius});
+	main_planet->set_local_position({earth_location, 0, 0});
 	Engine::get().get_world().get_scene_root().add_child(main_planet);
 
 	const auto secondary_planet = std::make_shared<Planet>("moon");
 	Engine::get().get_world().get_scene_root().add_child(secondary_planet);
 	secondary_planet->radius = 1700000;
-	secondary_planet->num_lods = 19;
+	secondary_planet->num_lods = 18;
+	secondary_planet->cell_count = 40;
 	secondary_planet->regenerate();
 	double planet_rotation = 0;
 
@@ -60,7 +62,8 @@ int main()
 	const auto cube = std::make_shared<MeshComponent>("cube");
 	cube->set_material(default_material);
 	cube->set_mesh(primitives::cube());
-	Engine::get().get_world().get_scene_root().add_child(cube);
+	cube->set_local_position({0, 0, main_planet->radius});
+	main_planet->add_child(cube);
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
@@ -76,12 +79,13 @@ int main()
 			// Gameplay
 			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
-			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.02;
+			planet_rotation += Engine::get().get_world().get_delta_seconds() * 0.0002;
 			secondary_planet->set_local_position(
 				Eigen::Vector3d(std::cos(planet_rotation), 0, std::sin(planet_rotation)) * 30000000 + Eigen::Vector3d(
 					earth_location, 0, 0));
 
-			//main_planet->set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(planet_rotation, Eigen::Vector3d::UnitY())));
+			main_planet->set_local_rotation(
+				Eigen::Quaterniond(Eigen::AngleAxisd(planet_rotation, Eigen::Vector3d::UnitY())));
 
 			// G_buffers
 			{

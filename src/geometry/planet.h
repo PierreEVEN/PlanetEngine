@@ -43,17 +43,17 @@ private:
 class PlanetRegion
 {
 public:
-	PlanetRegion(const Planet& parent, const World& world, uint32_t lod_level, uint32_t my_level);
+	PlanetRegion(Planet& parent, const World& world, uint32_t lod_level, uint32_t my_level);
 
 	void regenerate(int32_t cell_number, double width);
 
 	void tick(double delta_time, int num_lods);
-	void render(Camera& camera) const;
+	void render(Camera& camera);
 
 	void rebuild_maps();
 
 private:
-	const Planet& planet;
+	Planet& planet;
 	Eigen::Vector3d chunk_position;
 	const World& world;
 	double cell_size;

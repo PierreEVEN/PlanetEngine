@@ -22,6 +22,7 @@ static std::shared_ptr<TextureImage> rock = nullptr;
 static std::shared_ptr<TextureImage> sand = nullptr;
 static std::shared_ptr<ComputeShader> compute_positions = nullptr;
 static std::shared_ptr<ComputeShader> compute_normals = nullptr;
+static std::shared_ptr<ComputeShader> fix_seams = nullptr;
 
 
 static double snap(double value, double delta) { return round(value / delta) * delta; }
@@ -54,6 +55,8 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	compute_normals = ComputeShader::create("Planet compute normals");
 	compute_normals->load_from_source("resources/shaders/compute/planet_compute_normals.cs");
 
+	fix_seams = ComputeShader::create("Planet Fix Seams");
+	fix_seams->load_from_source("resources/shaders/compute/planet_fix_seams.cs");
 	return planet_material;
 }
 
@@ -195,7 +198,7 @@ void Planet::tick(double delta_time)
 	{
 		STAT_DURATION("compute planet global transform");
 		// Get camera direction from planet center
-		const auto camera_direction = (Engine::get().get_world().get_camera()->get_world_position() -
+		const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->get_world_position() -
 			get_world_position()).normalized();
 
 		// Compute global rotation snapping step
@@ -204,8 +207,7 @@ void Planet::tick(double delta_time)
 		// Compute global planet rotation (orient planet mesh toward camera)
 		const auto pitch = asin(camera_direction.z());
 		const auto yaw = atan2(camera_direction.y(), camera_direction.x());
-		const auto planet_orientation =
-			Eigen::Affine3d(
+		const auto planet_orientation = get_world_rotation() * Eigen::Affine3d(
 				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
 				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
 			);
@@ -213,10 +215,7 @@ void Planet::tick(double delta_time)
 
 		// Compute global planet transformation (ensure ground is always close to origin)
 		planet_global_transform = Eigen::Affine3d::Identity();
-		planet_global_transform.translate(
-			get_world_position() -
-			Engine::get().get_world().get_camera()->get_world_position()
-		);
+		planet_global_transform.translate(get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
 		planet_global_transform = planet_global_transform * planet_orientation;
 		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
 	}
@@ -231,7 +230,7 @@ void Planet::render(Camera& camera)
 	root->render(camera);
 }
 
-PlanetRegion::PlanetRegion(const Planet& in_parent, const World& in_world, uint32_t in_lod_level,
+PlanetRegion::PlanetRegion(Planet& in_parent, const World& in_world, uint32_t in_lod_level,
                            uint32_t in_my_level) :
 	world(in_world), num_lods(in_lod_level), current_lod(in_my_level), planet(in_parent)
 {
@@ -329,7 +328,7 @@ void PlanetRegion::tick(double delta_time, int in_num_lods)
 	rebuild_maps();
 }
 
-void PlanetRegion::render(Camera& camera) const
+void PlanetRegion::render(Camera& camera)
 {
 	if (child)
 		child->render(camera);
@@ -341,13 +340,13 @@ void PlanetRegion::render(Camera& camera) const
 
 	glUniform1f(Planet::get_landscape_material()->binding("cell_width"), planet.cell_width);
 	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
-	            static_cast<float>(planet.cell_count * 4 + 2));
+	            static_cast<float>(planet.cell_count));
 
 	glUniform3fv(Planet::get_landscape_material()->binding("ground_color"), 1, planet.planet_color.data());
 
 	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 	                   lod_local_transform.cast<float>().matrix().data());
-
+	
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind maps
@@ -395,7 +394,7 @@ void PlanetRegion::rebuild_maps()
 
 	const LandscapeChunkData chunk_data{
 		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
-		.Chunk_PlanetTransform = planet.planet_global_transform.cast<float>().matrix(),
+		.Chunk_PlanetTransform = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>().matrix(),
 		.Chunk_PlanetRadius = planet.radius,
 		.Chunk_CellWidth = static_cast<float>(cell_size),
 		.Chunk_CellCount = cell_number,
@@ -405,19 +404,20 @@ void PlanetRegion::rebuild_maps()
 	const auto ssbo = StorageBuffer::create("test");
 	ssbo->set_data(chunk_data);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo->id());
-
-	GL_CHECK_ERROR();
+	
 	planet.get_landscape_material();
 	height_map->bind_compute(0, GL_WRITE_ONLY);
 	compute_positions->bind();
 	compute_positions->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
-	GL_CHECK_ERROR();
 
-	normal_map->bind_compute(0, GL_WRITE_ONLY);
-	height_map->bind_compute(1, GL_READ_WRITE);
+	height_map->bind_compute(0, GL_READ_WRITE);
+	fix_seams->bind();
+	fix_seams->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
+
+	height_map->bind_compute(0, GL_READ_ONLY);
+	normal_map->bind_compute(1, GL_WRITE_ONLY);
 	compute_normals->bind();
 	compute_normals->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
-	GL_CHECK_ERROR();
 
 	GL_CHECK_ERROR();
 }

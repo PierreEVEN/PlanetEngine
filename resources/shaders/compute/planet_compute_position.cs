@@ -7,18 +7,6 @@ layout (local_size_x = 1, local_size_y = 1) in;
 
 layout (r32f, binding = 0) uniform image2D img_output;
 
-vec3 grid_to_sphere_old(vec2 pos, float rho) {
-    vec2 dpos = pos;
-	vec2 norm_pos = clamp(pos / rho, -HALF_PI, HALF_PI);
-
-    float cos_y = cos(norm_pos.y);
-    return vec3(
-        cos_y * cos(norm_pos.x) - 1,
-        cos_y * sin(norm_pos.x), 
-        sin (norm_pos.y)
-    ) * rho;
-}
-
 void main() {
 
   ivec2 vertex_pos_2D = pixel_pos_to_vertex_2D_pos(gl_GlobalInvocationID.xy);

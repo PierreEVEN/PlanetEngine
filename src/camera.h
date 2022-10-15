@@ -48,12 +48,34 @@ public:
 	void tick(double delta_time) override;
 	void draw_ui() override;
 
+	[[nodiscard]] virtual Eigen::Vector3d world_forward()
+	{
+		return get_local_rotation() * Eigen::Vector3d(1, 0, 0);
+	}
+
+	[[nodiscard]] virtual Eigen::Vector3d world_right()
+	{
+		return get_local_rotation()* Eigen::Vector3d(0, 1, 0);
+	}
+
+	[[nodiscard]] virtual Eigen::Vector3d world_up()
+	{
+		return get_local_rotation() * Eigen::Vector3d(0, 0, 1);
+	}
+
+	/*
+	Eigen::Quaterniond get_world_rotation() override
+	{
+		return get_local_rotation();
+	}
+
 	[[nodiscard]] Eigen::Vector3d get_world_position() const override
 	{
 		if (get_parent())
 			return get_parent()->get_world_transform().translation() + get_local_position(); //@TODO : fix rotation
 		return get_local_position();
 	}
+	*/
 private:
 
 	void update_rotation();

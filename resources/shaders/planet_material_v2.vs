@@ -30,20 +30,20 @@ void main()
 	vec3 planet_pos = grid_to_sphere(vertex_pos, radius);
     mat3 rot = mat3(model);
     vec3 norm_f64 = normalize(rot * (planet_pos + vec3(radius, 0, 0)));
+    vec3 norm_f642 = normalize( (planet_pos + vec3(radius, 0, 0)));
 
-    vec2 coords = (pos.xz + (grid_cell_count) / 2) / (grid_cell_count + 2);
+    vec2 coords = (pos.xz + grid_cell_count * 2 + 3) / (grid_cell_count * 4 + 6);
 
     vec2 packed_normal = texture(normal_map, coords).xy;
-
 	out_norm = normalize(vec3(packed_normal, 1 - length(packed_normal)));
     altitude = texture(height_map, coords).r;
 
     debug_scalar = out_norm;
 
-    coordinates = vec2(mod(seamless_uv_from_sphere_normal(norm_f64) * 1000, 1));
-    out_norm = vec3(norm_f64);
+    coordinates = vec2(mod(seamless_uv_from_sphere_normal(dvec3(norm_f642)) * 1000, 1));
+    //out_norm = vec3(norm_f64);
     vec4 world_pos = model * vec4(planet_pos, 1.0);
-    world_pos.xyz += norm_f64 * altitude;
+    world_pos.xyz += norm_f64 * (altitude < 0 ? 0 : altitude);
 	out_position = world_pos.xyz;
 	gl_Position = pv_matrix * world_pos;
     planet_radius = radius;
