@@ -49,6 +49,7 @@ public:
 	const std::string name;
 	void bind(uint32_t unit = 0);
 	bool is_depth() const;
+	virtual uint32_t texture_type() const;
 protected:
 	TextureBase(std::string name, const TextureCreateInfos& params = {});
 	int32_t image_width;
@@ -63,11 +64,7 @@ protected:
 class Texture2D : public TextureBase
 {
 public:
-	~Texture2D() override
-	{
-		if (async_load_thread.joinable())
-			async_load_thread.join();
-	}
+	~Texture2D() override;
 
 	static std::shared_ptr<Texture2D> create(const std::string& name, const TextureCreateInfos& params = {})
 	{

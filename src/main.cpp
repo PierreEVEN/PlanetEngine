@@ -12,6 +12,7 @@
 #include "graphics/easycppogl_texture.h"
 #include "world/planet.h"
 #include "graphics/primitives.h"
+#include "graphics/texture_cube.h"
 #include "ui/asset_manager_ui.h"
 #include "ui/graphic_debugger.h"
 #include "ui/session_frontend.h"
@@ -19,6 +20,7 @@
 #include "ui/viewport.h"
 #include "ui/world_outliner.h"
 #include "utils/profiler.h"
+#include "world/cubemap_component.h"
 #include "world/mesh_component.h"
 
 const double earth_location = 0; // 149597870700;
@@ -65,11 +67,21 @@ int main()
 	cube->set_material(default_material);
 	cube->set_mesh(primitives::cube());
 	cube->set_local_position({0, 0, earth->radius});
+	Engine::get().get_world().get_scene_root().add_child(cube);
 	earth->add_child(cube);
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
 	camera_controller.teleport_to({-10, 0, earth->radius + 20});
+
+
+	const auto cubemap = TextureCube::create("cube map");
+	cubemap->from_file("resources/textures/top.jpg", "resources/textures/bottom.jpg", "resources/textures/right.jpg",
+	                   "resources/textures/left.jpg", "resources/textures/front.jpg", "resources/textures/back.jpg");
+
+	const auto cubemap_component = std::make_shared<CubemapComponent>("skybox");
+	cubemap_component->set_texture(cubemap);
+	Engine::get().get_world().get_scene_root().add_child(cubemap_component);
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -110,9 +122,15 @@ int main()
 				g_buffer_combine_material->bind();
 				glUniform1f(g_buffer_combine_material->binding("z_near"),
 				            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
-				g_buffer_combine_material->bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_color()), "GBUFFER_color");
-				g_buffer_combine_material->bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_normal()), "GBUFFER_normal");
-				g_buffer_combine_material->bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_depth()), "GBUFFER_depth");
+				g_buffer_combine_material->bind_texture(
+					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_color()),
+					"GBUFFER_color");
+				g_buffer_combine_material->bind_texture(
+					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_normal()),
+					"GBUFFER_normal");
+				g_buffer_combine_material->bind_texture(
+					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_depth()),
+					"GBUFFER_depth");
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 			// UI

@@ -24,13 +24,18 @@ std::shared_ptr<TextureBase> TextureBase::create(const std::string& name, const 
 void TextureBase::bind(uint32_t unit)
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
-	glBindTexture(GL_TEXTURE_2D, id());
+	glBindTexture(texture_type(), id());
 	GL_CHECK_ERROR();
 }
 
 bool TextureBase::is_depth() const
 {
 	return image_format == GL_DEPTH_COMPONENT32F || image_format == GL_DEPTH_COMPONENT24;
+}
+
+uint32_t TextureBase::texture_type() const
+{
+	return GL_TEXTURE_2D;
 }
 
 TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) : name(std::move(in_name))
@@ -79,14 +84,23 @@ TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) 
 	case TextureWrapping::ClampToBorder: wrapping = GL_CLAMP_TO_BORDER;
 		break;
 	}
-	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrapping);
+	glTexParameteri(texture_type(), GL_TEXTURE_MIN_FILTER, min_filter);
+	glTexParameteri(texture_type(), GL_TEXTURE_MAG_FILTER, mag_filter);
+
+	glTexParameteri(texture_type(), GL_TEXTURE_WRAP_S, wrapping);
+	glTexParameteri(texture_type(), GL_TEXTURE_WRAP_T, wrapping);
+	glTexParameteri(texture_type(), GL_TEXTURE_WRAP_R, wrapping);
 	GL_CHECK_ERROR();
+}
+
+Texture2D::~Texture2D()
+{
+	if (async_load_thread.joinable())
+		async_load_thread.join();
+
+	if (loading_image_ptr)
+		delete static_cast<EZCOGL::GLImage*>(loading_image_ptr);
 }
 
 void Texture2D::from_file(const std::string& filename, int force_nb_channel)
@@ -95,12 +109,12 @@ void Texture2D::from_file(const std::string& filename, int force_nb_channel)
 		async_load_thread.join();
 
 	async_load_thread = std::thread([&, filename, force_nb_channel]
-		{
-			std::lock_guard lock_guard(load_mutex);
-			finished_loading = false;
-			loading_image_ptr = new EZCOGL::GLImage(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
-			finished_loading = true;
-		});
+	{
+		std::lock_guard lock_guard(load_mutex);
+		finished_loading = false;
+		loading_image_ptr = new EZCOGL::GLImage(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
+		finished_loading = true;
+	});
 }
 
 void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const void* data_ptr)
@@ -112,8 +126,9 @@ void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const v
 	image_height = h;
 	data_format = tf.second;
 	bind();
-	glTexImage2D(GL_TEXTURE_2D, 0, image_format, w, h, 0, external_format, data_format, (w * h > 0) ? data_ptr : nullptr);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glTexImage2D(texture_type(), 0, image_format, w, h, 0, external_format, data_format,
+	             (w * h > 0) ? data_ptr : nullptr);
+	glBindTexture(texture_type(), 0);
 
 	GL_CHECK_ERROR();
 }
@@ -140,17 +155,18 @@ uint32_t Texture2D::id()
 			break;
 		default:
 			delete image;
+			loading_image_ptr = nullptr;
 			return 0;
 		}
 
 		bind();
-		glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glGenerateMipmap(texture_type());
+		glBindTexture(texture_type(), 0);
 
 		GL_CHECK_ERROR();
 		delete image;
+		loading_image_ptr = nullptr;
 	}
-
 
 
 	return TextureBase::id();

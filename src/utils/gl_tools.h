@@ -2,6 +2,7 @@
 
 #include <GL/gl3w.h>
 #include <iostream>
+#include <cassert>
 
 #ifndef GL_TABLE_TOO_LARGE
 #define GL_TABLE_TOO_LARGE 0x8031
