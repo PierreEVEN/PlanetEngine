@@ -83,17 +83,17 @@ void TextureCube::set_data(int32_t w, int32_t h, uint32_t in_image_format, const
 	image_height = h;
 	data_format = tf.second;
 	bind();
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_right : nullptr);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_left : nullptr);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_top : nullptr);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_bottom : nullptr);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_front : nullptr);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_back : nullptr);
 	glBindTexture(texture_type(), 0);
 	GL_CHECK_ERROR();

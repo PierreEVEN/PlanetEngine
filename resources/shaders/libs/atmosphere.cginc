@@ -9,7 +9,7 @@ float getAtmosphereDensityAtLocation(vec3 location) {
     float groundDistance = distance_from_planet_center - planetRadius;
 	float atmosphere_altitude = atmosphereRadius - planetRadius;
     float heightFactor = groundDistance / atmosphere_altitude;
-    return exp(-heightFactor * atmosphereDensityFalloff) * (1 - heightFactor ) / atmosphere_altitude;
+    return exp(-heightFactor * atmosphereDensityFalloff) * (1 - heightFactor) / atmosphere_altitude;
 }
 
 float opticalDepth(vec3 rayOrigin, vec3 rayDir, float rayLength) {
@@ -29,7 +29,7 @@ vec3 computeLight(vec3 cameraPosition, vec3 rayDir, float raylength, vec3 origin
     vec3 inScatterPoint = cameraPosition;
     float step_size = raylength / (float(NumScatterPoints - 1));
     vec3 inScatteredLight = vec3(0);
-    float viewRayOpticalDepth = 0.0;
+    float viewRayOpticalDepth = -0.0;
 
     for (int i = 0; i < NumScatterPoints; ++i) {
         RaySphereTraceResult rsResult = raySphereIntersection(planetCenter, atmosphereRadius, light_dir, inScatterPoint);

@@ -14,10 +14,10 @@ uniform float z_near;
 int NumScatterPoints = 5;
 int NumOpticalDepthPoints = 5;
 vec3 planetCenter = vec3(0,0, 0);
-float atmosphereRadius = 6400000;
+float atmosphereRadius = 6200000;
 float planetRadius = 6000000;
-float atmosphereDensityFalloff = 3;
-float scatter_strength = 2;
+float atmosphereDensityFalloff = 1;
+float scatter_strength = 1;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
 
@@ -68,7 +68,7 @@ void main()
 	else {
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
-		oFragmentColor = vec4(col * pow(max(0, dot(norm, light_dir)), 0.7), 1) * 1.2;
+		oFragmentColor = vec4(col * pow(max(0, dot(norm, light_dir) + 0.1), 2), 1) * 1.2;
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());
@@ -96,6 +96,10 @@ void main()
 	// Draw sun disc
     if (depth <= 0) {
         oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 200000000;
-        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.4;
+        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.2;
     }
+    
+    // Gamma correction
+    float gamma = 2.2;
+    oFragmentColor.rgb = pow(oFragmentColor.rgb, vec3(1.0 / gamma));
 }

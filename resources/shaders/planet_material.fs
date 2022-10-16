@@ -26,8 +26,8 @@ void main()
 	vec3 grass_color = texture(grass, coordinates * 1000).rgb;
 	vec3 snow_color = vec3(0.8, 0.75, 0.8);
 	vec3 rock_color_bis = texture(rock, coordinates * 1398.48945).rgb;
-	vec3 water_deep = vec3(97, 130, 223) / 350;
-	vec3 water = vec3(97, 130, 223) / 265;
+	vec3 water_deep = vec3(20, 50, 150) / 350;
+	vec3 water = vec3(40, 80, 150) / 265;
 	if (planet_radius < 2000000) {
 		rock_color = vec3(1,1,1);
 		rock_color_bis = vec3(0.7, 0.7, 0.5);

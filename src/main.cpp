@@ -20,7 +20,6 @@
 #include "ui/viewport.h"
 #include "ui/world_outliner.h"
 #include "utils/profiler.h"
-#include "world/cubemap_component.h"
 #include "world/mesh_component.h"
 
 const double earth_location = 0; // 149597870700;

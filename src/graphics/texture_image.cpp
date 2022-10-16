@@ -126,7 +126,7 @@ void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const v
 	image_height = h;
 	data_format = tf.second;
 	bind();
-	glTexImage2D(texture_type(), 0, image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(texture_type(), 0, data_ptr ? GL_SRGB : image_format, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_ptr : nullptr);
 	glBindTexture(texture_type(), 0);
 
