@@ -7,7 +7,7 @@
 class EasyCppOglTexture : public Texture2D, public EZCOGL::TextureInterface
 {
 public:
-	virtual ~EasyCppOglTexture() = default;
+	~EasyCppOglTexture() override;
 
 	static std::shared_ptr<EasyCppOglTexture> create(const std::string& name, const TextureCreateInfos& params = {})
 	{
@@ -15,9 +15,7 @@ public:
 	}
 
 private:
-	EasyCppOglTexture(std::string name, const TextureCreateInfos& params = {}) : Texture2D(name, params)
-	{
-	}
+	EasyCppOglTexture(std::string name, const TextureCreateInfos& params = {});
 
 public:
 	void init_interface(GLint internal) override

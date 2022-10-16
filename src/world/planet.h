@@ -67,6 +67,7 @@ private:
 		bool operator==(const LandscapeChunkData& other) const
 		{
 			return Chunk_LocalTransform == other.Chunk_LocalTransform &&
+				Chunk_PlanetTransform == other.Chunk_PlanetTransform &&
 				Chunk_PlanetRadius == other.Chunk_PlanetRadius &&
 				Chunk_CellWidth == other.Chunk_CellWidth &&
 				Chunk_CellCount == other.Chunk_CellCount &&

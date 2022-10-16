@@ -11,8 +11,6 @@
 
 TextureBase::~TextureBase()
 {
-	auto& textures = Engine::get().get_asset_manager().textures;
-	textures.erase(std::find(textures.begin(), textures.end(), this));
 	glDeleteTextures(1, &texture_id);
 }
 
@@ -23,9 +21,11 @@ std::shared_ptr<TextureBase> TextureBase::create(const std::string& name, const 
 
 void TextureBase::bind(uint32_t unit)
 {
-	glActiveTexture(GL_TEXTURE0 + unit);
-	glBindTexture(texture_type(), id());
-	GL_CHECK_ERROR();
+	if (id() != 0) {
+		glActiveTexture(GL_TEXTURE0 + unit);
+		glBindTexture(texture_type(), id());
+		GL_CHECK_ERROR();
+	}
 }
 
 bool TextureBase::is_depth() const
@@ -40,8 +40,6 @@ uint32_t TextureBase::texture_type() const
 
 TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) : name(std::move(in_name))
 {
-	Engine::get().get_asset_manager().textures.emplace_back(this);
-
 	GL_CHECK_ERROR();
 	glGenTextures(1, &texture_id);
 	bind();
@@ -96,6 +94,8 @@ TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) 
 
 Texture2D::~Texture2D()
 {
+	auto& textures = Engine::get().get_asset_manager().textures;
+	textures.erase(std::find(textures.begin(), textures.end(), this));
 	if (async_load_thread.joinable())
 		async_load_thread.join();
 
@@ -170,4 +170,11 @@ uint32_t Texture2D::id()
 
 
 	return TextureBase::id();
+}
+
+Texture2D::Texture2D(std::string name, const TextureCreateInfos& params)
+	: TextureBase(name, params)
+{
+	Engine::get().get_asset_manager().textures.emplace_back(this);
+
 }

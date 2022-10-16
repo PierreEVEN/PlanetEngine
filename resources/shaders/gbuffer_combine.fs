@@ -4,6 +4,8 @@ precision highp float;
 #include "libs/deferred_input.cginc"
 #include "libs/world_data.cginc"
 
+layout(location = 5) uniform samplerCube WORLD_Cubemap;
+
 out vec4 oFragmentColor;
 
 layout(location = 0) in vec2 uv;
@@ -92,5 +94,8 @@ void main()
 	}
 	
 	// Draw sun disc
-    if (depth <= 0) oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 200000000;
+    if (depth <= 0) {
+        oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 200000000;
+        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.4;
+    }
 }

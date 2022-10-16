@@ -20,14 +20,16 @@ int Material::binding(const std::string& binding_name) const
 	return -1;
 }
 
-int Material::bind_texture(const std::shared_ptr<Texture2D>& texture, const std::string& binding_name)
+int Material::bind_texture(const std::shared_ptr<TextureBase>& texture, const std::string& binding_name) const
 {
 	GL_CHECK_ERROR();
 	const int binding_location = binding(binding_name);
 	if (binding_location > 0)
 	{
 		glUniform1i(binding_location, binding_location);
+		GL_CHECK_ERROR();
 		texture->bind(binding_location);
+		GL_CHECK_ERROR();
 	}
 	GL_CHECK_ERROR();
 	return binding_location;

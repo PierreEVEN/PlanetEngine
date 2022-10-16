@@ -47,7 +47,7 @@ public:
 	[[nodiscard]] virtual uint32_t id() { return texture_id; }
 	[[nodiscard]] uint32_t internal_format() const { return image_format; }
 	const std::string name;
-	void bind(uint32_t unit = 0);
+	virtual void bind(uint32_t unit = 0);
 	bool is_depth() const;
 	virtual uint32_t texture_type() const;
 protected:
@@ -83,7 +83,5 @@ protected:
 	std::thread async_load_thread;
 	void* loading_image_ptr = nullptr;
 
-	Texture2D(std::string name, const TextureCreateInfos& params = {}) : TextureBase(name, params)
-	{
-	}
+	Texture2D(std::string name, const TextureCreateInfos& params = {});
 };

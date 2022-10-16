@@ -76,12 +76,9 @@ int main()
 
 
 	const auto cubemap = TextureCube::create("cube map");
-	cubemap->from_file("resources/textures/top.jpg", "resources/textures/bottom.jpg", "resources/textures/right.jpg",
-	                   "resources/textures/left.jpg", "resources/textures/front.jpg", "resources/textures/back.jpg");
-
-	const auto cubemap_component = std::make_shared<CubemapComponent>("skybox");
-	cubemap_component->set_texture(cubemap);
-	Engine::get().get_world().get_scene_root().add_child(cubemap_component);
+	cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
+	                   "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
+	                   "resources/textures/skybox/pz.png","resources/textures/skybox/nz.png");
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -131,6 +128,7 @@ int main()
 				g_buffer_combine_material->bind_texture(
 					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_depth()),
 					"GBUFFER_depth");
+				g_buffer_combine_material->bind_texture(cubemap, "WORLD_Cubemap");
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 			// UI

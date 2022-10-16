@@ -11,7 +11,8 @@ class AssetManager
 	friend class Engine;
 	friend class Mesh;
 	friend class Material;
-	friend class TextureBase;
+	friend class Texture2D;
+	friend class EasyCppOglTexture;
 	friend class ComputeShader;
 public:
 	[[nodiscard]] const std::vector<Mesh*>& get_meshes() const { return meshes; }

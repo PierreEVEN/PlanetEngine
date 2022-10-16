@@ -12,6 +12,9 @@ public:
 
 	[[nodiscard]] int32_t depth() const override { return 6; }
 
+	[[nodiscard]] uint32_t texture_type() const override;
+	void bind(uint32_t unit = 0) override;
+
 	void from_file(const std::string& file_top, const std::string& file_bottom, const std::string& file_right,
 	               const std::string& file_left, const std::string& file_front, const std::string& file_back,
 	               int force_nb_channel = 0);
@@ -21,9 +24,7 @@ public:
 	              const void* data_front = nullptr, const void* data_back = nullptr);
 	uint32_t id() override;
 protected:
-	TextureCube(std::string name, const TextureCreateInfos& params = {}) : TextureBase(name, params)
-	{
-	}
+	TextureCube(std::string name, const TextureCreateInfos& params = {});
 private:
 
 	bool finished_loading = false;
