@@ -8,17 +8,18 @@ layout(location = 2) uniform vec2 input_resolution;
 void main()
 {
     vec3 color2 = vec3(0);
-    vec3 color = vec3(0);
+    vec3 color1 = vec3(0);
 
-    color2 += textureLod(Color, uv + vec2(0, 2) / input_resolution, 0).rgb;
-    color2 += textureLod(Color, uv + vec2(-2, 0) / input_resolution, 0).rgb;
-    color2 += textureLod(Color, uv + vec2(2, 0) / input_resolution, 0).rgb;
-    color2 += textureLod(Color, uv + vec2(0, -2) / input_resolution, 0).rgb;
+    color2 += texture(Color, uv + vec2(0, 2) / input_resolution).rgb;
+    color2 += ( texture(Color, uv + vec2(-2, 0) / input_resolution).rgb);
+    color2 += ( texture(Color, uv + vec2(2, 0) / input_resolution).rgb);
+    color2 += ( texture(Color, uv + vec2(0, -2) / input_resolution).rgb);
+color2/= 4;
+    color1 = texture(Color, uv + vec2(1, 1) / input_resolution).rgb;
+    color1 = (texture(Color, uv + vec2(-1, 1) / input_resolution).rgb);
+    color1 = (texture(Color, uv + vec2(-1, -1) / input_resolution).rgb);
+    color1 = (texture(Color, uv + vec2(1, -1) / input_resolution).rgb);
+color1/= 4;
 
-    color += textureLod(Color, uv + vec2(1, 1) / input_resolution, 0).rgb;
-    color += textureLod(Color, uv + vec2(-1, 1) / input_resolution, 0).rgb;
-    color += textureLod(Color, uv + vec2(-1, -1) / input_resolution, 0).rgb;
-    color += textureLod(Color, uv + vec2(1, -1) / input_resolution, 0).rgb;
-
-    oFragmentColor.rgb = color * 0.5 + color2 * 0.125;
+    oFragmentColor.rgb = color1 * 0.5 + color2 * 0.5;
 }

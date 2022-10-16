@@ -32,10 +32,7 @@ int main()
 
 	const auto post_process_pass = PostProcessPass::create("PostProcess", Engine::get().get_renderer());
 	post_process_pass->init("resources/shaders/post_process.fs");
-	post_process_pass->on_resolution_changed([](int& x, int& y)
-		{
-			std::cout << "test update : " << x << " / " << y << std::endl;
-		});
+
 
 	ImGuiWindow::create_window<GraphicDebugger>();
 	ImGuiWindow::create_window<MaterialManagerUi>();
@@ -85,7 +82,7 @@ int main()
 	                   "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
 
 	std::vector<std::shared_ptr<PostProcessPass>> downsample_passes;
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < 9; ++i)
 	{
 		const auto downsample_pass = PostProcessPass::create("DownSample_" + std::to_string(i), Engine::get().get_renderer());
 		downsample_pass->init("resources/shaders/post_process/downsample_pass.fs");
@@ -98,7 +95,7 @@ int main()
 	}
 
 	std::vector<std::shared_ptr<PostProcessPass>> upsample_passes;
-	for (int i = 0; i < 7; ++i)
+	for (int i = 0; i < 9; ++i)
 	{
 		const auto upsample_pass = PostProcessPass::create("UpSample_" + std::to_string(i), Engine::get().get_renderer());
 		upsample_pass->init("resources/shaders/post_process/upsample_pass.fs");
@@ -110,10 +107,10 @@ int main()
 		upsample_passes.emplace_back(upsample_pass);
 	}
 
-	float bloom_strength = 0.35;
+	float bloom_strength = 0.5f;
 	int bloom_quality = 5;
-	float gamma = 2.2;
-	float exposure = 1.0;
+	float gamma = 2.2f;
+	float exposure = 1.0f;
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -128,7 +125,7 @@ int main()
 
 			moon_orbit += Engine::get().get_world().get_delta_seconds() * 0.02;
 			moon_rotation += Engine::get().get_world().get_delta_seconds() * 0.2;
-			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.05;
+			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.002;
 
 			moon->set_local_position(
 				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000);
@@ -158,19 +155,21 @@ int main()
 				pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_depth(),
 				                                                   "GBUFFER_depth");
 				pass_g_buffer_combine->material()->bind_texture(cubemap,"WORLD_Cubemap");
+				glUniform1f(pass_g_buffer_combine->material()->binding("gamma"), gamma);
+				glUniform1f(pass_g_buffer_combine->material()->binding("exposure"), exposure);
 				pass_g_buffer_combine->draw();
 			}
 			// Down Samples
 			{
 				downsample_passes[0]->bind();
-				glUniform2f(downsample_passes[0]->material()->binding("input_resolution"), pass_g_buffer_combine->width(), pass_g_buffer_combine->height());
+				glUniform2f(downsample_passes[0]->material()->binding("input_resolution"), static_cast<float>(pass_g_buffer_combine->width()), static_cast<float>(pass_g_buffer_combine->height()));
 				downsample_passes[0]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
 				downsample_passes[0]->draw();
 				for (int i = 1; i < downsample_passes.size(); ++i)
 				{
 					downsample_passes[i]->bind();
 					downsample_passes[i]->material()->bind_texture_ex(downsample_passes[i - 1]->result(), "Color");
-					glUniform2f(downsample_passes[i]->material()->binding("input_resolution"), downsample_passes[i - 1]->width(), downsample_passes[i - 1]->height());
+					glUniform2f(downsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(downsample_passes[i - 1]->width()), static_cast<float>(downsample_passes[i - 1]->height()));
 					downsample_passes[i]->draw();
 				}
 			}
@@ -179,33 +178,34 @@ int main()
 				ImGui::SliderFloat("bloom strength", &bloom_strength, 0, 1);
 				ImGui::SliderInt("bloom quality", &bloom_quality, 1, 20);
 				upsample_passes.back()->bind();
-				glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), downsample_passes.back()->width(), downsample_passes.back()->height());
+				glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), static_cast<float>(downsample_passes.back()->width()), static_cast<float>(downsample_passes.back()->height()));
 				glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), bloom_strength);
-				glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - ((float)upsample_passes.size() - 1) / (float)upsample_passes.size());
+				glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - (static_cast<float>(upsample_passes.size()) - 1) / static_cast<float>(upsample_passes.size()));
 				glUniform1i(upsample_passes.back()->material()->binding("bloom_quality"), bloom_quality);
 				upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(), "LastSample");
-				upsample_passes.back()->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
+				upsample_passes.back()->material()->bind_texture_ex(downsample_passes[downsample_passes.size() - 2]->result(), "Color");
 				upsample_passes.back()->draw();
-				for (int i = upsample_passes.size() - 2; i >= 0; --i)
+				for (int i = static_cast<int>(upsample_passes.size()) - 2; i >= 0; --i)
 				{
 					upsample_passes[i]->bind();
-					glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), upsample_passes[i + 1]->width(), upsample_passes[i + 1]->height());
+					glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(upsample_passes[i + 1]->width()), static_cast<float>(upsample_passes[i + 1]->height()));
 					glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), bloom_strength);
-					glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / (float)upsample_passes.size());
+					glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / static_cast<float>(upsample_passes.size()));
 					glUniform1i(upsample_passes[i]->material()->binding("bloom_quality"), bloom_quality);
 					upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
-					upsample_passes[i]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
+					upsample_passes[i]->material()->bind_texture_ex(i == 0 ? pass_g_buffer_combine->result() : downsample_passes[i - 1]->result(), "Color");
 					upsample_passes[i]->draw();
 				}
 			}
 
 			// Post process
 			{
-				ImGui::SliderFloat("Exposure", &exposure, 0.1, 4);
-				ImGui::SliderFloat("Gamma", &gamma, 0.5, 4);
+				ImGui::SliderFloat("Exposure", &exposure, 0.1f, 4);
+				ImGui::SliderFloat("Gamma", &gamma, 0.5f, 4);
 				post_process_pass->bind(Engine::get().get_renderer().is_fullscreen());
 				glUniform1f(post_process_pass->material()->binding("gamma"), gamma);
 				glUniform1f(post_process_pass->material()->binding("exposure"), exposure);
+				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneBloom");
 				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneColor");
 				post_process_pass->draw();
 			}

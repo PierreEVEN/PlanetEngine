@@ -132,6 +132,9 @@ void DefaultCameraController::tick(double delta_time)
 {
 	STAT_DURATION("CameraController_update");
 
+	if (delta_time > 1 / 20.0)
+		delta_time = 1 / 20.0;
+
 	target_roll = target_roll += (input_add_roll - input_sub_roll) * delta_time;
 	camera->set_roll(target_roll);
 	camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (

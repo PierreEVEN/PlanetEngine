@@ -20,7 +20,7 @@ vec3 planetCenter = vec3(0,0, 0);
 float atmosphereRadius = 6200000;
 float planetRadius = 6000000;
 float atmosphereDensityFalloff = 1;
-float scatter_strength = 1;
+float scatter_strength = .7;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
 
@@ -71,7 +71,7 @@ void main()
 	else {
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
-		oFragmentColor = vec4(col * pow(max(0, dot(norm, light_dir) + 0.1), 2), 1) * 1.2;
+		oFragmentColor = vec4(col * pow(max(0.015, dot(norm, light_dir) + 0.1), 2), 1) * 1.2;
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());
@@ -81,7 +81,7 @@ void main()
 
 	// Trace sun disc
     vec3 sunPosition = light_dir * 10000000000.0;
-    RaySphereTraceResult sunInfos = raySphereIntersection(sunPosition, 200000000.0, cameraDirection, camera_pos);
+    RaySphereTraceResult sunInfos = raySphereIntersection(sunPosition, 100000000.0, cameraDirection, camera_pos);
     float distanceThroughSun = max(0.0, sunInfos.atmosphereDistanceOut - sunInfos.atmosphereDistanceIn);
 
 
@@ -89,6 +89,11 @@ void main()
 	float distance_to_atmosphere = hitInfo.atmosphereDistanceIn;
     float distanceThroughAtmosphere = outMax - hitInfo.atmosphereDistanceIn;
 
+	// Draw sun disc
+    if (depth <= 0) {
+        oFragmentColor += vec4(1.0, 1, 1, 1.0) * distanceThroughSun / 2000;
+        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.05;
+    }
 
     if (distanceThroughAtmosphere > 0.0) {
         vec3 pointInAtmosphere = camera_pos + cameraDirection * (distance_to_atmosphere - epsilon);
@@ -96,9 +101,4 @@ void main()
         oFragmentColor = vec4(light, 1);
 	}
 	
-	// Draw sun disc
-    if (depth <= 0) {
-        oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 400000;
-        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.05;
-    }
 }

@@ -23,5 +23,6 @@ void main()
     color += texture(LastSample, uv + vec2(-1, -1) / input_resolution).rgb * 0.0625;
     color += texture(LastSample, uv + vec2(1, -1) / input_resolution).rgb * 0.0625;
 
-    oFragmentColor.rgb = color / (1 / bloom_strength) * pow(step, 0.5) + texture(Color, uv).rgb;
+    oFragmentColor.rgb = color / (1 / bloom_strength) * pow(step, 1) + texture(Color, uv).rgb;
+    //oFragmentColor.rgb = texture(Color, uv).rgb - 0.8;
 }

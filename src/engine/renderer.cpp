@@ -179,8 +179,6 @@ void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 	framebuffer()->resize(x, y);
 	on_resolution_changed.execute(x, y);
 	Engine::get().get_world().get_camera()->viewport_res() = {x, y};
-
-	std::cout << "resize to " << x << " x " << y << std::endl;
 }
 
 void Renderer::set_icon(const std::string& file_path)
