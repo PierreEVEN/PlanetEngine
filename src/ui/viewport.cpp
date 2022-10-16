@@ -20,10 +20,9 @@ Viewport::~Viewport()
 
 void Viewport::draw()
 {
-	const auto& new_res = ImGui::GetContentRegionAvail();
-	if (last_viewport_res != Eigen::Vector2i{new_res.x, new_res.y} && !Engine::get().get_renderer().is_fullscreen())
+	if (!Engine::get().get_renderer().is_fullscreen())
 	{
-		last_viewport_res = Eigen::Vector2i{new_res.x, new_res.y};
+		const auto& new_res = ImGui::GetContentRegionAvail();
 		Engine::get().get_renderer().resize_framebuffer_internal(nullptr, static_cast<int>(new_res.x), static_cast<int>(new_res.y));
 	}
 	ImGui::Image(

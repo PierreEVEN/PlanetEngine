@@ -51,13 +51,13 @@ Renderer::Renderer()
 	g_buffer_depth->set_data_interface(default_window_res.x(), default_window_res.y(), GL_DEPTH_COMPONENT32F);
 	g_buffer = EZCOGL::FBO_DepthTexture::create(textures, g_buffer_depth);
 
-	Engine::get().on_framebuffer_resized.add_object(this, &Renderer::resize_framebuffer_internal);
+	Engine::get().on_window_resized.add_object(this, &Renderer::resize_framebuffer_internal);
 	GL_CHECK_ERROR();
 }
 
 Renderer::~Renderer()
 {
-	Engine::get().on_framebuffer_resized.clear_object(this);
+	Engine::get().on_window_resized.clear_object(this);
 	glfwDestroyWindow(main_window);
 }
 
@@ -156,13 +156,13 @@ bool Renderer::should_close() const
 
 void Renderer::switch_fullscreen()
 {
-	Engine::get().on_framebuffer_resized.clear_object(this);
+	Engine::get().on_window_resized.clear_object(this);
 	fullscreen = !fullscreen;
 	if (fullscreen)
 	{
 		int w, h;
 		glfwGetWindowSize(main_window, &w, &h);
-		Engine::get().on_framebuffer_resized.add_object(this, &Renderer::resize_framebuffer_internal);
+		Engine::get().on_window_resized.add_object(this, &Renderer::resize_framebuffer_internal);
 		resize_framebuffer_internal(nullptr, w, h);
 	}
 	on_fullscreen.execute(fullscreen);
@@ -170,12 +170,17 @@ void Renderer::switch_fullscreen()
 
 void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 {
-	GL_CHECK_ERROR();
+	if (render_width == x && render_height == y || x <= 0 || y <= 0)
+		return;
+
+	render_width = x;
+	render_height = y;
+
 	framebuffer()->resize(x, y);
 	on_resolution_changed.execute(x, y);
-
 	Engine::get().get_world().get_camera()->viewport_res() = {x, y};
-	GL_CHECK_ERROR();
+
+	std::cout << "resize to " << x << " x " << y << std::endl;
 }
 
 void Renderer::set_icon(const std::string& file_path)

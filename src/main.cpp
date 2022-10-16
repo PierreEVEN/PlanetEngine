@@ -1,5 +1,6 @@
 #include "graphics/camera.h"
 #include <imgui.h>
+#include <iostream>
 #include <GL/gl3w.h>
 
 #include "graphics/material.h"
@@ -31,6 +32,10 @@ int main()
 
 	const auto post_process_pass = PostProcessPass::create("PostProcess", Engine::get().get_renderer());
 	post_process_pass->init("resources/shaders/post_process.fs");
+	post_process_pass->on_resolution_changed([](int& x, int& y)
+		{
+			std::cout << "test update : " << x << " / " << y << std::endl;
+		});
 
 	ImGuiWindow::create_window<GraphicDebugger>();
 	ImGuiWindow::create_window<MaterialManagerUi>();
@@ -99,8 +104,8 @@ int main()
 		upsample_pass->init("resources/shaders/post_process/upsample_pass.fs");
 		upsample_pass->on_resolution_changed([i](int& x, int& y)
 			{
-				x /= static_cast<int>(std::pow(2, i + 1));
-				y /= static_cast<int>(std::pow(2, i + 1));
+				x /= static_cast<int>(std::pow(2, i));
+				y /= static_cast<int>(std::pow(2, i));
 			});
 		upsample_passes.emplace_back(upsample_pass);
 	}

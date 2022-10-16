@@ -58,7 +58,7 @@ void Engine::init()
 	glfwSetFramebufferSizeCallback(get().get_renderer().get_window(),
 	                               [](GLFWwindow* window, int width, int height)
 	                               {
-		                               get().on_framebuffer_resized.execute(window, width, height);
+		                               get().on_window_resized.execute(window, width, height);
 	                               }
 	);
 

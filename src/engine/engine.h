@@ -37,7 +37,7 @@ public:
 
 	EventKeyboard on_key_down;
 	EventMousePos on_mouse_moved;
-	EventResizeFramebuffer on_framebuffer_resized;
+	EventResizeFramebuffer on_window_resized;
 	EventScroll on_mouse_scroll;
 
 	void init();

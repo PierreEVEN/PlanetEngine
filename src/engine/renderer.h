@@ -62,5 +62,7 @@ private:
 	GLFWwindow* main_window = nullptr;
 	ImGuiContext* imgui_context = nullptr;
 	bool uniform_explicit_location_support;
+	int render_width = 0;
+	int render_height = 0;
 
 };

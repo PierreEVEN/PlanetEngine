@@ -14,11 +14,17 @@ PostProcessPass::~PostProcessPass()
 	parent_renderer.on_resolution_changed.clear_object(this);
 }
 
+static std::unordered_map<std::string, std::shared_ptr<Material>> post_process_materials;
+
 void PostProcessPass::init(const std::string& fragment_shader)
 {
-	pass_material = Material::create(name + "::Material");
-	pass_material->load_from_source("resources/shaders/post_process_vertex.vs", fragment_shader);
-
+	if (post_process_materials.contains(fragment_shader))
+		pass_material = post_process_materials.find(fragment_shader)->second;
+	else {
+		pass_material = Material::create(name + "::Material");
+		pass_material->load_from_source("resources/shaders/post_process_vertex.vs", fragment_shader);
+		post_process_materials.insert({ fragment_shader, pass_material });
+	}
 	texture = EasyCppOglTexture::create(name + "::Texture", { .wrapping = TextureWrapping::ClampToEdge, .filtering_mag = TextureMagFilter::Linear, .filtering_min = TextureMinFilter::Linear });
 	texture->set_data_interface(1920, 1080, GL_RGB16F);
 	framebuffer = EZCOGL::FBO::create({texture});
