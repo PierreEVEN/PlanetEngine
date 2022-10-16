@@ -96,10 +96,15 @@ void main()
 	// Draw sun disc
     if (depth <= 0) {
         oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 200000000;
-        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.2;
+        oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.05;
     }
     
+
+    // Tone mapping
+    float exposure = 1; // Todo : compute dynamic hdr
+    vec3 color_mapped = vec3(1.0) - exp(-oFragmentColor.rgb * exposure);
+
     // Gamma correction
     float gamma = 2.2;
-    oFragmentColor.rgb = pow(oFragmentColor.rgb, vec3(1.0 / gamma));
+    oFragmentColor.rgb = pow(color_mapped, vec3(1.0 / gamma));
 }
