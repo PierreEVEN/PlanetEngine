@@ -278,7 +278,7 @@ static void texture_manager()
 	for (const auto& texture : Engine::get().get_asset_manager().get_textures())
 	{
 		const int base_res = std::max(texture->width(), texture->height());
-		const int res = std::min(base_res, 800);
+		const int res = std::clamp(base_res, 300, 1000);
 		const float ratio = static_cast<float>(res) / static_cast<float>(base_res);
 
 		ImGui::BeginGroup();

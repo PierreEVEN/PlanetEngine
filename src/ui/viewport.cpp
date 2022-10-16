@@ -7,7 +7,7 @@
 #include "engine/renderer.h"
 #include "graphics/texture_image.h"
 
-Viewport::Viewport()
+Viewport::Viewport(const std::shared_ptr<EZCOGL::TextureInterface>& texture): framebuffer_texture(texture)
 {
 	window_name = "Viewport";
 	Engine::get().get_renderer().on_fullscreen.add_object(this, &Viewport::on_fullscreen);
@@ -27,7 +27,7 @@ void Viewport::draw()
 		Engine::get().get_renderer().resize_framebuffer_internal(nullptr, static_cast<int>(new_res.x), static_cast<int>(new_res.y));
 	}
 	ImGui::Image(
-		reinterpret_cast<ImTextureID>(static_cast<size_t>(Engine::get().get_renderer().get_resolve_texture()->id_interface())),
+		reinterpret_cast<ImTextureID>(static_cast<size_t>(framebuffer_texture->id_interface())),
 		ImGui::GetContentRegionAvail(), ImVec2(0, 1), ImVec2(1, 0));
 }
 

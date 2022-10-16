@@ -11,6 +11,9 @@ out vec4 oFragmentColor;
 layout(location = 0) in vec2 uv;
 uniform float z_near;
 
+layout(location = 12) uniform float gamma;
+layout(location = 13) uniform float exposure;
+
 int NumScatterPoints = 5;
 int NumOpticalDepthPoints = 5;
 vec3 planetCenter = vec3(0,0, 0);
@@ -78,7 +81,7 @@ void main()
 
 	// Trace sun disc
     vec3 sunPosition = light_dir * 10000000000.0;
-    RaySphereTraceResult sunInfos = raySphereIntersection(sunPosition, 500000000.0, cameraDirection, camera_pos);
+    RaySphereTraceResult sunInfos = raySphereIntersection(sunPosition, 200000000.0, cameraDirection, camera_pos);
     float distanceThroughSun = max(0.0, sunInfos.atmosphereDistanceOut - sunInfos.atmosphereDistanceIn);
 
 
@@ -95,16 +98,7 @@ void main()
 	
 	// Draw sun disc
     if (depth <= 0) {
-        oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 200000000;
+        oFragmentColor += vec4(1.0, .5, .2, 1.0) * distanceThroughSun / 400000;
         oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.05;
     }
-    
-
-    // Tone mapping
-    float exposure = 1; // Todo : compute dynamic hdr
-    vec3 color_mapped = vec3(1.0) - exp(-oFragmentColor.rgb * exposure);
-
-    // Gamma correction
-    float gamma = 2.2;
-    oFragmentColor.rgb = pow(color_mapped, vec3(1.0 / gamma));
 }

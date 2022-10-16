@@ -9,7 +9,7 @@
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
-#include "graphics/easycppogl_texture.h"
+#include "graphics/post_process_pass.h"
 #include "world/planet.h"
 #include "graphics/primitives.h"
 #include "graphics/texture_cube.h"
@@ -22,19 +22,20 @@
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
 
-const double earth_location = 0; // 149597870700;
-
 int main()
 {
 	Engine::get().get_renderer().set_icon("resources/textures/icon.png");
-	const auto g_buffer_combine_material = Material::create("g_buffer combine");
-	g_buffer_combine_material->load_from_source("resources/shaders/gbuffer_combine.vs",
-	                                            "resources/shaders/gbuffer_combine.fs");
+
+	const auto pass_g_buffer_combine = PostProcessPass::create("GBuffer_Combine", Engine::get().get_renderer());
+	pass_g_buffer_combine->init("resources/shaders/gbuffer_combine.fs");
+
+	const auto post_process_pass = PostProcessPass::create("PostProcess", Engine::get().get_renderer());
+	post_process_pass->init("resources/shaders/post_process.fs");
 
 	ImGuiWindow::create_window<GraphicDebugger>();
 	ImGuiWindow::create_window<MaterialManagerUi>();
 	ImGuiWindow::create_window<TextureManagerUi>();
-	ImGuiWindow::create_window<Viewport>();
+	ImGuiWindow::create_window<Viewport>(post_process_pass->result());
 	ImGuiWindow::create_window<SessionFrontend>();
 	ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
 
@@ -44,7 +45,6 @@ int main()
 	earth->num_lods = 19;
 	earth->cell_count = 30;
 	earth->regenerate();
-	earth->set_local_position({earth_location, 0, 0});
 	Engine::get().get_world().get_scene_root().add_child(earth);
 
 	const auto moon = std::make_shared<Planet>("moon");
@@ -77,7 +77,38 @@ int main()
 	const auto cubemap = TextureCube::create("cube map");
 	cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
 	                   "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
-	                   "resources/textures/skybox/pz.png","resources/textures/skybox/nz.png");
+	                   "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
+
+	std::vector<std::shared_ptr<PostProcessPass>> downsample_passes;
+	for (int i = 0; i < 8; ++i)
+	{
+		const auto downsample_pass = PostProcessPass::create("DownSample_" + std::to_string(i), Engine::get().get_renderer());
+		downsample_pass->init("resources/shaders/post_process/downsample_pass.fs");
+		downsample_pass->on_resolution_changed([i](int& x, int& y)
+			{
+				x /= static_cast<int>(std::pow(2, i + 1));
+				y /= static_cast<int>(std::pow(2, i + 1));
+			});
+		downsample_passes.emplace_back(downsample_pass);
+	}
+
+	std::vector<std::shared_ptr<PostProcessPass>> upsample_passes;
+	for (int i = 0; i < 7; ++i)
+	{
+		const auto upsample_pass = PostProcessPass::create("UpSample_" + std::to_string(i), Engine::get().get_renderer());
+		upsample_pass->init("resources/shaders/post_process/upsample_pass.fs");
+		upsample_pass->on_resolution_changed([i](int& x, int& y)
+			{
+				x /= static_cast<int>(std::pow(2, i + 1));
+				y /= static_cast<int>(std::pow(2, i + 1));
+			});
+		upsample_passes.emplace_back(upsample_pass);
+	}
+
+	float bloom_strength = 0.2;
+	int bloom_quality = 5;
+	float gamma = 2.2;
+	float exposure = 1.0;
 
 	while (!Engine::get().get_renderer().should_close())
 	{
@@ -89,46 +120,89 @@ int main()
 			// Gameplay
 			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
+
 			moon_orbit += Engine::get().get_world().get_delta_seconds() * 0.02;
 			moon_rotation += Engine::get().get_world().get_delta_seconds() * 0.2;
 			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.05;
 
 			moon->set_local_position(
-				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000 + Eigen::Vector3d(
-					earth_location, 0, 0));
-
+				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000);
 			moon->set_local_rotation(
 				Eigen::Quaterniond(Eigen::AngleAxisd(moon_rotation, Eigen::Vector3d::UnitY())));
-
 			earth->set_local_rotation(
 				Eigen::Quaterniond(Eigen::AngleAxisd(hearth_rotation, Eigen::Vector3d::UnitY())));
 
+			// Rendering
+
 			// G_buffers
 			{
-				STAT_DURATION("Deferred_GBuffers");
+				STAT_DURATION("Deferred GBuffers");
 				Engine::get().get_renderer().bind_g_buffers();
 				Engine::get().get_world().render_world();
 			}
 
 			// Deferred combine
 			{
-				STAT_DURATION("Deferred_Combine");
-				Engine::get().get_renderer().bind_deferred_combine();
-
-				g_buffer_combine_material->bind();
-				glUniform1f(g_buffer_combine_material->binding("z_near"),
+				pass_g_buffer_combine->bind();
+				glUniform1f(pass_g_buffer_combine->material()->binding("z_near"),
 				            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
-				g_buffer_combine_material->bind_texture(
-					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_color()),
-					"GBUFFER_color");
-				g_buffer_combine_material->bind_texture(
-					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_normal()),
-					"GBUFFER_normal");
-				g_buffer_combine_material->bind_texture(
-					dynamic_pointer_cast<EasyCppOglTexture>(Engine::get().get_renderer().world_depth()),
-					"GBUFFER_depth");
-				g_buffer_combine_material->bind_texture(cubemap, "WORLD_Cubemap");
-				glDrawArrays(GL_TRIANGLES, 0, 3);
+				pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_color(),
+				                                                   "GBUFFER_color");
+				pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_normal(),
+				                                                   "GBUFFER_normal");
+				pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_depth(),
+				                                                   "GBUFFER_depth");
+				pass_g_buffer_combine->material()->bind_texture(cubemap,"WORLD_Cubemap");
+				pass_g_buffer_combine->draw();
+			}
+			// Down Samples
+			{
+				downsample_passes[0]->bind();
+				glUniform2f(downsample_passes[0]->material()->binding("input_resolution"), pass_g_buffer_combine->width(), pass_g_buffer_combine->height());
+				downsample_passes[0]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
+				downsample_passes[0]->draw();
+				for (int i = 1; i < downsample_passes.size(); ++i)
+				{
+					downsample_passes[i]->bind();
+					downsample_passes[i]->material()->bind_texture_ex(downsample_passes[i - 1]->result(), "Color");
+					glUniform2f(downsample_passes[i]->material()->binding("input_resolution"), downsample_passes[i - 1]->width(), downsample_passes[i - 1]->height());
+					downsample_passes[i]->draw();
+				}
+			}
+			// Up Samples
+			{
+				ImGui::SliderFloat("bloom strength", &bloom_strength, 0, 1);
+				ImGui::SliderInt("bloom quality", &bloom_quality, 1, 20);
+				upsample_passes.back()->bind();
+				glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), downsample_passes.back()->width(), downsample_passes.back()->height());
+				glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), bloom_strength);
+				glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - ((float)upsample_passes.size() - 1) / (float)upsample_passes.size());
+				glUniform1i(upsample_passes.back()->material()->binding("bloom_quality"), bloom_quality);
+				upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(), "LastSample");
+				upsample_passes.back()->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
+				upsample_passes.back()->draw();
+				for (int i = upsample_passes.size() - 2; i >= 0; --i)
+				{
+					upsample_passes[i]->bind();
+					glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), upsample_passes[i + 1]->width(), upsample_passes[i + 1]->height());
+					glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), bloom_strength);
+					glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / (float)upsample_passes.size());
+					glUniform1i(upsample_passes[i]->material()->binding("bloom_quality"), bloom_quality);
+					upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
+					upsample_passes[i]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
+					upsample_passes[i]->draw();
+				}
+			}
+
+			// Post process
+			{
+				ImGui::SliderFloat("Exposure", &exposure, 0.1, 4);
+				ImGui::SliderFloat("Gamma", &gamma, 0.5, 4);
+				post_process_pass->bind(Engine::get().get_renderer().is_fullscreen());
+				glUniform1f(post_process_pass->material()->binding("gamma"), gamma);
+				glUniform1f(post_process_pass->material()->binding("exposure"), exposure);
+				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneColor");
+				post_process_pass->draw();
 			}
 			// UI
 			ui::draw();
