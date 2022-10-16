@@ -105,7 +105,7 @@ int main()
 		upsample_passes.emplace_back(upsample_pass);
 	}
 
-	float bloom_strength = 0.2;
+	float bloom_strength = 0.35;
 	int bloom_quality = 5;
 	float gamma = 2.2;
 	float exposure = 1.0;
