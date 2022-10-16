@@ -1,0 +1,4 @@
+- Chargement des textures en parallèle
+- Deferred rendering
+- Heightmaps calculées via compute shaders (normales aussi)
+- Lod dynamiques

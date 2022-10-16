@@ -41,7 +41,7 @@ int main()
 	const auto earth = std::make_shared<Planet>("earth");
 	earth->radius = 6000000;
 	earth->num_lods = 19;
-	earth->cell_count = 40;
+	earth->cell_count = 30;
 	earth->regenerate();
 	earth->set_local_position({earth_location, 0, 0});
 	Engine::get().get_world().get_scene_root().add_child(earth);
@@ -50,7 +50,7 @@ int main()
 	Engine::get().get_world().get_scene_root().add_child(moon);
 	moon->radius = 1700000;
 	moon->num_lods = 18;
-	moon->cell_count = 40;
+	moon->cell_count = 30;
 	moon->regenerate();
 	double moon_orbit = 0;
 	double moon_rotation = 0;
@@ -69,7 +69,7 @@ int main()
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	camera_controller.teleport_to({0, 0, earth->radius + 20});
+	camera_controller.teleport_to({-10, 0, earth->radius + 20});
 
 	while (!Engine::get().get_renderer().should_close())
 	{

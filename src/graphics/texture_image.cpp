@@ -21,10 +21,10 @@ std::shared_ptr<TextureBase> TextureBase::create(const std::string& name, const 
 	return std::shared_ptr<TextureBase>(new TextureBase(name, params));
 }
 
-void TextureBase::bind(uint32_t unit) const
+void TextureBase::bind(uint32_t unit)
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
+	glBindTexture(GL_TEXTURE_2D, id());
 	GL_CHECK_ERROR();
 }
 
@@ -89,31 +89,18 @@ TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) 
 	GL_CHECK_ERROR();
 }
 
-bool Texture2D::from_file(const std::string& filename, int force_nb_channel)
+void Texture2D::from_file(const std::string& filename, int force_nb_channel)
 {
-	const EZCOGL::GLImage img(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
+	if (async_load_thread.joinable())
+		async_load_thread.join();
 
-	switch (img.depth())
-	{
-	case 1:
-		set_data(img.width(), img.height(), GL_R8, img.data());
-		break;
-	case 3:
-		set_data(img.width(), img.height(), GL_RGB8, img.data());
-		break;
-	case 4:
-		set_data(img.width(), img.height(), GL_RGBA8, img.data());
-		break;
-	default:
-		return false;
-	}
-
-	bind();
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	GL_CHECK_ERROR();
-	return true;
+	async_load_thread = std::thread([&, filename, force_nb_channel]
+		{
+			std::lock_guard lock_guard(load_mutex);
+			finished_loading = false;
+			loading_image_ptr = new EZCOGL::GLImage(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
+			finished_loading = true;
+		});
 }
 
 void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const void* data_ptr)
@@ -131,12 +118,40 @@ void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const v
 	GL_CHECK_ERROR();
 }
 
-bool TextureCube::from_file(const std::string& file_x, const std::string& file_y, const std::string& file_z,
-	const std::string& file_mx, const std::string& file_my, const std::string& file_mz, int force_nb_channel)
+uint32_t Texture2D::id()
 {
-	return false;
-}
+	if (finished_loading)
+	{
+		std::lock_guard lock_guard(load_mutex);
+		finished_loading = false;
 
-void TextureCube::set_data(int32_t w, int32_t h, uint32_t image_format, const void* data_ptr)
-{
+		const auto* image = static_cast<EZCOGL::GLImage*>(loading_image_ptr);
+
+		switch (image->depth())
+		{
+		case 1:
+			set_data(image->width(), image->height(), GL_R8, image->data());
+			break;
+		case 3:
+			set_data(image->width(), image->height(), GL_RGB8, image->data());
+			break;
+		case 4:
+			set_data(image->width(), image->height(), GL_RGBA8, image->data());
+			break;
+		default:
+			delete image;
+			return 0;
+		}
+
+		bind();
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		GL_CHECK_ERROR();
+		delete image;
+	}
+
+
+
+	return TextureBase::id();
 }

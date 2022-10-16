@@ -185,7 +185,7 @@ void Planet::regenerate()
 
 	GL_CHECK_ERROR();
 
-	root->regenerate(cell_count, cell_width);
+	root->regenerate(cell_count);
 	GL_CHECK_ERROR();
 }
 
@@ -222,7 +222,16 @@ void Planet::tick(double delta_time)
 		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
 	}
 
-	root->tick(delta_time, num_lods);
+	const double camera_distance_to_ground = (Engine::get().get_world().get_camera()->
+	                                                        get_world_position() -
+		get_world_position()).norm() - static_cast<double>(radius);
+
+	const double normalized_distance = std::max(1.0, camera_distance_to_ground / (cell_width * (cell_count * 4 + 2)));
+	const int min_lod = std::min(num_lods - 1, static_cast<int>(std::log2(normalized_distance)));
+	const int max_lod = num_lods;
+	const float initial_cell_width = cell_width * static_cast<float>(std::pow(2, min_lod));
+
+	root->tick(delta_time, max_lod - min_lod, initial_cell_width);
 }
 
 void Planet::render(Camera& camera)
@@ -238,10 +247,9 @@ PlanetRegion::PlanetRegion(Planet& in_parent, const World& in_world, uint32_t in
 {
 }
 
-void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
+void PlanetRegion::regenerate(int32_t in_cell_number)
 {
 	cell_number = in_cell_number;
-	cell_size = in_width; // in_width;
 
 	const int map_size = cell_number * 4 + 5;
 	if (!height_map || height_map->width() != map_size)
@@ -271,24 +279,25 @@ void PlanetRegion::regenerate(int32_t in_cell_number, double in_width)
 	rebuild_maps();
 
 	if (child)
-		child->regenerate(cell_number, cell_size * 2);
+		child->regenerate(cell_number);
 }
 
 
-void PlanetRegion::tick(double delta_time, int in_num_lods)
+void PlanetRegion::tick(double delta_time, int in_num_lods, double in_width)
 {
+	cell_size = in_width; // in_width;
 	// Create or destroy children
 	num_lods = in_num_lods;
 	if (!child && current_lod + 1 < num_lods)
 	{
 		child = std::make_shared<PlanetRegion>(planet, world, num_lods, current_lod + 1);
-		child->regenerate(cell_number, cell_size * 2);
+		child->regenerate(cell_number);
 	}
 	if (child && current_lod >= num_lods - 1)
 		child = nullptr;
 
 	if (child)
-		child->tick(delta_time, num_lods);
+		child->tick(delta_time, num_lods, cell_size * 2);
 
 	STAT_DURATION("Planet Tick LOD :" + std::to_string(current_lod));
 
@@ -387,16 +396,6 @@ void PlanetRegion::render(Camera& camera)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-struct LandscapeChunkData
-{
-	Eigen::Matrix4f Chunk_LocalTransform;
-	Eigen::Matrix4f Chunk_PlanetTransform;
-	float Chunk_PlanetRadius;
-	float Chunk_CellWidth;
-	int32_t Chunk_CellCount;
-	int32_t Chunk_CurrentLOD;
-};
-
 void PlanetRegion::rebuild_maps()
 {
 	GL_CHECK_ERROR();
@@ -404,16 +403,21 @@ void PlanetRegion::rebuild_maps()
 
 	const LandscapeChunkData chunk_data{
 		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
-		.Chunk_PlanetTransform = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>()
-		.matrix(),
+		.Chunk_PlanetTransform = (planet.get_world_transform().inverse() *
+			planet.planet_global_transform).cast<float>().matrix(),
 		.Chunk_PlanetRadius = planet.radius,
 		.Chunk_CellWidth = static_cast<float>(cell_size),
 		.Chunk_CellCount = cell_number,
 		.Chunk_CurrentLOD = static_cast<int32_t>(current_lod),
 	};
 
+	if (chunk_data == last_chunk_data)
+		return;
+
 	const auto ssbo = StorageBuffer::create("test");
 	ssbo->set_data(chunk_data);
+
+	last_chunk_data = chunk_data;
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo->id());
 
 	planet.get_landscape_material();

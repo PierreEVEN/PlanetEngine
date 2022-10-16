@@ -45,14 +45,37 @@ class PlanetRegion
 public:
 	PlanetRegion(Planet& parent, const World& world, uint32_t lod_level, uint32_t my_level);
 
-	void regenerate(int32_t cell_number, double width);
+	void regenerate(int32_t cell_number);
 
-	void tick(double delta_time, int num_lods);
+	void tick(double delta_time, int num_lods, double width);
 	void render(Camera& camera);
 
 	void rebuild_maps();
 
 private:
+
+
+	struct LandscapeChunkData
+	{
+		Eigen::Matrix4f Chunk_LocalTransform;
+		Eigen::Matrix4f Chunk_PlanetTransform;
+		float Chunk_PlanetRadius;
+		float Chunk_CellWidth;
+		int32_t Chunk_CellCount;
+		int32_t Chunk_CurrentLOD;
+
+		bool operator==(const LandscapeChunkData& other) const
+		{
+			return Chunk_LocalTransform == other.Chunk_LocalTransform &&
+				Chunk_PlanetRadius == other.Chunk_PlanetRadius &&
+				Chunk_CellWidth == other.Chunk_CellWidth &&
+				Chunk_CellCount == other.Chunk_CellCount &&
+				Chunk_CurrentLOD == other.Chunk_CurrentLOD;
+		}
+	};
+
+	LandscapeChunkData last_chunk_data;
+
 	Planet& planet;
 	Eigen::Vector3d chunk_position;
 	const World& world;
