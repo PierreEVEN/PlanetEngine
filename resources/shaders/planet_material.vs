@@ -46,7 +46,32 @@ void main()
     coordinates = vec2(mod(seamless_uv_from_sphere_normal(dvec3(planet_normal_unrotated)) * 1000, 1));
     vec4 world_pos = model * vec4(planet_pos, 1.0);
     world_pos.xyz += planet_normal * (altitude < 0 ? 0 : altitude);
+
+    // Waves
+
+    if (altitude < 0) {
+
+        float intensity = clamp(-altitude * 10, 0, 1);
+
+        float progressx = -world_pos.z * 0.1 + -world_time * 1;
+        float progressy = -world_pos.y * .05 + -world_time * 0.3;
+
+        world_pos.x += sin(progressx) * 4 * intensity;
+        world_pos.z -= (cos(1 - progressx) + 1) * 8 * intensity;
+        world_pos.z -= (cos(2 - progressx) + 2) * 3* intensity;
+        world_pos.z -= (cos(3 - progressx) + 3) * 2* intensity;
+        world_pos.z -= (cos(4 - progressx) + 4) * 1 * intensity;
+
+        world_pos.x += sin(progressy) * 8 * intensity;
+    }
+
+
+
+
 	out_position = world_pos.xyz;
+
+
+
 	gl_Position = pv_matrix * world_pos;
     planet_radius = radius;
 }

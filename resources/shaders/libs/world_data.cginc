@@ -9,9 +9,9 @@ layout (std140, binding = 0) uniform WorldData
     mat4 proj_matrix_inv;
     mat4 view_matrix_inv;
     mat4 pv_matrix_inv;
+    float world_time;
 	vec3 camera_pos;
 	vec3 camera_forward;
-    float world_time;
 };
 
 #endif // WORLD_DATA_H_

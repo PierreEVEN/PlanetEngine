@@ -14,9 +14,9 @@ struct WorldDataStructure
 	alignas(16) Eigen::Matrix4f proj_matrix_inv;
 	alignas(16) Eigen::Matrix4f view_matrix_inv;
 	alignas(16) Eigen::Matrix4f vp_matrix_inv;
+	alignas(16) float world_time;
 	alignas(16) Eigen::Vector3f camera_pos;
 	alignas(16) Eigen::Vector3f camera_forward;
-	alignas(16) float world_time;
 };
 
 World::World() : camera(std::make_shared<Camera>()), root_component(std::make_unique<SceneComponent>("root"))
@@ -64,12 +64,12 @@ void World::tick_world()
 		.proj_matrix_inv = proj_matrix.cast<float>().inverse(),
 		.view_matrix_inv = view_matrix.cast<float>().inverse(),
 		.vp_matrix_inv = pv_matrix.cast<float>().inverse(),
+		.world_time = static_cast<float>(glfwGetTime()),
 		.camera_pos = camera->get_world_position().cast<float>(),
 		.camera_forward = camera->world_forward().cast<float>(),
-		.world_time = static_cast<float>(glfwGetTime())
 	};
 	glBindBuffer(GL_UNIFORM_BUFFER, world_uniform);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(world_data), &world_data, GL_STATIC_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(WorldDataStructure), &world_data, GL_STATIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
