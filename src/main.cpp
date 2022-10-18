@@ -145,6 +145,7 @@ int main()
 
 			// Deferred combine
 			{
+				STAT_DURATION("Deferred combine");
 				pass_g_buffer_combine->bind();
 				glUniform1f(pass_g_buffer_combine->material()->binding("z_near"),
 				            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
@@ -159,47 +160,52 @@ int main()
 				glUniform1f(pass_g_buffer_combine->material()->binding("exposure"), exposure);
 				pass_g_buffer_combine->draw();
 			}
-			// Down Samples
 			{
-				downsample_passes[0]->bind();
-				glUniform2f(downsample_passes[0]->material()->binding("input_resolution"), static_cast<float>(pass_g_buffer_combine->width()), static_cast<float>(pass_g_buffer_combine->height()));
-				downsample_passes[0]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
-				downsample_passes[0]->draw();
-				for (int i = 1; i < downsample_passes.size(); ++i)
+
+				STAT_DURATION("Bloom");
+				// Down Samples
 				{
-					downsample_passes[i]->bind();
-					downsample_passes[i]->material()->bind_texture_ex(downsample_passes[i - 1]->result(), "Color");
-					glUniform2f(downsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(downsample_passes[i - 1]->width()), static_cast<float>(downsample_passes[i - 1]->height()));
-					downsample_passes[i]->draw();
+					downsample_passes[0]->bind();
+					glUniform2f(downsample_passes[0]->material()->binding("input_resolution"), static_cast<float>(pass_g_buffer_combine->width()), static_cast<float>(pass_g_buffer_combine->height()));
+					downsample_passes[0]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
+					downsample_passes[0]->draw();
+					for (int i = 1; i < downsample_passes.size(); ++i)
+					{
+						downsample_passes[i]->bind();
+						downsample_passes[i]->material()->bind_texture_ex(downsample_passes[i - 1]->result(), "Color");
+						glUniform2f(downsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(downsample_passes[i - 1]->width()), static_cast<float>(downsample_passes[i - 1]->height()));
+						downsample_passes[i]->draw();
+					}
 				}
-			}
-			// Up Samples
-			{
-				ImGui::SliderFloat("bloom strength", &bloom_strength, 0, 1);
-				ImGui::SliderInt("bloom quality", &bloom_quality, 1, 20);
-				upsample_passes.back()->bind();
-				glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), static_cast<float>(downsample_passes.back()->width()), static_cast<float>(downsample_passes.back()->height()));
-				glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), bloom_strength);
-				glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - (static_cast<float>(upsample_passes.size()) - 1) / static_cast<float>(upsample_passes.size()));
-				glUniform1i(upsample_passes.back()->material()->binding("bloom_quality"), bloom_quality);
-				upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(), "LastSample");
-				upsample_passes.back()->material()->bind_texture_ex(downsample_passes[downsample_passes.size() - 2]->result(), "Color");
-				upsample_passes.back()->draw();
-				for (int i = static_cast<int>(upsample_passes.size()) - 2; i >= 0; --i)
+				// Up Samples
 				{
-					upsample_passes[i]->bind();
-					glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(upsample_passes[i + 1]->width()), static_cast<float>(upsample_passes[i + 1]->height()));
-					glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), bloom_strength);
-					glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / static_cast<float>(upsample_passes.size()));
-					glUniform1i(upsample_passes[i]->material()->binding("bloom_quality"), bloom_quality);
-					upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
-					upsample_passes[i]->material()->bind_texture_ex(i == 0 ? pass_g_buffer_combine->result() : downsample_passes[i - 1]->result(), "Color");
-					upsample_passes[i]->draw();
+					ImGui::SliderFloat("bloom strength", &bloom_strength, 0, 1);
+					ImGui::SliderInt("bloom quality", &bloom_quality, 1, 20);
+					upsample_passes.back()->bind();
+					glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), static_cast<float>(downsample_passes.back()->width()), static_cast<float>(downsample_passes.back()->height()));
+					glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), bloom_strength);
+					glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - (static_cast<float>(upsample_passes.size()) - 1) / static_cast<float>(upsample_passes.size()));
+					glUniform1i(upsample_passes.back()->material()->binding("bloom_quality"), bloom_quality);
+					upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(), "LastSample");
+					upsample_passes.back()->material()->bind_texture_ex(downsample_passes[downsample_passes.size() - 2]->result(), "Color");
+					upsample_passes.back()->draw();
+					for (int i = static_cast<int>(upsample_passes.size()) - 2; i >= 0; --i)
+					{
+						upsample_passes[i]->bind();
+						glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(upsample_passes[i + 1]->width()), static_cast<float>(upsample_passes[i + 1]->height()));
+						glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), bloom_strength);
+						glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / static_cast<float>(upsample_passes.size()));
+						glUniform1i(upsample_passes[i]->material()->binding("bloom_quality"), bloom_quality);
+						upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
+						upsample_passes[i]->material()->bind_texture_ex(i == 0 ? pass_g_buffer_combine->result() : downsample_passes[i - 1]->result(), "Color");
+						upsample_passes[i]->draw();
+					}
 				}
 			}
 
 			// Post process
 			{
+				STAT_DURATION("Post process");
 				ImGui::SliderFloat("Exposure", &exposure, 0.1f, 4);
 				ImGui::SliderFloat("Gamma", &gamma, 0.5f, 4);
 				post_process_pass->bind(Engine::get().get_renderer().is_fullscreen());

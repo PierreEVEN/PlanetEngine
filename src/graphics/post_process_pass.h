@@ -20,6 +20,12 @@ public:
 	{
 		return std::shared_ptr<PostProcessPass>(new PostProcessPass(name, parent));
 	}
+
+	static std::shared_ptr<PostProcessPass> create(const std::string& name, std::shared_ptr<PostProcessPass> previous_pass)
+	{
+		return std::shared_ptr<PostProcessPass>(new PostProcessPass(name, previous_pass));
+	}
+
 	virtual ~PostProcessPass();
 
 	void init(const std::string& fragment_shader);
@@ -42,6 +48,8 @@ public:
 
 private:
 	PostProcessPass(std::string in_name, Renderer& in_parent);
+	PostProcessPass(std::string in_name, const std::shared_ptr<PostProcessPass>& previous_pass);
+	PostProcessPass(std::string in_name, Renderer& in_parent, const std::shared_ptr<EZCOGL::TextureInterface>& in_previous_texture);
 	void resolution_changed(int x, int y);
 
 	std::shared_ptr<Material> pass_material;
@@ -49,4 +57,5 @@ private:
 	std::shared_ptr<EZCOGL::FBO> framebuffer;
 	std::function<void(int&, int&)> resolution_changed_callback = nullptr;
 	Renderer& parent_renderer;
+	std::shared_ptr<EZCOGL::TextureInterface> previous_texture;
 };

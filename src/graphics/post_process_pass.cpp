@@ -20,12 +20,17 @@ void PostProcessPass::init(const std::string& fragment_shader)
 {
 	if (post_process_materials.contains(fragment_shader))
 		pass_material = post_process_materials.find(fragment_shader)->second;
-	else {
+	else
+	{
 		pass_material = Material::create(name + "::Material");
 		pass_material->load_from_source("resources/shaders/post_process_vertex.vs", fragment_shader);
-		post_process_materials.insert({ fragment_shader, pass_material });
+		post_process_materials.insert({fragment_shader, pass_material});
 	}
-	texture = EasyCppOglTexture::create(name + "::Texture", { .wrapping = TextureWrapping::ClampToEdge, .filtering_mag = TextureMagFilter::Linear, .filtering_min = TextureMinFilter::Linear });
+	texture = EasyCppOglTexture::create(name + "::Texture", {
+		                                    .wrapping = TextureWrapping::ClampToEdge,
+		                                    .filtering_mag = TextureMagFilter::Linear,
+		                                    .filtering_min = TextureMinFilter::Linear
+	                                    });
 	texture->set_data_interface(1920, 1080, GL_RGB16F);
 	framebuffer = EZCOGL::FBO::create({texture});
 }
@@ -50,6 +55,12 @@ void PostProcessPass::bind(bool to_back_buffer) const
 	GL_CHECK_ERROR();
 
 	pass_material->bind();
+	if (previous_texture)
+	{
+		glUniform2f(material()->binding("input_resolution"), static_cast<float>(previous_texture->width_interface()),
+		            static_cast<float>(previous_texture->height_interface()));
+		material()->bind_texture_ex(previous_texture, "previous_pass");
+	}
 	GL_CHECK_ERROR();
 }
 
@@ -76,6 +87,19 @@ PostProcessPass::PostProcessPass(std::string in_name, Renderer& in_parent)
 	  parent_renderer(in_parent)
 {
 	parent_renderer.on_resolution_changed.add_object(this, &PostProcessPass::resolution_changed);
+}
+
+PostProcessPass::PostProcessPass(std::string in_name, const std::shared_ptr<PostProcessPass>& in_previous_pass) :
+	PostProcessPass(in_name, in_previous_pass->parent_renderer)
+{
+	previous_texture = in_previous_pass->result();
+}
+
+PostProcessPass::PostProcessPass(std::string in_name, Renderer& in_parent,
+                                 const std::shared_ptr<EZCOGL::TextureInterface>& in_previous_texture) :
+	 PostProcessPass(in_name, in_parent)
+{
+	previous_texture = in_previous_texture;
 }
 
 void PostProcessPass::resolution_changed(int x, int y)
