@@ -71,7 +71,7 @@ void Planet::draw_ui()
 		ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
 		regenerate();
 	ImGui::Separator();
-	ImGui::ColorPicker3("color", planet_color.data());
+	ImGui::DragFloat4("debug vector", debug_vector.data());
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
@@ -213,7 +213,7 @@ void Planet::tick(double delta_time)
 			Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
 		);
 		planet_inverse_rotation = planet_orientation.inverse();
-
+		planet_rotation = planet_orientation;
 		// Compute global planet transformation (ensure ground is always close to origin)
 		planet_global_transform = Eigen::Affine3d::Identity();
 		planet_global_transform.translate(
@@ -361,10 +361,13 @@ void PlanetRegion::render(Camera& camera)
 	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
 	            static_cast<float>(planet.cell_count));
 
-	glUniform3fv(Planet::get_landscape_material()->binding("ground_color"), 1, planet.planet_color.data());
+	glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
 
 	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 	                   lod_local_transform.cast<float>().matrix().data());
+	
+	glUniformMatrix3fv(Planet::get_landscape_material()->binding("planet_rotation"), 1, false,
+		Eigen::Matrix3f(planet.planet_rotation.cast<float>().rotation().matrix()).data());
 
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 

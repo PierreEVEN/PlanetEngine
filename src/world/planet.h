@@ -26,8 +26,10 @@ public:
 	bool double_sided = false;
 	void regenerate();
 	Eigen::Affine3d planet_global_transform;
-	Eigen::Vector3f planet_color = Eigen::Vector3f(97.f / 256, 130.f / 256, 223.f / 256);
 	Eigen::Affine3d planet_inverse_rotation;
+	Eigen::Affine3d planet_rotation;
+
+	Eigen::Vector4f debug_vector;
 
 protected:
 	void tick(double delta_time) override;

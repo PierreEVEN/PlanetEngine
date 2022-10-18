@@ -70,130 +70,84 @@ dvec2 uv_from_sphere_normal(dvec3 sphere_norm) {
     return dvec2(0, 0);
 }
 
-/*
- FROM https://outerra.blogspot.com/2017/06/fp64-approximations-for-sincos-for.html 
-*/
+// return cos(x) * rho
+float scaled_cos(float x, float rho) {
+    if (abs(x) > HALF_PI / 5)
+        return cos(x) * rho;
 
-//sin approximation, error < 5e-9
-double dsin(double x)
-{
-    //minimax coefs for sin for 0..pi/2 range
-    const double a3 = -1.666665709650470145824129400050267289858e-1LF;
-    const double a5 =  8.333017291562218127986291618761571373087e-3LF;
-    const double a7 = -1.980661520135080504411629636078917643846e-4LF;
-    const double a9 =  2.600054767890361277123254766503271638682e-6LF;
-
-    const double m_2_pi = 0.636619772367581343076LF;
-    const double m_pi_2 = 1.57079632679489661923LF;
-
-    double y = abs(x * m_2_pi);
-    double q = floor(y);
-    int quadrant = int(q);
-
-    double t = (quadrant & 1) != 0 ? 1 - y + q : y - q;
-    t *= m_pi_2;
-
-    double t2 = t * t;
-    double r = fma(fma(fma(fma(a9, t2, a7), t2, a5), t2, a3), t2*t, t);
-
-    r = x < 0 ? -r : r;
-
-    return (quadrant & 2) != 0 ? -r : r;
-}
-//cos approximation, error < 5e-9
-double dcos(double x)
-{
-    //sin(x + PI/2) = cos(x)
-    return dsin(x + 1.57079632679489661923LF);
-}
-
-float scaled_cos(float x_f, float rho_f) {
-
-    if (abs(x_f) > HALF_PI / 5)
-        return cos(float(x_f)) * rho_f;
-
-    float rho = float(rho_f);
-    float x = float(x_f);
     float x_2 = x * x;
     float x_4 = x_2 * x_2;
     float x_6 = x_4 * x_4;
     float x_8 = x_6 * x_6;
     float x_10 = x_8 * x_8;
 
-    return float(
-        rho_f - x_2 / 2 * rho + x_4 / 24 * rho - x_6 / 720 * rho + x_8 / 40320 * rho - x_10 / 3628800 * rho
-    );
+    return rho - x_2 / 2 * rho + x_4 / 24 * rho - x_6 / 720 * rho + x_8 / 40320 * rho - x_10 / 3628800 * rho;
 }
 
-float one_minus_cos(float x_f, float rho_f) {
+// return rho - cos(x)
+float rho_minus_cos(float x, float rho) {
 
-    if (abs(x_f) > HALF_PI / 5)
-        return rho_f - cos(float(x_f)) * rho_f;
+    if (abs(x) > HALF_PI / 5)
+        return rho - cos(x) * rho;
 
-    float rho = float(rho_f);
-    float x = float(x_f);
     float x_2 = x * x;
     float x_4 = x_2 * x_2;
     float x_6 = x_4 * x_4;
     float x_8 = x_6 * x_6;
     float x_10 = x_8 * x_8;
 
-    return float(
-        x_2 / 2 * rho + x_4 / 24 * rho - x_6 / 720 * rho + x_8 / 40320 * rho - x_10 / 3628800 * rho
-    );
+    return x_2 / 2 * rho + x_4 / 24 * rho - x_6 / 720 * rho + x_8 / 40320 * rho - x_10 / 3628800 * rho;
 }
 
-float cos_minus_one(float x_f) {
+// return cos(x) - 1
+float cos_minus_one(float x) {
 
-    if (abs(x_f) > HALF_PI / 5)
-        return cos(float(x_f)) - 1;
+    if (abs(x) > HALF_PI / 5)
+        return cos(x) - 1;
 
-    float x = float(x_f);
     float x_2 = x * x;
     float x_4 = x_2 * x_2;
     float x_6 = x_4 * x_4;
     float x_8 = x_6 * x_6;
     float x_10 = x_8 * x_8;
 
-    return float(
-        -x_2 / 2 + x_4 / 24 - x_6 / 720 + x_8 / 40320 - x_10 / 3628800
-    );
+    return -x_2 / 2 + x_4 / 24 - x_6 / 720 + x_8 / 40320 - x_10 / 3628800;
 }
 
-float sin_2(float x_f, float rho_f) {
-    if (abs(x_f) > HALF_PI / 5)
-        return sin(float(x_f)) * rho_f;
+// return sin(x)
+float sin_2(float x, float rho) {
+    if (abs(x) > HALF_PI / 5)
+        return sin(x) * rho;
 
-
-    float rho = float(rho_f);
-    float x = float(x_f);
     float x_3 = x * x * x;
     float x_5 = x_3 * x_3;
     float x_7 = x_5 * x_5;
     float x_9 = x_7 * x_7;
-    float x_11 = x_9 * x_9;
 
-    return float(
-        x * rho - x_3 / 6 * rho + x_5 / 120 * rho - x_7 / 5040 * rho + x_9 / 362880 * rho// - x_11 / 39916800 * rho
-    );
+    return x * rho - x_3 / 6 * rho + x_5 / 120 * rho - x_7 / 5040 * rho + x_9 / 362880 * rho;
 }
 
-// Cos = 1 - dv2;
-// Sin = dv3
-
+// Transform 2D position into 3D sphere position. the sphere center is vec3(-rho, 0, 0)
 vec3 grid_to_sphere(vec2 pos, float rho) {
-    vec2 dpos = pos;
-	vec2 norm_pos = clamp(dpos / rho, -HALF_PI, HALF_PI);
-    float cos_y = scaled_cos(norm_pos.y, 1);
-
+	vec2 norm_pos = pos / rho;
+    float cos_y = cos_minus_one(norm_pos.y);
+    float sin_x = sin_2(norm_pos.x, rho);
     return vec3(
-        (cos_minus_one(norm_pos.y)) * rho - cos_y * one_minus_cos(norm_pos.x, rho),
-        cos_minus_one(norm_pos.y) * sin_2(norm_pos.x, rho) + sin_2(norm_pos.x, rho),
+        cos_y * rho - scaled_cos(norm_pos.y, 1) * rho_minus_cos(norm_pos.x, rho),
+        cos_y * sin_x + sin_x,
         sin_2(norm_pos.y, rho)
     );
 }
 
-
+// Transform 2D position into 3D sphere position. the sphere center is vec3(0, 0, 0)
+vec3 grid_to_sphere_centered(vec2 pos, float rho) {
+	vec2 norm_pos = pos / rho;
+    return vec3(
+        cos(norm_pos.y) * cos(norm_pos.x) * rho,
+        cos(norm_pos.y) * sin(norm_pos.x) * rho,
+        sin(norm_pos.y) * rho
+    );
+}
 
 struct RaySphereTraceResult {
     float atmosphereDistanceIn;

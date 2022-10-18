@@ -24,7 +24,7 @@ float scatter_strength = .7;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
 
-vec3 light_dir = normalize(vec3(0.5, 0, 1));
+vec3 light_dir = normalize(vec3(0.0, 0, 1));
 
 #include "libs/atmosphere.cginc"
 
