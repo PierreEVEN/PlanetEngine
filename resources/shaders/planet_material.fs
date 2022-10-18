@@ -8,11 +8,11 @@ precision highp float;
 #include "libs/world_data.cginc"
 
 layout(location = 0) in vec3 normal;
-layout(location = 1) in vec3 debug_scalar;
-layout(location = 2) in vec3 position;
-layout(location = 3) in float altitude;
-layout(location = 4) in vec2 coordinates;
-layout(location = 5) in float planet_radius;
+layout(location = 1) in vec3 position;
+layout(location = 2) in float altitude;
+layout(location = 3) in vec2 coordinates;
+layout(location = 4) in float planet_radius;
+layout(location = 5) in vec3 debug_scalar;
 
 layout(location = 8) uniform sampler2D grass;
 layout(location = 9) uniform sampler2D sand;
