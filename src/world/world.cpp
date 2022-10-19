@@ -38,8 +38,8 @@ void World::tick_world()
 {
 	STAT_DURATION("World tick");
 
-	const double required_delta_s = 1.0 / framerate_limit;
 	{
+		const double required_delta_s = 1.0 / framerate_limit;
 		STAT_DURATION("Framerate limiter");
 		do
 		{
