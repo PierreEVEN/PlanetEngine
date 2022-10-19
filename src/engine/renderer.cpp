@@ -17,6 +17,8 @@
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
+#define COLOR(r, g, b, a) ImVec4(r / 255.f, g / 255.f, b / 255.f, a / 255.f)
+
 static bool initialized_opengl = false;
 
 static Eigen::Vector2i default_window_res = {1920, 1080};
@@ -224,16 +226,20 @@ void Renderer::init_context()
 	imgui_context = ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 
+	ImGui::StyleColorsDark();
+
 	io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto-Medium.ttf", 16.f);
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 	io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
-	io.FontGlobalScale = 1;
+
 	auto& style = ImGui::GetStyle();
 	style.WindowRounding = 0;
 	style.ScrollbarRounding = 0;
+	style.FramePadding = ImVec2(10, 2);
+	style.ItemSpacing = ImVec2(8, 3);
 	style.WindowTitleAlign = ImVec2(0.5f, 0.5);
 	style.WindowPadding = ImVec2(4, 4);
 	style.GrabMinSize = 12;
@@ -243,28 +249,33 @@ void Renderer::init_context()
 	style.PopupBorderSize = 0;
 	style.TabRounding = 0;
 	style.ScrollbarSize = 10;
-
-	style.Colors[ImGuiCol_FrameBg] = ImVec4(53, 53, 53, 255);
-	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(102, 102, 102, 255);
-	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(85, 85, 85, 255);
-	style.Colors[ImGuiCol_WindowBg] = ImVec4(65, 65, 65, 255);
-	style.Colors[ImGuiCol_Border] = ImVec4(0, 0, 0, 255);
-	style.Colors[ImGuiCol_Button] = ImVec4(100, 100, 100, 255);
-	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(140, 140, 140, 255);
-	style.Colors[ImGuiCol_ButtonActive] = ImVec4(78, 78, 78, 255);
-	style.Colors[ImGuiCol_CheckMark] = ImVec4(255, 222, 139, 255);
-	style.Colors[ImGuiCol_SliderGrab] = ImVec4(142, 142, 142, 255);
-	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(210, 210, 210, 255);
-	style.Colors[ImGuiCol_Tab] = ImVec4(0, 0, 0, 0);
-	style.Colors[ImGuiCol_TabActive] = ImVec4(133, 133, 133, 255);
-	style.Colors[ImGuiCol_TabHovered] = ImVec4(181, 181, 181, 255);
-	style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(63, 63, 63, 255);
-	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(48, 48, 48, 255);
-	style.Colors[ImGuiCol_Header] = ImVec4(154, 154, 154, 255);
-	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(117, 117, 117, 255);
-	/*
-	style.FramePadding = ImVec2(12, 10);
-	*/
+	style.FrameBorderSize = 1;
+	style.PopupBorderSize = 1;
+	
+	style.Colors[ImGuiCol_Text] = COLOR(232, 232, 232, 255);
+	style.Colors[ImGuiCol_FrameBg] = COLOR(47, 47, 47, 255);
+	style.Colors[ImGuiCol_FrameBgHovered] = COLOR(102, 102, 102, 255);
+	style.Colors[ImGuiCol_FrameBgActive] = COLOR(85, 85, 85, 255);
+	style.Colors[ImGuiCol_WindowBg] = COLOR(65, 65, 65, 255);
+	style.Colors[ImGuiCol_Border] = COLOR(0, 0, 0, 255);
+	style.Colors[ImGuiCol_Button] = COLOR(100, 100, 100, 255);
+	style.Colors[ImGuiCol_ButtonHovered] = COLOR(140, 140, 140, 255);
+	style.Colors[ImGuiCol_ButtonActive] = COLOR(78, 78, 78, 255);
+	style.Colors[ImGuiCol_CheckMark] = COLOR(255, 222, 139, 255);
+	style.Colors[ImGuiCol_SliderGrab] = COLOR(142, 142, 142, 255);
+	style.Colors[ImGuiCol_SliderGrabActive] = COLOR(210, 210, 210, 255);
+	style.Colors[ImGuiCol_Tab] = COLOR(0, 0, 0, 0);
+	style.Colors[ImGuiCol_TabActive] = COLOR(86, 86, 86, 255);
+	style.Colors[ImGuiCol_TabHovered] = COLOR(140, 140, 140, 255);
+	style.Colors[ImGuiCol_TabUnfocusedActive] = COLOR(63, 63, 63, 255);
+	style.Colors[ImGuiCol_TitleBgActive] = COLOR(48, 48, 48, 255);
+	style.Colors[ImGuiCol_Header] = COLOR(73, 73, 73, 255);
+	style.Colors[ImGuiCol_HeaderActive] = COLOR(48, 48, 48, 255);
+	style.Colors[ImGuiCol_HeaderHovered] = COLOR(109, 109, 109, 255);
+	style.Colors[ImGuiCol_TextSelectedBg] = COLOR(153, 153, 153, 255);
+	style.Colors[ImGuiCol_NavHighlight] = COLOR(250, 203, 66, 255);
+	style.Colors[ImGuiCol_DockingPreview] = COLOR(148, 148, 148, 223);
+	style.Colors[ImGuiCol_PopupBg] = COLOR(70, 70, 70, 255);
 
 #ifdef _WIN32
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -272,15 +283,12 @@ void Renderer::init_context()
 	glfwGetMonitorContentScale(monitor, &xscale, &yscale);
 	if (xscale > 1 || yscale > 1)
 	{
-		const float highDPIscaleFactor = xscale;
+		const float highDPIscaleFactor = 1;
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.ScaleAllSizes(highDPIscaleFactor);
 		ImGui::GetIO().FontGlobalScale = highDPIscaleFactor;
 	}
 #endif
-
-	GL_CHECK_ERROR();
-	ImGui::StyleColorsDark(); //ImGui::StyleColorsClassic();
 
 	GL_CHECK_ERROR();
 	ImGui_ImplGlfw_InitForOpenGL(main_window, true);
