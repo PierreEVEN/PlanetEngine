@@ -12,6 +12,7 @@
 #include "graphics/material.h"
 #include "graphics/storage_buffer.h"
 #include "graphics/texture_image.h"
+#include "ui/widgets.h"
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
@@ -64,7 +65,7 @@ void Planet::draw_ui()
 {
 	SceneComponent::draw_ui();
 	ImGui::Checkbox("Double sided", &double_sided);
-	ImGui::Checkbox("Fragment Normals", &fragment_normals);
+	ImGui::Checkbox("Freeze Camera", &freeze_camera);
 	ImGui::SliderInt("num LODs : ", &num_lods, 1, 40);
 	ImGui::DragFloat("radius : ", &radius, 10);
 	if (ImGui::SliderInt("cell number", &cell_count, 1, 40) ||
@@ -72,6 +73,14 @@ void Planet::draw_ui()
 		regenerate();
 	ImGui::Separator();
 	ImGui::DragFloat4("debug vector", debug_vector.data());
+
+	Eigen::Quaterniond rot = Eigen::Quaterniond(planet_orientation.rotation());
+
+	if (ui::rotation_edit(rot, "camera rotation"))
+	{
+		planet_orientation = Eigen::Affine3d::Identity();
+		planet_orientation.rotate(rot);
+	}
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
@@ -197,23 +206,26 @@ void Planet::tick(double delta_time)
 
 	{
 		STAT_DURATION("compute planet global transform");
-		// Get camera direction from planet center
-		const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->
-			get_world_position() -
-			get_world_position()).normalized();
 
-		// Compute global rotation snapping step
-		const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
+		if (!freeze_camera)
+		{
+			// Get camera direction from planet center
+			const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->
+				get_world_position() - get_world_position()).normalized();
 
-		// Compute global planet rotation (orient planet mesh toward camera)
-		const auto pitch = asin(camera_direction.z());
-		const auto yaw = atan2(camera_direction.y(), camera_direction.x());
-		const auto planet_orientation = get_world_rotation() * Eigen::Affine3d(
-			Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
-			Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
-		);
+			// Compute global rotation snapping step
+			const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
+
+			// Compute global planet rotation (orient planet mesh toward camera)
+			const auto pitch = asin(camera_direction.z());
+			const auto yaw = atan2(camera_direction.y(), camera_direction.x());
+			planet_orientation = get_world_rotation() * Eigen::Affine3d(
+				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
+				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
+			);
+		}
+
 		planet_inverse_rotation = planet_orientation.inverse();
-		planet_rotation = planet_orientation;
 		// Compute global planet transformation (ensure ground is always close to origin)
 		planet_global_transform = Eigen::Affine3d::Identity();
 		planet_global_transform.translate(
@@ -357,7 +369,6 @@ void PlanetRegion::render(Camera& camera)
 	Planet::get_landscape_material()->bind();
 	glUniform1f(Planet::get_landscape_material()->binding("radius"), planet.radius);
 
-	glUniform1f(Planet::get_landscape_material()->binding("cell_width"), planet.cell_width);
 	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
 	            static_cast<float>(planet.cell_count));
 
@@ -365,10 +376,6 @@ void PlanetRegion::render(Camera& camera)
 
 	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 	                   lod_local_transform.cast<float>().matrix().data());
-	
-	glUniformMatrix3fv(Planet::get_landscape_material()->binding("planet_rotation"), 1, false,
-		Eigen::Matrix3f(planet.planet_rotation.cast<float>().rotation().matrix()).data());
-
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind maps

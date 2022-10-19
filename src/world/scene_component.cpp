@@ -4,6 +4,8 @@
 #include <iostream>
 #include <Eigen/Core>
 
+#include "ui/widgets.h"
+
 Eigen::Quaterniond SceneComponent::get_world_rotation()
 {
 	if (parent)
@@ -36,10 +38,17 @@ void SceneComponent::detach()
 
 void SceneComponent::draw_ui()
 {
-	Eigen::Vector3f location = get_local_position().cast<float>();
-	Eigen::Vector3f scale = get_local_scale().cast<float>();
-	if (ImGui::DragFloat3("position", location.data())) set_local_position(location.cast<double>());
-	if (ImGui::DragFloat3("scale", scale.data())) set_local_scale(scale.cast<double>());
+	Eigen::Vector3d location = get_local_position();
+	if (ui::position_edit(location, "position"))
+		set_local_position(location);
+
+	Eigen::Quaterniond rotation = get_local_rotation();
+	if (ui::rotation_edit(rotation, "rotation"))
+		set_local_rotation(rotation);
+
+	Eigen::Vector3d scale = get_local_scale();
+	if (ui::position_edit(scale, "scale"))
+		set_local_scale(scale);
 }
 
 void SceneComponent::tick_internal(double delta_time)

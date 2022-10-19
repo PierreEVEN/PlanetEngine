@@ -24,12 +24,13 @@ public:
 	float cell_width = 1.0f;
 	int cell_count = 10;
 	bool double_sided = false;
+	bool freeze_camera = true;
 	void regenerate();
 	Eigen::Affine3d planet_global_transform;
 	Eigen::Affine3d planet_inverse_rotation;
-	Eigen::Affine3d planet_rotation;
+	Eigen::Affine3d planet_orientation = Eigen::Affine3d::Identity();
 
-	Eigen::Vector4f debug_vector;
+	Eigen::Vector4f debug_vector = Eigen::Vector4f::Zero();
 
 protected:
 	void tick(double delta_time) override;
