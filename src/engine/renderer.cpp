@@ -230,32 +230,38 @@ void Renderer::init_context()
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 	io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
-
-	ImGui::GetStyle().Colors[ImGuiCol_FrameBg] = (ImVec4(46, 46, 46, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_TitleBg] = (ImVec4(30, 30, 30, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_CheckMark] = (ImVec4(159, 159, 159, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_SliderGrab] = (ImVec4(159, 159, 159, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_Button] = (ImVec4(69, 69, 69, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_Header] = (ImVec4(71, 71, 71, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_Tab] = (ImVec4(21, 21, 21, 220));
-	ImGui::GetStyle().Colors[ImGuiCol_TabUnfocused] = (ImVec4(27, 27, 27, 220));
-	ImGui::GetStyle().Colors[ImGuiCol_TabUnfocusedActive] = (ImVec4(52, 52, 52, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_DockingEmptyBg] = (ImVec4(18, 18, 18, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_TitleBgActive] = (ImVec4(29, 29, 29, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = (ImVec4(15, 15, 15, 255));
-	ImGui::GetStyle().Colors[ImGuiCol_TabActive] = (ImVec4(135, 135, 135, 255));
-
+	io.FontGlobalScale = 1;
 	auto& style = ImGui::GetStyle();
 	style.WindowRounding = 0;
 	style.ScrollbarRounding = 0;
-	style.TabRounding = 0;
-	style.WindowBorderSize = 1;
-	style.PopupBorderSize = 1;
 	style.WindowTitleAlign = ImVec2(0.5f, 0.5);
 	style.WindowPadding = ImVec2(4, 4);
 	style.GrabMinSize = 12;
-	style.ScrollbarSize = 16;
 	style.IndentSpacing = 17;
+	style.WindowBorderSize = 0;
+	style.ChildBorderSize = 0;
+	style.PopupBorderSize = 0;
+	style.TabRounding = 0;
+	style.ScrollbarSize = 10;
+
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(53, 53, 53, 255);
+	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(102, 102, 102, 255);
+	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(85, 85, 85, 255);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(65, 65, 65, 255);
+	style.Colors[ImGuiCol_Border] = ImVec4(0, 0, 0, 255);
+	style.Colors[ImGuiCol_Button] = ImVec4(100, 100, 100, 255);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(140, 140, 140, 255);
+	style.Colors[ImGuiCol_ButtonActive] = ImVec4(78, 78, 78, 255);
+	style.Colors[ImGuiCol_CheckMark] = ImVec4(255, 222, 139, 255);
+	style.Colors[ImGuiCol_SliderGrab] = ImVec4(142, 142, 142, 255);
+	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(210, 210, 210, 255);
+	style.Colors[ImGuiCol_Tab] = ImVec4(0, 0, 0, 0);
+	style.Colors[ImGuiCol_TabActive] = ImVec4(133, 133, 133, 255);
+	style.Colors[ImGuiCol_TabHovered] = ImVec4(181, 181, 181, 255);
+	style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(63, 63, 63, 255);
+	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(48, 48, 48, 255);
+	style.Colors[ImGuiCol_Header] = ImVec4(154, 154, 154, 255);
+	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(117, 117, 117, 255);
 	/*
 	style.FramePadding = ImVec2(12, 10);
 	*/
