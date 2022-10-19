@@ -60,5 +60,5 @@ void main()
 	gColor *= 1;
 
 	gNormal = normal;
-	//gColor = debug_scalar;
+	gColor = debug_scalar;
 }

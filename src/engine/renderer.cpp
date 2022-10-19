@@ -17,7 +17,9 @@
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
-#define COLOR(r, g, b, a) ImVec4(r / 255.f, g / 255.f, b / 255.f, a / 255.f)
+#define COLOR_DARKNESS 400.f
+#define COLOR(r, g, b, a) ImVec4(r / COLOR_DARKNESS, g / COLOR_DARKNESS, b / COLOR_DARKNESS, a / 255.f)
+#define COLOR_BR(r, g, b, a) ImVec4(r / 255.f, g / 255.f, b / 255.f, a / 255.f)
 
 static bool initialized_opengl = false;
 
@@ -252,7 +254,7 @@ void Renderer::init_context()
 	style.FrameBorderSize = 1;
 	style.PopupBorderSize = 1;
 	
-	style.Colors[ImGuiCol_Text] = COLOR(232, 232, 232, 255);
+	style.Colors[ImGuiCol_Text] = COLOR_BR(232, 232, 232, 255);
 	style.Colors[ImGuiCol_FrameBg] = COLOR(47, 47, 47, 255);
 	style.Colors[ImGuiCol_FrameBgHovered] = COLOR(102, 102, 102, 255);
 	style.Colors[ImGuiCol_FrameBgActive] = COLOR(85, 85, 85, 255);

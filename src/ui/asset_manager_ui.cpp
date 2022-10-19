@@ -117,11 +117,11 @@ static void material_manager()
 	size_t unique_id = 0;
 	const float total_width = ImGui::GetContentRegionAvail().x;
 
-	constexpr float field_a_width = 140;
-	constexpr float field_b_width = 180;
-	constexpr float field_c_width = 330;
-	constexpr float field_d_width = 420;
-	constexpr float field_e_width = 500;
+	constexpr float field_a_width = 180;
+	constexpr float field_b_width = 210;
+	constexpr float field_c_width = 370;
+	constexpr float field_d_width = 460;
+	constexpr float field_e_width = 540;
 
 	ImGui::Text("name");
 	ImGui::SameLine();
