@@ -25,21 +25,13 @@ static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 static std::shared_ptr<ComputeShader> fix_seams = nullptr;
 
 
-static double snap(double value, double delta) { return round(value / delta) * delta; }
-
-Planet::Planet(const std::string& name) : SceneComponent(name), world(Engine::get().get_world())
-{
-	root = std::make_shared<PlanetRegion>(*this, world, 16, 0);
-	dirty = true;
-}
-
 std::shared_ptr<Material> Planet::get_landscape_material()
 {
 	if (planet_material)
 		return planet_material;
 	planet_material = Material::create("planet material");
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
-	                                  "resources/shaders/planet_material.fs");
+		"resources/shaders/planet_material.fs");
 
 	grass = Texture2D::create("terrain grass");
 	grass->from_file("resources/textures/terrain/grass.jpg");
@@ -60,6 +52,21 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	compute_normals->load_from_source("resources/shaders/compute/planet_compute_normals.cs");
 
 	return planet_material;
+}
+
+
+static double snap(double value, double delta) { return round(value / delta) * delta; }
+
+Planet::Planet(const std::string& name) : SceneComponent(name), world(Engine::get().get_world())
+{
+	root = std::make_shared<PlanetRegion>(*this, world, 16, 0);
+	dirty = true;
+
+	get_landscape_material();
+
+	compute_positions->on_reload.add_object(root.get(), &PlanetRegion::force_rebuild_maps);
+	fix_seams->on_reload.add_object(root.get(), &PlanetRegion::force_rebuild_maps);
+	compute_normals->on_reload.add_object(root.get(), &PlanetRegion::force_rebuild_maps);
 }
 
 void Planet::draw_ui()
@@ -416,7 +423,7 @@ void PlanetRegion::render(Camera& camera)
 
 void PlanetRegion::rebuild_maps()
 {
-	if (planet.freeze_updates)
+	if (planet.freeze_updates && !force_rebuild)
 		return;
 
 	GL_CHECK_ERROR();
@@ -432,8 +439,10 @@ void PlanetRegion::rebuild_maps()
 		.Chunk_CurrentLOD = static_cast<int32_t>(current_lod)
 	};
 
-	if (chunk_data == last_chunk_data)
+	if (chunk_data == last_chunk_data && !force_rebuild)
 		return;
+
+	force_rebuild = false;
 
 	const auto ssbo = StorageBuffer::create("PlanetChunkData");
 	ssbo->set_data(chunk_data);
@@ -449,16 +458,23 @@ void PlanetRegion::rebuild_maps()
 
 	// Fix seams
 	fix_seams->bind();
-	compute_positions->bind_texture(chunk_height_map, BindingMode::InOut, 0);
-	compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
+	fix_seams->bind_texture(chunk_height_map, BindingMode::InOut, 0);
+	fix_seams->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
 
 	// Compute normals
 	compute_normals->bind();
-	compute_positions->bind_texture(chunk_height_map, BindingMode::In, 0);
-	compute_positions->bind_texture(chunk_normal_map, BindingMode::Out, 1);
-	compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
+	compute_normals->bind_texture(chunk_height_map, BindingMode::In, 0);
+	compute_normals->bind_texture(chunk_normal_map, BindingMode::Out, 1);
+	compute_normals->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
 
 	GL_CHECK_ERROR();
+}
+
+void PlanetRegion::force_rebuild_maps()
+{
+	force_rebuild = true;
+	if (child)
+		child->force_rebuild_maps();
 }
 
 bool PlanetRegion::LandscapeChunkData::operator==(const LandscapeChunkData& other) const

@@ -77,6 +77,8 @@ public:
 
 	void rebuild_maps();
 
+	void force_rebuild_maps();
+
 private:
 	struct LandscapeChunkData
 	{
@@ -101,6 +103,7 @@ private:
 	uint32_t current_lod;
 	uint32_t num_lods;
 	std::shared_ptr<PlanetRegion> child;
+	bool force_rebuild = true;
 
 	Eigen::Affine3d lod_local_transform;
 	std::shared_ptr<Texture2D> chunk_height_map;

@@ -152,4 +152,5 @@ void ComputeShader::reload_internal()
 	}
 	is_dirty = false;
 	GL_CHECK_ERROR();
+	on_reload.execute();
 }

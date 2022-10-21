@@ -6,6 +6,8 @@
 
 #include "shader_source.h"
 
+DECLARE_DELEGATE_MULTICAST(EventReloadShader);
+
 class TextureBase;
 
 namespace EZCOGL
@@ -46,6 +48,7 @@ public:
 
 	void bind_texture(const std::shared_ptr<TextureBase>& texture, BindingMode mode, int32_t binding);
 
+	EventReloadShader on_reload;
 private:
 
 	ComputeShader(const std::string& in_name);
