@@ -22,6 +22,7 @@ layout(location = 2) out float g_Altitude;
 layout(location = 3) out vec2 g_TextureCoordinates;
 layout(location = 4) out float g_PlanetRadius;
 layout(location = 5) out vec3 g_DebugScalar;
+layout(location = 6) out vec3 g_LocalNormal;
 
 vec2 pack_normal(vec3 normal) {
     return normal.xy;
@@ -62,11 +63,11 @@ void main()
     **/
 
     // Transform vertex coordinates to pixel position (used to fetch precomputed chunk data)
-    vec2 coords = (pos.xz + grid_cell_count * 2 + 3) / (grid_cell_count * 4 + 6);
+    ivec2 coords = ivec2(pos.xz + grid_cell_count * 2 + 2);
 
     // Load chunk normals and heightmap
-    vec3 tex_normal = normalize(unpack_normal(texture(normal_map, coords).xy)); // Normals are encoded into RG16f pixels
-    float height = texture(height_map, coords).r;
+    vec3 tex_normal = normalize(unpack_normal(texelFetch(normal_map, coords, 0).xy)); // Normals are encoded into RG16f pixels
+    float height = texelFetch(height_map, coords, 0).r;
 
     /**
     /* Compute world space data
@@ -85,6 +86,7 @@ void main()
 
     // To fragment shader
 	g_WorldPosition = world_position.xyz;
+    g_LocalNormal = tex_normal;
     g_Normal = world_normals;
     g_Altitude = height;
     g_PlanetRadius = radius;

@@ -13,6 +13,7 @@ layout(location = 2) in float altitude;
 layout(location = 3) in vec2 coordinates;
 layout(location = 4) in float planet_radius;
 layout(location = 5) in vec3 debug_scalar;
+layout(location = 6) in vec3 g_LocalNormal;
 
 layout(location = 8) uniform sampler2D grass;
 layout(location = 9) uniform sampler2D sand;
@@ -39,11 +40,11 @@ void main()
 	}
 
 
-	vec3 normal_vector = normal;
+	vec3 normal_vector = g_LocalNormal;
 
 	vec2 uv = position.xy / 2 + camera_pos.zx;
 
-	float slope = pow(dot(normal_vector, vec3(0,0,1)), 20) + .2;
+	float slope = pow(dot(normal_vector, vec3(0,0,1)), 1);
 
 	gColor = mix((rock_color_bis + rock_color) / 2, grass_color, clamp(slope, 0, 1));
 
@@ -58,5 +59,5 @@ void main()
 	}
 
 	gNormal = normal;
-	//gColor = debug_scalar;
+	//gColor = normal_vector;
 }

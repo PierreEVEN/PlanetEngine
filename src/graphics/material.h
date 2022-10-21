@@ -26,7 +26,7 @@ public:
 		return std::shared_ptr<Material>(new Material(name));
 	}
 
-	void bind();
+	bool bind();
 	void set_model_transform(const Eigen::Affine3d& transformation);
 
 	// Load or reload shader

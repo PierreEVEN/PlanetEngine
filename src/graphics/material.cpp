@@ -163,17 +163,18 @@ Material::~Material()
 	glDeleteProgram(shader_program_id);
 }
 
-void Material::bind()
+bool Material::bind()
 {
 	GL_CHECK_ERROR();
 	if (is_dirty)
 		reload_internal();
 
 	if (compilation_error)
-		return;
+		return false;
 
 	glUseProgram(shader_program_id);
 	GL_CHECK_ERROR();
+	return true;
 }
 
 void Material::set_model_transform(const Eigen::Affine3d& transformation)

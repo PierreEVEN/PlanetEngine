@@ -31,7 +31,7 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 		return planet_material;
 	planet_material = Material::create("planet material");
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
-		"resources/shaders/planet_material.fs");
+	                                  "resources/shaders/planet_material.fs");
 
 	grass = Texture2D::create("terrain grass");
 	grass->from_file("resources/textures/terrain/grass.jpg");
@@ -283,11 +283,11 @@ void PlanetRegion::regenerate(int32_t in_cell_number)
 	{
 		GL_CHECK_ERROR();
 		chunk_height_map = Texture2D::create("heightmap_LOD_" + std::to_string(current_lod),
-		                               {
-			                               .wrapping = TextureWrapping::ClampToEdge,
-			                               .filtering_mag = TextureMagFilter::Nearest,
-			                               .filtering_min = TextureMinFilter::Nearest
-		                               });
+		                                     {
+			                                     .wrapping = TextureWrapping::ClampToEdge,
+			                                     .filtering_mag = TextureMagFilter::Nearest,
+			                                     .filtering_min = TextureMinFilter::Nearest
+		                                     });
 		chunk_height_map->set_data(map_size, map_size, GL_R32F);
 		GL_CHECK_ERROR();
 	}
@@ -295,10 +295,10 @@ void PlanetRegion::regenerate(int32_t in_cell_number)
 	{
 		GL_CHECK_ERROR();
 		chunk_normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
-			                               .wrapping = TextureWrapping::ClampToEdge,
-			                               .filtering_mag = TextureMagFilter::Nearest,
-			                               .filtering_min = TextureMinFilter::Nearest
-		                               });
+			                                     .wrapping = TextureWrapping::ClampToEdge,
+			                                     .filtering_mag = TextureMagFilter::Nearest,
+			                                     .filtering_min = TextureMinFilter::Nearest
+		                                     });
 		chunk_normal_map->set_data(map_size, map_size, GL_RG16F);
 		GL_CHECK_ERROR();
 	}
@@ -381,44 +381,44 @@ void PlanetRegion::render(Camera& camera)
 	GL_CHECK_ERROR();
 	STAT_DURATION("Render planet lod " + std::to_string(current_lod));
 	// Set uniforms
-	Planet::get_landscape_material()->bind();
-	glUniform1f(Planet::get_landscape_material()->binding("radius"), planet.radius);
-
-	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
-	            static_cast<float>(planet.cell_count));
-	
-	glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
-
-	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
-	                   lod_local_transform.cast<float>().matrix().data());
-	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
-
-	// Bind maps
-	Planet::get_landscape_material()->bind_texture(chunk_height_map, "height_map");
-	Planet::get_landscape_material()->bind_texture(chunk_normal_map, "normal_map");
-
-	// Bind textures
-	Planet::get_landscape_material()->bind_texture(grass, "grass");
-	Planet::get_landscape_material()->bind_texture(rock, "rock");
-	Planet::get_landscape_material()->bind_texture(sand, "sand");
-
-	glEnable(GL_CULL_FACE);
-	glPolygonMode(GL_FRONT_AND_BACK, Engine::get().get_renderer().wireframe ? GL_LINE : GL_FILL);
-	if (current_lod == 0)
-		planet.root_mesh->draw();
-	else
-		planet.child_mesh->draw();
-	if (planet.double_sided)
+	GL_CHECK_ERROR();
+	if (Planet::get_landscape_material()->bind())
 	{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glFrontFace(GL_CW);
+		glUniform1f(Planet::get_landscape_material()->binding("radius"), planet.radius);
+		glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
+		            static_cast<float>(planet.cell_count));
+		glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
+		glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
+		                   lod_local_transform.cast<float>().matrix().data());
+		Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
+
+		// Bind maps
+		Planet::get_landscape_material()->bind_texture(chunk_height_map, "height_map");
+		Planet::get_landscape_material()->bind_texture(chunk_normal_map, "normal_map");
+
+		// Bind textures
+		Planet::get_landscape_material()->bind_texture(grass, "grass");
+		Planet::get_landscape_material()->bind_texture(rock, "rock");
+		Planet::get_landscape_material()->bind_texture(sand, "sand");
+
+		glEnable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, Engine::get().get_renderer().wireframe ? GL_LINE : GL_FILL);
 		if (current_lod == 0)
 			planet.root_mesh->draw();
 		else
 			planet.child_mesh->draw();
-		glFrontFace(GL_CCW);
+		if (planet.double_sided)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glFrontFace(GL_CW);
+			if (current_lod == 0)
+				planet.root_mesh->draw();
+			else
+				planet.child_mesh->draw();
+			glFrontFace(GL_CCW);
+		}
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void PlanetRegion::rebuild_maps()
@@ -431,7 +431,8 @@ void PlanetRegion::rebuild_maps()
 
 	const LandscapeChunkData chunk_data{
 		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
-		.Chunk_PlanetModel = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>().matrix(),
+		.Chunk_PlanetModel = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>().
+		matrix(),
 		.Chunk_LocalOrientation = planet.local_orientation.cast<float>().matrix(),
 		.Chunk_PlanetRadius = planet.radius,
 		.Chunk_CellWidth = static_cast<float>(cell_size),
