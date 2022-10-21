@@ -42,7 +42,7 @@ void main() {
 
     vec3 norm = normalize(normalize(cross(v2 - v0, v1 - v0)));
 
-    vec2 world_norm = vec2(norm.z, norm.x) * 10;
+    vec2 world_norm = vec2(norm.z, norm.x);
 
     imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), vec4(world_norm, 0, 1));
 }

@@ -71,7 +71,6 @@ void main()
 
     // Compute world space TBN
     mat3 sphere_TBN = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
-    mat3 sphere_TBNb = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
 
     /**
     /*  LOAD CHUNK DATA
@@ -93,7 +92,7 @@ void main()
 
     // Compute vertex position (with altitude)
     vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, height < 0 ? 0 : height), 0);
-    vec3 world_normals = tex_normal;
+    vec3 world_normals = sphere_TBN * tex_normal;
 
     g_DebugScalar = world_normals;
 

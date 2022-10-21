@@ -3,9 +3,9 @@
 #include <imgui.h>
 #include <GL/gl3w.h>
 
-inline void InfoUi::draw()
+void InfoUi::draw()
 {
-	ImGui::Text("%s", glGetString(GL_VENDOR));
-	ImGui::Text("%s", glGetString(GL_RENDERER));
-	ImGui::Text("%s", glGetString(GL_VERSION));
+	ImGui::Text("VENDOR : %s", glGetString(GL_VENDOR));
+	ImGui::Text("RENDERER : %s", glGetString(GL_RENDERER));
+	ImGui::Text("GL VERSION : %s", glGetString(GL_VERSION));
 }
