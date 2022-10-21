@@ -8,6 +8,7 @@
 #include <GL/gl3w.h>
 
 #include "utils/gl_tools.h"
+#include "utils/profiler.h"
 
 TextureBase::~TextureBase()
 {
@@ -111,6 +112,7 @@ void Texture2D::from_file(const std::string& filename, int force_nb_channel)
 	async_load_thread = std::thread([&, filename, force_nb_channel]
 	{
 		std::lock_guard lock_guard(load_mutex);
+		STAT_ACTION("set texture data [" + filename + "]");
 		finished_loading = false;
 		loading_image_ptr = new EZCOGL::GLImage(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
 		finished_loading = true;
@@ -140,6 +142,7 @@ uint32_t Texture2D::id()
 {
 	if (finished_loading)
 	{
+		STAT_ACTION("set texture data [" + name + "]");
 		std::lock_guard lock_guard(load_mutex);
 		finished_loading = false;
 

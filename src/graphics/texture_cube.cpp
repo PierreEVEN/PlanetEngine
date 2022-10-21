@@ -4,6 +4,7 @@
 #include <texture2d.h>
 
 #include "utils/gl_tools.h"
+#include "utils/profiler.h"
 
 TextureCube::~TextureCube()
 {
@@ -45,6 +46,7 @@ void TextureCube::from_file(const std::string& file_top, const std::string& file
 		async_load_thread[i] = std::thread(
 			[&, files, i, force_nb_channel]
 			{
+				STAT_ACTION("load cubemap [" + files[i] + "]::" + std::to_string(i));
 				finished_loading[i] = false;
 				loaded_image_ptr[i] = new EZCOGL::GLImage(files[i], EZCOGL::Texture::flip_y_on_load, force_nb_channel);
 				if (!static_cast<EZCOGL::GLImage*>(loaded_image_ptr[i])->data())
@@ -55,6 +57,7 @@ void TextureCube::from_file(const std::string& file_top, const std::string& file
 
 void TextureCube::set_data(int32_t w, int32_t h, uint32_t in_image_format, uint32_t index, const void* image_data)
 {
+	STAT_ACTION("set cubemap data [" + name + "]::" + std::to_string(index));
 	image_format = in_image_format;
 	const auto tf = EZCOGL::Texture::texture_formats[image_format];
 	external_format = tf.first;

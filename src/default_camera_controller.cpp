@@ -130,7 +130,7 @@ void DefaultCameraController::process_mouse_wheel(GLFWwindow* window, double x_p
 
 void DefaultCameraController::tick(double delta_time)
 {
-	STAT_DURATION("CameraController_update");
+	STAT_FRAME("CameraController_update");
 
 	if (delta_time > 1 / 20.0)
 		delta_time = 1 / 20.0;

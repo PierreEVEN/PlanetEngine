@@ -29,6 +29,7 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 {
 	if (planet_material)
 		return planet_material;
+	STAT_ACTION("Create planet resources");
 	planet_material = Material::create("planet material");
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
 	                                  "resources/shaders/planet_material.fs");
@@ -146,7 +147,8 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
 void Planet::regenerate()
 {
 	GL_CHECK_ERROR();
-	STAT_DURATION("regenerate planet mesh");
+	STAT_ACTION("Generate planet mesh : [" + name + "]");
+	STAT_FRAME("regenerate planet mesh");
 	std::vector<Eigen::Vector3f> positions_root;
 	std::vector<uint32_t> indices_root;
 
@@ -210,7 +212,7 @@ void Planet::regenerate()
 
 void Planet::tick(double delta_time)
 {
-	STAT_DURATION("Planet_Tick");
+	STAT_FRAME("Planet_Tick");
 	SceneComponent::tick(delta_time);
 
 	if (dirty)
@@ -219,7 +221,7 @@ void Planet::tick(double delta_time)
 	}
 
 	{
-		STAT_DURATION("compute planet global transform");
+		STAT_FRAME("compute planet global transform");
 
 		if (!freeze_camera)
 		{
@@ -263,7 +265,7 @@ void Planet::tick(double delta_time)
 
 void Planet::render(Camera& camera)
 {
-	STAT_DURATION("Render Planet");
+	STAT_FRAME("Render Planet");
 	SceneComponent::render(camera);
 	root->render(camera);
 }
@@ -326,7 +328,7 @@ void PlanetRegion::tick(double delta_time, int in_num_lods, double in_width)
 	if (child)
 		child->tick(delta_time, num_lods, cell_size * 2);
 
-	STAT_DURATION("Planet Tick LOD :" + std::to_string(current_lod));
+	STAT_FRAME("Planet Tick LOD :" + std::to_string(current_lod));
 
 	// Compute camera position in local space
 	const Eigen::Vector3d camera_local_position = planet.planet_inverse_rotation * (world.get_camera()->
@@ -379,7 +381,7 @@ void PlanetRegion::render(Camera& camera)
 	if (child)
 		child->render(camera);
 	GL_CHECK_ERROR();
-	STAT_DURATION("Render planet lod " + std::to_string(current_lod));
+	STAT_FRAME("Render planet lod " + std::to_string(current_lod));
 	// Set uniforms
 	GL_CHECK_ERROR();
 	if (Planet::get_landscape_material()->bind())
@@ -427,7 +429,7 @@ void PlanetRegion::rebuild_maps()
 		return;
 
 	GL_CHECK_ERROR();
-	STAT_DURATION("rebuild landscape map");
+	STAT_FRAME("rebuild landscape map");
 
 	const LandscapeChunkData chunk_data{
 		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),

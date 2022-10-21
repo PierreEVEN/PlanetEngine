@@ -51,6 +51,7 @@ Material::Material(const std::string& in_name) : name(in_name), shader_program_i
 
 void Material::reload_internal()
 {
+	STAT_ACTION("Compile shader [" + name + "]");
 	GL_CHECK_ERROR();
 	if (shader_program_id != 0)
 		glDeleteProgram(shader_program_id);

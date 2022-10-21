@@ -59,5 +59,4 @@ void main()
 	}
 
 	gNormal = normal;
-	//gColor = normal_vector;
 }

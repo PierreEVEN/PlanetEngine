@@ -8,7 +8,7 @@
 
 void AssetManager::refresh_dirty_assets() const
 {
-	STAT_DURATION("Check asset updates");
+	STAT_FRAME("Check asset updates");
 	for (const auto& material : materials)
 		material->check_updates();
 	for (const auto& computes : compute_shaders)

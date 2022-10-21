@@ -36,11 +36,11 @@ World::~World()
 
 void World::tick_world()
 {
-	STAT_DURATION("World tick");
+	STAT_FRAME("World tick");
 
 	{
 		const double required_delta_s = 1.0 / framerate_limit;
-		STAT_DURATION("Framerate limiter");
+		STAT_FRAME("Framerate limiter");
 		do
 		{
 			delta_seconds = std::min(glfwGetTime() - last_time, 1.0);
@@ -78,7 +78,7 @@ void World::tick_world()
 
 void World::render_world() const
 {
-	STAT_DURATION("World render");
+	STAT_FRAME("World render");
 	root_component->render_internal(*camera);
 }
 

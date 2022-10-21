@@ -113,7 +113,7 @@ int main()
 	{
 		Engine::get().get_asset_manager().refresh_dirty_assets();
 		{
-			STAT_DURATION("Game_loop");
+			STAT_FRAME("Game_loop");
 			Engine::get().get_renderer().initialize();
 
 			// Gameplay
@@ -135,14 +135,14 @@ int main()
 
 			// G_buffers
 			{
-				STAT_DURATION("Deferred GBuffers");
+				STAT_FRAME("Deferred GBuffers");
 				Engine::get().get_renderer().bind_g_buffers();
 				Engine::get().get_world().render_world();
 			}
 
 			// Deferred combine
 			{
-				STAT_DURATION("Deferred combine");
+				STAT_FRAME("Deferred combine");
 				pass_g_buffer_combine->bind();
 				glUniform1f(pass_g_buffer_combine->material()->binding("z_near"),
 				            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
@@ -159,7 +159,7 @@ int main()
 			}
 			{
 
-				STAT_DURATION("Bloom");
+				STAT_FRAME("Bloom");
 				// Down Samples
 				{
 					downsample_passes[0]->bind();
@@ -196,10 +196,9 @@ int main()
 					}
 				}
 			}
-
 			// Post process
 			{
-				STAT_DURATION("Post process");
+				STAT_FRAME("Post process");
 				ImGui::SliderFloat("Exposure", &exposure, 0.1f, 4);
 				ImGui::SliderFloat("Gamma", &gamma, 0.5f, 4);
 				post_process_pass->bind(Engine::get().get_renderer().is_fullscreen());

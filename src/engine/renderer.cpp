@@ -32,13 +32,16 @@ static void glfw_error_callback(int error, const char* description)
 
 Renderer::Renderer()
 {
+	STAT_ACTION("Create renderer");
 	if (!initialized_opengl)
 	{
+		STAT_ACTION("init context");
 		initialized_opengl = true;
 		init_context();
 	}
 	GL_CHECK_ERROR();
 
+	STAT_ACTION("Create G-Buffers");
 	std::vector<std::shared_ptr<EZCOGL::TextureInterface>> textures;
 	// GBuffer color
 	g_buffer_color = EasyCppOglTexture::create("gbuffer-color", {.filtering_min = TextureMinFilter::Nearest });
@@ -68,26 +71,26 @@ Renderer::~Renderer()
 void Renderer::initialize() const
 {
 	GL_CHECK_ERROR();
-	STAT_DURATION("Initialize_Renderer");
+	STAT_FRAME("Initialize_Renderer");
 	{
-		STAT_DURATION("ImGui new frame");
+		STAT_FRAME("ImGui new frame");
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 	}
 
 	{
-		STAT_DURATION("Switch glfw context");
+		STAT_FRAME("Switch glfw context");
 		if (glfwGetCurrentContext() != main_window)
 			glfwMakeContextCurrent(main_window);
 	}
 	{
-		STAT_DURATION("Handle_Events");
+		STAT_FRAME("Handle_Events");
 		glfwPollEvents();
 	}
 	EZCOGL::VAO::none()->bind();
 
-	STAT_DURATION("Draw dock table");
+	STAT_FRAME("Draw dock table");
 	int w, h;
 	glfwGetWindowSize(main_window, &w, &h);
 	ImGui::SetNextWindowPos(ImVec2(fullscreen ? -100.f : -4.f, 18));
@@ -136,9 +139,9 @@ void Renderer::submit() const
 			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 		}
 
-		STAT_DURATION("ImGui Render");
+		STAT_FRAME("ImGui Render");
 		{
-			STAT_DURATION("ImGui pre-render");
+			STAT_FRAME("ImGui pre-render");
 			ImGui::Render();
 		}
 		GL_CHECK_ERROR();
@@ -148,7 +151,7 @@ void Renderer::submit() const
 	}
 	GL_CHECK_ERROR();
 
-	STAT_DURATION("Swap_buffers");
+	STAT_FRAME("Swap_buffers");
 	glfwSwapBuffers(main_window);
 	GL_CHECK_ERROR();
 }
@@ -164,11 +167,14 @@ void Renderer::switch_fullscreen()
 	fullscreen = !fullscreen;
 	if (fullscreen)
 	{
+		STAT_ACTION("Make fullscreen");
 		int w, h;
 		glfwGetWindowSize(main_window, &w, &h);
 		Engine::get().on_window_resized.add_object(this, &Renderer::resize_framebuffer_internal);
 		resize_framebuffer_internal(nullptr, w, h);
 	}
+	else
+		STAT_ACTION("Make windowed");
 	on_fullscreen.execute(fullscreen);
 }
 
@@ -176,6 +182,8 @@ void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 {
 	if (render_width == x && render_height == y || x <= 0 || y <= 0)
 		return;
+
+	STAT_ACTION("Resize framebuffer");
 
 	render_width = x;
 	render_height = y;
@@ -187,6 +195,7 @@ void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 
 void Renderer::set_icon(const std::string& file_path)
 {
+	STAT_ACTION("Set window icon");
 	const EZCOGL::GLImage icon_image(file_path, false, 4);
 	GLFWimage images[1];
 	images[0].width = icon_image.width();
@@ -197,6 +206,7 @@ void Renderer::set_icon(const std::string& file_path)
 
 void Renderer::init_context()
 {
+	STAT_ACTION("Init render context");
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit()) { std::cerr << "Failed to initialize GFLW!" << std::endl; }
 

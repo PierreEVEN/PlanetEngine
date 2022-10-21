@@ -40,7 +40,7 @@ namespace ui
 {
 	void draw()
 	{
-		STAT_DURATION("ImGui_UI");
+		STAT_FRAME("ImGui_UI");
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))

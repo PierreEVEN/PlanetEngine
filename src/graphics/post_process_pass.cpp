@@ -66,7 +66,7 @@ void PostProcessPass::bind(bool to_back_buffer) const
 
 void PostProcessPass::draw() const
 {
-	STAT_DURATION("Post processing pass [" + name + "]");
+	STAT_FRAME("Post processing pass [" + name + "]");
 	GL_CHECK_ERROR();
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	GL_CHECK_ERROR();
