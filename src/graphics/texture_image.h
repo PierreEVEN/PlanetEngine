@@ -2,6 +2,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 
 enum class TextureWrapping
 {
