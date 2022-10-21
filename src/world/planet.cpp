@@ -372,10 +372,24 @@ void PlanetRegion::render(Camera& camera)
 	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
 	            static_cast<float>(planet.cell_count));
 
+	Eigen::Vector3d v1 = Eigen::Vector3d(0, 0, 1);
+	Eigen::Vector3d v2 = planet.planet_global_transform.rotation() * Eigen::Vector3d(0, 0, 1);
+
+	float dot = v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z();
+		float	lenSq1 = v1.x() * v1.x() + v1.y() * v1.y() + v1.z() * v1.z();
+		float	lenSq2 = v2.x() * v2.x() + v2.y() * v2.y() + v2.z() * v2.z();
+		float	angle = acos(dot / sqrt(lenSq1 * lenSq2));
+
+
+		ImGui::Text("angle : %f", angle);
+	glUniform1f(Planet::get_landscape_material()->binding("test_angle"), angle);
+
 	glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
 
 	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 	                   lod_local_transform.cast<float>().matrix().data());
+	glUniformMatrix4fv(Planet::get_landscape_material()->binding("inv_model"), 1, false,
+		planet.planet_global_transform.inverse().cast<float>().matrix().data());
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind maps
@@ -419,6 +433,7 @@ void PlanetRegion::rebuild_maps()
 		.Chunk_CellWidth = static_cast<float>(cell_size),
 		.Chunk_CellCount = cell_number,
 		.Chunk_CurrentLOD = static_cast<int32_t>(current_lod),
+		.test_rotation = static_cast<float>(planet.planet_global_transform.rotation().matrix().eulerAngles(0, 1, 2).x())
 	};
 
 	if (chunk_data == last_chunk_data)

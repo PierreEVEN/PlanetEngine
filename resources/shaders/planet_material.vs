@@ -16,6 +16,8 @@ layout(location = 5) uniform sampler2D height_map;
 layout(location = 6) uniform sampler2D normal_map;
 layout(location = 7) uniform vec4 debug_vector;
 
+layout(location = 12) uniform mat4 inv_model;
+layout(location = 13) uniform float test_angle;
 // Outputs
 layout(location = 0) out vec3 g_Normal;
 layout(location = 1) out vec3 g_WorldPosition;
@@ -29,8 +31,20 @@ vec2 pack_normal(vec3 normal) {
 }
 
 vec3 unpack_normal(vec2 packed_normal) {
-    return vec3(packed_normal, 1 - length(packed_normal));
+    return vec3(packed_normal, 1 - packed_normal.x - packed_normal.y);
 }
+
+
+vec2 rotate(vec2 pos) {
+    float a = debug_vector.r / 180 * PI;//-test_angle;
+    mat2 m;
+    m[0][0] = cos(a);
+    m[0][1] = - sin(a);
+    m[1][0] = sin(a);
+    m[1][1] = cos(a);
+    return m * pos;
+}
+
 
 void main()
 {
@@ -57,8 +71,7 @@ void main()
 
     // Compute world space TBN
     mat3 sphere_TBN = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
-
-    g_DebugScalar = sphere_TBN * vec3(0,0,1);
+    mat3 sphere_TBNb = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
 
     /**
     /*  LOAD CHUNK DATA
@@ -68,7 +81,7 @@ void main()
     vec2 coords = (pos.xz + grid_cell_count * 2 + 3) / (grid_cell_count * 4 + 6);
 
     // Load chunk normals and heightmap
-    vec3 tex_normal = unpack_normal(texture(normal_map, coords).xy); // Normals are encoded into RG16f pixels
+    vec3 tex_normal = normalize(unpack_normal(rotate(texture(normal_map, coords).xy)) ); // Normals are encoded into RG16f pixels
     float height = texture(height_map, coords).r;
 
     /**
@@ -80,7 +93,9 @@ void main()
 
     // Compute vertex position (with altitude)
     vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, height < 0 ? 0 : height), 0);
-    vec3 world_normals = sphere_TBN * tex_normal;
+    vec3 world_normals = tex_normal;
+
+    g_DebugScalar = world_normals;
 
     /**
     /*  OUTPUTS

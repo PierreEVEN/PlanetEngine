@@ -16,7 +16,7 @@ void main() {
 
     ivec2 vertex_pos_2D = pixel_pos_to_vertex_2D_pos(gl_GlobalInvocationID.xy);
 
-      // Don't compute center
+    // Skip center
     if (
       abs(vertex_pos_2D.x - 1) > Chunk_CellCount * 2 + 2 ||
       abs(vertex_pos_2D.y - 1) > Chunk_CellCount * 2 + 2 ||
@@ -26,33 +26,13 @@ void main() {
       return;
     }
 
+    // Compute local right and left vectors
     mat3 rot = mat3(Chunk_LocalTransform);
-
     vec2 f0 = normalize((rot * vec3(1, 0, 0)).xz);
+    ivec2 dirx = ivec2(f0.x, -f0.y);
+    ivec2 diry = ivec2(f0.y, f0.x);
 
-    ivec2 dirx = ivec2(1, 0);
-    ivec2 diry = ivec2(0, 1);
-
-    if (f0.x > 0.99) {
-      dirx = ivec2(1, 0);
-      diry = ivec2(0, 1);
-    }
-    if (f0.x < -0.99) {
-      dirx = ivec2(-1, 0);
-      diry = ivec2(0, -1);
-    }
-    if (f0.y < -0.99) {
-      dirx = ivec2(0, 1);
-      diry = ivec2(-1, 0);
-    }
-    if (f0.y > 0.99) {
-      dirx = ivec2(0, -1);
-      diry = ivec2(1, 0);
-    }
-
-
-
-    float h0 = imageLoad(heightmap_input, ivec2(gl_GlobalInvocationID.xy + ivec2(0, 0))).r;
+    float h0 = imageLoad(heightmap_input, ivec2(gl_GlobalInvocationID.xy)).r;
     float h1 = imageLoad(heightmap_input, ivec2(gl_GlobalInvocationID.xy + dirx)).r;
     float h2 = imageLoad(heightmap_input, ivec2(gl_GlobalInvocationID.xy + diry)).r;
 
@@ -62,18 +42,7 @@ void main() {
 
     vec3 norm = normalize(normalize(cross(v2 - v0, v1 - v0)));
 
-    vec2 norm_2d = norm.xz;
-    
-    if (f0.x > 0.99) {
-    }
-    if (f0.x < -0.99) {
-      norm_2d = vec2(norm_2d.x, norm_2d.y);
-    }
-    if (f0.y < -0.99) {
-      norm_2d = vec2(norm_2d.x, norm_2d.y);
-    }
-    if (f0.y > 0.99) {
-    }
+    vec2 world_norm = vec2(norm.z, norm.x) * 10;
 
-    imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), vec4(norm_2d, 0, 1));
+    imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), vec4(world_norm, 0, 1));
 }

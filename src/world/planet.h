@@ -66,6 +66,7 @@ private:
 		float Chunk_CellWidth;
 		int32_t Chunk_CellCount;
 		int32_t Chunk_CurrentLOD;
+		float test_rotation;
 
 		bool operator==(const LandscapeChunkData& other) const
 		{

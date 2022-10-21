@@ -9,6 +9,7 @@ layout(std430, binding = 3) buffer PLANET_CHUNK
   float Chunk_CellWidth;
   int Chunk_CellCount;
   int Chunk_CurrentLOD;
+  float test_rotation;
 };
 
 #endif // PLANET_CHUNK_DATA_H_

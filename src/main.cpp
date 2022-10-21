@@ -125,7 +125,7 @@ int main()
 
 			moon_orbit += Engine::get().get_world().get_delta_seconds() * 0.02;
 			moon_rotation += Engine::get().get_world().get_delta_seconds() * 0.2;
-			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.002;
+			//hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.002;
 
 			moon->set_local_position(
 				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000);
