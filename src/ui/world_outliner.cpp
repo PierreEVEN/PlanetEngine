@@ -16,6 +16,8 @@ static bool draw_node(const std::shared_ptr<SceneComponent>& node)
 	if (node->get_children().empty())
 		flags |= ImGuiTreeNodeFlags_Leaf;
 
+	if (selected_node == node)
+		flags |= ImGuiTreeNodeFlags_Selected;
 
 	const bool expand = ImGui::TreeNodeEx((node->name + "##" + std::to_string(node_index++)).c_str(), flags);
 	if (ImGui::BeginDragDropSource())
@@ -58,6 +60,7 @@ static bool draw_node(const std::shared_ptr<SceneComponent>& node)
 
 void WorldOutliner::draw()
 {
+	ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(104 / 255.f, 57 / 255.f, 2 / 255.f, 1));
 	node_index = 0;
 	ImGui::Separator();
 	for (int64_t i = world->get_scene_root().get_children().size() - 1; i >= 0; --i)
@@ -67,14 +70,12 @@ void WorldOutliner::draw()
 	if
 	(selected_node)
 	{
-		ImGui::PushStyleColor(ImGuiCol_ChildBg,
-		                      ImGui::ColorConvertFloat4ToU32(ImVec4(63 / 256.f, 72 / 256.f, 69 / 256.f, 1)));
 		if (ImGui::BeginChild("edit"))
 		{
 			ImGui::Text("[%s]", selected_node->name.c_str());
 			selected_node->draw_ui();
 		}
 		ImGui::EndChild();
-		ImGui::PopStyleColor();
 	}
+	ImGui::PopStyleColor();
 }

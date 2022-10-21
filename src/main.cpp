@@ -43,18 +43,16 @@ int main()
 
 	// Create planet
 	const auto earth = std::make_shared<Planet>("earth");
-	earth->radius = 6000000;
-	earth->num_lods = 19;
-	earth->cell_count = 30;
-	earth->regenerate();
+	earth->set_radius(6000000);
+	earth->set_max_lods(19);
+	earth->set_cell_count(30);
 	Engine::get().get_world().get_scene_root().add_child(earth);
 
 	const auto moon = std::make_shared<Planet>("moon");
 	Engine::get().get_world().get_scene_root().add_child(moon);
-	moon->radius = 1700000;
-	moon->num_lods = 18;
-	moon->cell_count = 30;
-	moon->regenerate();
+	moon->set_radius(1700000);
+	moon->set_max_lods(18);
+	moon->set_cell_count(30);
 	double moon_orbit = 0;
 	double moon_rotation = 0;
 	double hearth_rotation = 0;
@@ -67,13 +65,13 @@ int main()
 	const auto cube = std::make_shared<MeshComponent>("cube");
 	cube->set_material(default_material);
 	cube->set_mesh(primitives::cube());
-	cube->set_local_position({0, 0, earth->radius});
+	cube->set_local_position({0, 0, earth->get_radius()});
 	Engine::get().get_world().get_scene_root().add_child(cube);
 	earth->add_child(cube);
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	camera_controller.teleport_to({-10, 0, earth->radius + 20});
+	camera_controller.teleport_to({-10, 0, earth->get_radius() + 20});
 
 
 	const auto cubemap = TextureCube::create("cube map");
@@ -108,7 +106,6 @@ int main()
 	}
 
 	float bloom_strength = 0.5f;
-	int bloom_quality = 5;
 	float gamma = 2.2f;
 	float exposure = 1.0f;
 
@@ -125,7 +122,7 @@ int main()
 
 			moon_orbit += Engine::get().get_world().get_delta_seconds() * 0.02;
 			moon_rotation += Engine::get().get_world().get_delta_seconds() * 0.2;
-			//hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.002;
+			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.002;
 
 			moon->set_local_position(
 				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000);
@@ -180,12 +177,10 @@ int main()
 				// Up Samples
 				{
 					ImGui::SliderFloat("bloom strength", &bloom_strength, 0, 1);
-					ImGui::SliderInt("bloom quality", &bloom_quality, 1, 20);
 					upsample_passes.back()->bind();
 					glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), static_cast<float>(downsample_passes.back()->width()), static_cast<float>(downsample_passes.back()->height()));
 					glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), bloom_strength);
 					glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - (static_cast<float>(upsample_passes.size()) - 1) / static_cast<float>(upsample_passes.size()));
-					glUniform1i(upsample_passes.back()->material()->binding("bloom_quality"), bloom_quality);
 					upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(), "LastSample");
 					upsample_passes.back()->material()->bind_texture_ex(downsample_passes[downsample_passes.size() - 2]->result(), "Color");
 					upsample_passes.back()->draw();
@@ -195,7 +190,6 @@ int main()
 						glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(upsample_passes[i + 1]->width()), static_cast<float>(upsample_passes[i + 1]->height()));
 						glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), bloom_strength);
 						glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / static_cast<float>(upsample_passes.size()));
-						glUniform1i(upsample_passes[i]->material()->binding("bloom_quality"), bloom_quality);
 						upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
 						upsample_passes[i]->material()->bind_texture_ex(i == 0 ? pass_g_buffer_combine->result() : downsample_passes[i - 1]->result(), "Color");
 						upsample_passes[i]->draw();

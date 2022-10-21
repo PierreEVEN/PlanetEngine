@@ -57,8 +57,6 @@ void main()
 		gColor = mix(water, water_deep, depth_scale);
 	}
 
-	gColor *= 1;
-
 	gNormal = normal;
 	//gColor = debug_scalar;
 }

@@ -256,6 +256,7 @@ void Renderer::init_context()
 	
 	style.Colors[ImGuiCol_Text] = COLOR_BR(232, 232, 232, 255);
 	style.Colors[ImGuiCol_FrameBg] = COLOR(47, 47, 47, 255);
+	style.Colors[ImGuiCol_ChildBg] = COLOR(0, 0, 0, 39);
 	style.Colors[ImGuiCol_FrameBgHovered] = COLOR(102, 102, 102, 255);
 	style.Colors[ImGuiCol_FrameBgActive] = COLOR(85, 85, 85, 255);
 	style.Colors[ImGuiCol_WindowBg] = COLOR(65, 65, 65, 255);

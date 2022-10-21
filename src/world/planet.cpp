@@ -30,7 +30,7 @@ static double snap(double value, double delta) { return round(value / delta) * d
 Planet::Planet(const std::string& name) : SceneComponent(name), world(Engine::get().get_world())
 {
 	root = std::make_shared<PlanetRegion>(*this, world, 16, 0);
-	regenerate();
+	dirty = true;
 }
 
 std::shared_ptr<Material> Planet::get_landscape_material()
@@ -53,33 +53,35 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	compute_positions = ComputeShader::create("Planet compute position");
 	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
 
+	fix_seams = ComputeShader::create("Planet Fix Seams");
+	fix_seams->load_from_source("resources/shaders/compute/planet_fix_seams.cs");
+
 	compute_normals = ComputeShader::create("Planet compute normals");
 	compute_normals->load_from_source("resources/shaders/compute/planet_compute_normals.cs");
 
-	fix_seams = ComputeShader::create("Planet Fix Seams");
-	fix_seams->load_from_source("resources/shaders/compute/planet_fix_seams.cs");
 	return planet_material;
 }
 
 void Planet::draw_ui()
 {
 	SceneComponent::draw_ui();
-	ImGui::Checkbox("Double sided", &double_sided);
-	ImGui::Checkbox("Freeze Camera", &freeze_camera);
 	ImGui::SliderInt("num LODs : ", &num_lods, 1, 40);
 	ImGui::DragFloat("radius : ", &radius, 10);
 	if (ImGui::SliderInt("cell number", &cell_count, 1, 40) ||
 		ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
-		regenerate();
+		dirty = true;
 	ImGui::Separator();
+	ImGui::Checkbox("Double sided", &double_sided);
+	ImGui::Checkbox("Freeze Camera", &freeze_camera);
+	ImGui::Checkbox("Freeze Updates", &freeze_updates);
 	ImGui::DragFloat4("debug vector", debug_vector.data());
 
-	Eigen::Quaterniond rot = Eigen::Quaterniond(planet_orientation.rotation());
+	Eigen::Quaterniond rot = Eigen::Quaterniond(world_orientation.rotation());
 
 	if (ui::rotation_edit(rot, "camera rotation"))
 	{
-		planet_orientation = Eigen::Affine3d::Identity();
-		planet_orientation.rotate(rot);
+		world_orientation = Eigen::Affine3d::Identity();
+		world_orientation.rotate(rot);
 	}
 }
 
@@ -196,6 +198,7 @@ void Planet::regenerate()
 
 	root->regenerate(cell_count);
 	GL_CHECK_ERROR();
+	dirty = false;
 }
 
 void Planet::tick(double delta_time)
@@ -203,6 +206,10 @@ void Planet::tick(double delta_time)
 	STAT_DURATION("Planet_Tick");
 	SceneComponent::tick(delta_time);
 
+	if (dirty)
+	{
+		regenerate();
+	}
 
 	{
 		STAT_DURATION("compute planet global transform");
@@ -219,18 +226,19 @@ void Planet::tick(double delta_time)
 			// Compute global planet rotation (orient planet mesh toward camera)
 			const auto pitch = asin(camera_direction.z());
 			const auto yaw = atan2(camera_direction.y(), camera_direction.x());
-			planet_orientation = get_world_rotation() * Eigen::Affine3d(
+			local_orientation = Eigen::Affine3d(
 				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
 				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
 			);
+			world_orientation = get_world_rotation() * local_orientation;
 		}
 
-		planet_inverse_rotation = planet_orientation.inverse();
+		planet_inverse_rotation = world_orientation.inverse();
 		// Compute global planet transformation (ensure ground is always close to origin)
 		planet_global_transform = Eigen::Affine3d::Identity();
 		planet_global_transform.translate(
 			get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
-		planet_global_transform = planet_global_transform * planet_orientation;
+		planet_global_transform = planet_global_transform * world_orientation;
 		planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
 	}
 
@@ -264,27 +272,27 @@ void PlanetRegion::regenerate(int32_t in_cell_number)
 	cell_number = in_cell_number;
 
 	const int map_size = cell_number * 4 + 5;
-	if (!height_map || height_map->width() != map_size)
+	if (!chunk_height_map || chunk_height_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
-		height_map = Texture2D::create("heightmap_LOD_" + std::to_string(current_lod),
+		chunk_height_map = Texture2D::create("heightmap_LOD_" + std::to_string(current_lod),
 		                               {
 			                               .wrapping = TextureWrapping::ClampToEdge,
 			                               .filtering_mag = TextureMagFilter::Nearest,
 			                               .filtering_min = TextureMinFilter::Nearest
 		                               });
-		height_map->set_data(map_size, map_size, GL_R32F);
+		chunk_height_map->set_data(map_size, map_size, GL_R32F);
 		GL_CHECK_ERROR();
 	}
-	if (!normal_map || normal_map->width() != map_size)
+	if (!chunk_normal_map || chunk_normal_map->width() != map_size)
 	{
 		GL_CHECK_ERROR();
-		normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
+		chunk_normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
 			                               .wrapping = TextureWrapping::ClampToEdge,
 			                               .filtering_mag = TextureMagFilter::Nearest,
 			                               .filtering_min = TextureMinFilter::Nearest
 		                               });
-		normal_map->set_data(map_size, map_size, GL_RG16F);
+		chunk_normal_map->set_data(map_size, map_size, GL_RG16F);
 		GL_CHECK_ERROR();
 	}
 
@@ -371,30 +379,16 @@ void PlanetRegion::render(Camera& camera)
 
 	glUniform1f(Planet::get_landscape_material()->binding("grid_cell_count"),
 	            static_cast<float>(planet.cell_count));
-
-	Eigen::Vector3d v1 = Eigen::Vector3d(0, 0, 1);
-	Eigen::Vector3d v2 = planet.planet_global_transform.rotation() * Eigen::Vector3d(0, 0, 1);
-
-	float dot = v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z();
-		float	lenSq1 = v1.x() * v1.x() + v1.y() * v1.y() + v1.z() * v1.z();
-		float	lenSq2 = v2.x() * v2.x() + v2.y() * v2.y() + v2.z() * v2.z();
-		float	angle = acos(dot / sqrt(lenSq1 * lenSq2));
-
-
-		ImGui::Text("angle : %f", angle);
-	glUniform1f(Planet::get_landscape_material()->binding("test_angle"), angle);
-
+	
 	glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
 
 	glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 	                   lod_local_transform.cast<float>().matrix().data());
-	glUniformMatrix4fv(Planet::get_landscape_material()->binding("inv_model"), 1, false,
-		planet.planet_global_transform.inverse().cast<float>().matrix().data());
 	Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 	// Bind maps
-	Planet::get_landscape_material()->bind_texture(height_map, "height_map");
-	Planet::get_landscape_material()->bind_texture(normal_map, "normal_map");
+	Planet::get_landscape_material()->bind_texture(chunk_height_map, "height_map");
+	Planet::get_landscape_material()->bind_texture(chunk_normal_map, "normal_map");
 
 	// Bind textures
 	Planet::get_landscape_material()->bind_texture(grass, "grass");
@@ -422,42 +416,57 @@ void PlanetRegion::render(Camera& camera)
 
 void PlanetRegion::rebuild_maps()
 {
+	if (planet.freeze_updates)
+		return;
+
 	GL_CHECK_ERROR();
 	STAT_DURATION("rebuild landscape map");
 
 	const LandscapeChunkData chunk_data{
 		.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
-		.Chunk_PlanetTransform = (planet.get_world_transform().inverse() *
-			planet.planet_global_transform).cast<float>().matrix(),
+		.Chunk_PlanetModel = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>().matrix(),
+		.Chunk_LocalOrientation = planet.local_orientation.cast<float>().matrix(),
 		.Chunk_PlanetRadius = planet.radius,
 		.Chunk_CellWidth = static_cast<float>(cell_size),
 		.Chunk_CellCount = cell_number,
-		.Chunk_CurrentLOD = static_cast<int32_t>(current_lod),
-		.test_rotation = static_cast<float>(planet.planet_global_transform.rotation().matrix().eulerAngles(0, 1, 2).x())
+		.Chunk_CurrentLOD = static_cast<int32_t>(current_lod)
 	};
 
 	if (chunk_data == last_chunk_data)
 		return;
 
-	const auto ssbo = StorageBuffer::create("test");
+	const auto ssbo = StorageBuffer::create("PlanetChunkData");
 	ssbo->set_data(chunk_data);
-
 	last_chunk_data = chunk_data;
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo->id());
 
 	planet.get_landscape_material();
+
+	// Compute heightmaps
 	compute_positions->bind();
-	compute_positions->bind_texture(height_map, BindingMode::Out, 0);
-	compute_positions->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
+	compute_positions->bind_texture(chunk_height_map, BindingMode::Out, 0);
+	compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
 
+	// Fix seams
 	fix_seams->bind();
-	compute_positions->bind_texture(height_map, BindingMode::InOut, 0);
-	fix_seams->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
+	compute_positions->bind_texture(chunk_height_map, BindingMode::InOut, 0);
+	compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
 
+	// Compute normals
 	compute_normals->bind();
-	compute_positions->bind_texture(height_map, BindingMode::In, 0);
-	compute_positions->bind_texture(normal_map, BindingMode::Out, 1);
-	compute_normals->execute(cell_number * 4 + 5, cell_number * 4 + 5, 1);
+	compute_positions->bind_texture(chunk_height_map, BindingMode::In, 0);
+	compute_positions->bind_texture(chunk_normal_map, BindingMode::Out, 1);
+	compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
 
 	GL_CHECK_ERROR();
+}
+
+bool PlanetRegion::LandscapeChunkData::operator==(const LandscapeChunkData& other) const
+{
+	return Chunk_LocalTransform == other.Chunk_LocalTransform &&
+		Chunk_LocalOrientation == other.Chunk_LocalOrientation &&
+		Chunk_PlanetRadius == other.Chunk_PlanetRadius &&
+		Chunk_CellWidth == other.Chunk_CellWidth &&
+		Chunk_CellCount == other.Chunk_CellCount &&
+		Chunk_CurrentLOD == other.Chunk_CurrentLOD;
 }
