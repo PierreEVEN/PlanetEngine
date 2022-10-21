@@ -8,6 +8,7 @@
 #include "asset_manager_ui.h"
 #include "camera.h"
 #include "graphic_debugger.h"
+#include "info_ui.h"
 #include "session_frontend.h"
 #include "world_outliner.h"
 #include "engine/engine.h"
@@ -62,8 +63,9 @@ namespace ui
 				if (ImGui::MenuItem("Session frontend")) ImGuiWindow::create_window<SessionFrontend>();
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Debug"))
+			if (ImGui::BeginMenu("Help"))
 			{
+				if (ImGui::MenuItem("System information")) ImGuiWindow::create_window<InfoUi>();
 				if (ImGui::MenuItem("Demo window")) ImGuiWindow::create_window<ImGuiDemoWindow>();
 				ImGui::EndMenu();
 			}

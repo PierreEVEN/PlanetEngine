@@ -300,12 +300,6 @@ void Renderer::init_context()
 	while (glGetError() != GL_NO_ERROR);
 
 	GL_CHECK_ERROR();
-
-	std::cout << glGetString(GL_VENDOR) << std::endl;
-	std::cout << glGetString(GL_RENDERER) << std::endl;
-	std::cout << glGetString(GL_VERSION) << std::endl;
-
-	GL_CHECK_ERROR();
 	int nb_ext;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &nb_ext);
 	uniform_explicit_location_support = false;
