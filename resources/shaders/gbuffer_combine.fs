@@ -3,6 +3,7 @@ precision highp float;
 
 #include "libs/deferred_input.cginc"
 #include "libs/world_data.cginc"
+#include "libs/lighting.cginc"
 
 layout(location = 5) uniform samplerCube WORLD_Cubemap;
 
@@ -24,7 +25,7 @@ float scatter_strength = .7;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
 
-vec3 light_dir = normalize(vec3(0, 1, 0.5));
+vec3 light_dir = normalize(vec3(1, 0, 0));
 
 #include "libs/atmosphere.cginc"
 
@@ -71,7 +72,16 @@ void main()
 	else {
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
-		oFragmentColor = vec4(col * pow(max(0, clamp(dot(norm, light_dir) + 0.2, 0, 1)), 2), 1);
+		vec3 mrao = texture(GBUFFER_mrao, uv).rgb;
+		//oFragmentColor = vec4(col * pow(max(0, clamp(dot(norm, light_dir) + 0.2, 0, 1)), 2), 1);
+
+        PhongParams phong_params;
+        phong_params.ambiant_strength = 0.001;
+        phong_params.specular_strength = (mrao.r) * 32;
+        phong_params.specular_shininess = (1 - mrao.g) * 64 + 1;
+        oFragmentColor = vec4(phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
+
+        return;
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());

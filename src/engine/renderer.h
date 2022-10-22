@@ -37,6 +37,7 @@ public:
 	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_color() const { return g_buffer_color; }
 	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_normal() const { return g_buffer_normal; }
 	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_depth() const { return g_buffer_depth; }
+	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_mrao() const { return g_buffer_mrao; }
 	[[nodiscard]] std::shared_ptr<EZCOGL::FBO_DepthTexture> framebuffer() const { return g_buffer; }
 
 	void switch_fullscreen();
@@ -56,6 +57,7 @@ private:
 	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_color;
 	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_normal;
 	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_depth;
+	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_mrao;
 
 	bool fullscreen = false;
 	GLFWwindow* main_window = nullptr;

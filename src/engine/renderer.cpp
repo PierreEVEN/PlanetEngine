@@ -53,6 +53,11 @@ Renderer::Renderer()
 	g_buffer_normal->set_data_interface(default_window_res.x(), default_window_res.y(), GL_RGB16F);
 	textures.push_back(g_buffer_normal);
 
+	// GBuffer normal
+	g_buffer_mrao = EasyCppOglTexture::create("gbuffer-mrao", { .filtering_min = TextureMinFilter::Nearest });
+	g_buffer_mrao->set_data_interface(default_window_res.x(), default_window_res.y(), GL_RGBA8);
+	textures.push_back(g_buffer_mrao);
+
 	// GBuffer depth
 	g_buffer_depth = EasyCppOglTexture::create("gbuffer-depths", {.filtering_min = TextureMinFilter::Nearest});
 	g_buffer_depth->set_data_interface(default_window_res.x(), default_window_res.y(), GL_DEPTH_COMPONENT32F);

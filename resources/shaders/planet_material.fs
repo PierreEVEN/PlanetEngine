@@ -31,7 +31,7 @@ struct LandData {
 	vec3 mrao;
 };
 
-LandData mix(LandData a, LandData b, float value) {
+LandData mix_ld(LandData a, LandData b, float value) {
 	value = clamp(value, 0, 1);
 	LandData res;
 	res.color = mix(a.color, b.color, value);
@@ -57,27 +57,34 @@ LandData make_ld_col(vec3 color) {
 	return res;
 }
 
+vec3 make_mrao(float metalness, float roughness, float ao) {
+	return vec3(metalness, roughness, ao);
+}
+
+
 void main()
 {
 	mat3 TBN = mat3(g_Tangent, g_BiTangent, normal);
 	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) - 0.0001, 64);
 	float camera_distance = length(position);
 
+	// Create materials
 	float textures_scale = 1000;
 	LandData rock = make_ld_tex(rock_color, rock_normal, coordinates * textures_scale);
+	rock.mrao = make_mrao(0.01, 0.5, 0);
 	LandData grass = make_ld_tex(grass_color, rock_normal, coordinates * textures_scale);
+	grass.mrao = make_mrao(0.03, 0.7, 0);
 	LandData sand = make_ld_tex(sand_color, sand_normal, coordinates * textures_scale);
+	sand.mrao = make_mrao(0.2, 0.4, 0);
 	LandData water = make_ld_col(vec3(60, 100, 150) / 505);
+	water.mrao = make_mrao(0.8, 0.1, 0);
 	LandData water_deep = make_ld_col(vec3(30, 30, 150) / 750);
+	water_deep.mrao = make_mrao(0.8, 0.1, 0);
 
-	// Ajust grass color value;
-	//grass.color *= 2;
-	//rock.color *= 2;
-
-	LandData ground = mix(grass, rock, slope); // Grass rock
-	ground = mix(ground, sand, (-altitude + 100) / 50); // Add beach
-	LandData ocean = mix(water, water_deep, pow(-altitude / 10000, 0.5)); // Ocean
-	LandData ground_ocean = mix(ground, ocean, -altitude * 10); // Mix all
+	LandData ground = mix_ld(grass, rock, slope); // Grass rock
+	ground = mix_ld(ground, sand, (-altitude + 100) / 50); // Add beach
+	LandData ocean = mix_ld(water, water_deep, pow(-altitude / 10000, 0.5)); // Ocean
+	LandData ground_ocean = mix_ld(ground, ocean, -altitude * 10); // Mix all
 	LandData result = ground_ocean;
 
 	// Disable normals by distance
@@ -86,4 +93,5 @@ void main()
 
 	gNormal = TBN * output_normal;
 	gColor = result.color;
+	gMrao = vec4(result.mrao, 1);
 }
