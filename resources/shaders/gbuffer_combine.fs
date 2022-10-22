@@ -78,8 +78,8 @@ void main()
         PhongParams phong_params;
         phong_params.ambiant_strength = 0.001;
         phong_params.specular_strength = (mrao.r) * 32;
-        phong_params.specular_shininess = (1 - mrao.g) * 64 + 1;
-        oFragmentColor = vec4(phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
+        phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
+        oFragmentColor = vec4(blinn_phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
 
         return;
 	}
