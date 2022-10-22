@@ -18,12 +18,15 @@
 #include "utils/profiler.h"
 
 static std::shared_ptr<Material> planet_material = nullptr;
-static std::shared_ptr<Texture2D> grass = nullptr;
+static std::shared_ptr<Texture2D> grass_albedo = nullptr;
 static std::shared_ptr<Texture2D> grass_normal = nullptr;
-static std::shared_ptr<Texture2D> rock = nullptr;
+static std::shared_ptr<Texture2D> grass_mrao = nullptr;
+static std::shared_ptr<Texture2D> rock_albedo = nullptr;
 static std::shared_ptr<Texture2D> rock_normal = nullptr;
-static std::shared_ptr<Texture2D> sand = nullptr;
+static std::shared_ptr<Texture2D> rock_mrao = nullptr;
+static std::shared_ptr<Texture2D> sand_albedo = nullptr;
 static std::shared_ptr<Texture2D> sand_normal = nullptr;
+static std::shared_ptr<Texture2D> sand_mrao = nullptr;
 static std::shared_ptr<ComputeShader> compute_positions = nullptr;
 static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 static std::shared_ptr<ComputeShader> fix_seams = nullptr;
@@ -38,23 +41,26 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	planet_material->load_from_source("resources/shaders/planet_material.vs",
 	                                  "resources/shaders/planet_material.fs");
 
-	grass = Texture2D::create("terrain grass");
-	grass->from_file("resources/textures/terrain/wispy-grass-meadow_albedo.png");
-
+	grass_albedo = Texture2D::create("terrain grass albedo", { .srgb = true });
+	grass_albedo->from_file("resources/textures/terrain/wispy-grass-meadow_albedo.png");
 	grass_normal = Texture2D::create("terrain grass normal");
 	grass_normal->from_file("resources/textures/terrain/wispy-grass-meadow_normal-dx.png");
+	grass_mrao = Texture2D::create("terrain grass mrao");
+	grass_mrao->from_file("resources/textures/terrain/wispy-grass-meadow_mrao.jpg");
 
-	rock = Texture2D::create("terrain rock");
-	rock->from_file("resources/textures/terrain/pine_forest_ground1_albedo.png");
-
+	rock_albedo = Texture2D::create("terrain rock albedo", { .srgb = true });
+	rock_albedo->from_file("resources/textures/terrain/pine_forest_ground1_albedo.png");
 	rock_normal = Texture2D::create("terrain rock normal");
 	rock_normal->from_file("resources/textures/terrain/pine_forest_ground1_Normal-dx.png");
+	rock_mrao = Texture2D::create("terrain rock mrao");
+	rock_mrao->from_file("resources/textures/terrain/pine_forest_ground1_mrao.jpg");
 
-	sand = Texture2D::create("terrain sand");
-	sand->from_file("resources/textures/terrain/wavy-sand_albedo.png");
-
+	sand_albedo = Texture2D::create("terrain sand albedo", {.srgb = true});
+	sand_albedo->from_file("resources/textures/terrain/wavy-sand_albedo.png");
 	sand_normal = Texture2D::create("terrain sand normal");
 	sand_normal->from_file("resources/textures/terrain/wavy-sand_normal-dx.png");
+	sand_mrao = Texture2D::create("terrain sand mrao");
+	sand_mrao->from_file("resources/textures/terrain/wavy-sand_mrao.jpg");
 
 	compute_positions = ComputeShader::create("Planet compute position");
 	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
@@ -421,12 +427,15 @@ void PlanetRegion::render(Camera& camera)
 		Planet::get_landscape_material()->bind_texture(chunk_normal_map, "normal_map");
 
 		// Bind textures
-		Planet::get_landscape_material()->bind_texture(grass, "grass_color");
-		Planet::get_landscape_material()->bind_texture(rock, "rock_color");
-		Planet::get_landscape_material()->bind_texture(sand, "sand_color");
+		Planet::get_landscape_material()->bind_texture(grass_albedo, "grass_color");
+		Planet::get_landscape_material()->bind_texture(rock_albedo, "rock_color");
+		Planet::get_landscape_material()->bind_texture(sand_albedo, "sand_color");
 		Planet::get_landscape_material()->bind_texture(grass_normal, "grass_normal");
 		Planet::get_landscape_material()->bind_texture(rock_normal, "rock_normal");
 		Planet::get_landscape_material()->bind_texture(sand_normal, "sand_normal");
+		Planet::get_landscape_material()->bind_texture(grass_mrao, "grass_mrao");
+		Planet::get_landscape_material()->bind_texture(rock_mrao, "rock_mrao");
+		Planet::get_landscape_material()->bind_texture(sand_mrao, "sand_mrao");
 
 		glEnable(GL_CULL_FACE);
 		glPolygonMode(GL_FRONT_AND_BACK, GameSettings::get().wireframe ? GL_LINE : GL_FILL);

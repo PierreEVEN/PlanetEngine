@@ -17,13 +17,17 @@ layout(location = 6) in vec3 g_LocalNormal;
 layout(location = 7) in vec3 g_Tangent;
 layout(location = 8) in vec3 g_BiTangent;
 
-layout(location = 8) uniform sampler2D grass_color;
-layout(location = 9) uniform sampler2D sand_color;
-layout(location = 10) uniform sampler2D rock_color;
+layout(location = 9) uniform sampler2D grass_color;
+layout(location = 10) uniform sampler2D sand_color;
+layout(location = 11) uniform sampler2D rock_color;
 
-layout(location = 11) uniform sampler2D rock_normal;
-layout(location = 12) uniform sampler2D grass_normal;
-layout(location = 13) uniform sampler2D sand_normal;
+layout(location = 12) uniform sampler2D rock_normal;
+layout(location = 13) uniform sampler2D grass_normal;
+layout(location = 14) uniform sampler2D sand_normal;
+
+layout(location = 15) uniform sampler2D rock_mrao;
+layout(location = 16) uniform sampler2D grass_mrao;
+layout(location = 17) uniform sampler2D sand_mrao;
 
 struct LandData {
 	vec3 color;
@@ -41,7 +45,7 @@ LandData mix_ld(LandData a, LandData b, float value) {
 }
 
 
-LandData make_ld_tex(sampler2D color, sampler2D normal, vec2 tc) {
+LandData make_ld_tex(sampler2D color, sampler2D normal, sampler2D mrao, vec2 tc) {
 	LandData res;
 	res.color = texture(color, tc).rgb;
 	res.normal = texture(normal, tc).rgb;
@@ -70,11 +74,11 @@ void main()
 
 	// Create materials
 	float textures_scale = 1000;
-	LandData rock = make_ld_tex(rock_color, rock_normal, coordinates * textures_scale);
+	LandData rock = make_ld_tex(rock_color, rock_normal, rock_mrao, coordinates * textures_scale);
 	rock.mrao = make_mrao(0.01, 0.5, 0);
-	LandData grass = make_ld_tex(grass_color, rock_normal, coordinates * textures_scale);
+	LandData grass = make_ld_tex(grass_color, grass_normal, grass_mrao, coordinates * textures_scale);
 	grass.mrao = make_mrao(0.03, 0.7, 0);
-	LandData sand = make_ld_tex(sand_color, sand_normal, coordinates * textures_scale);
+	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
 	sand.mrao = make_mrao(0.2, 0.4, 0);
 	LandData water = make_ld_col(vec3(60, 100, 150) / 505);
 	water.mrao = make_mrao(0.8, 0.1, 0);

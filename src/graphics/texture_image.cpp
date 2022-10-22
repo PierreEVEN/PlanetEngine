@@ -39,7 +39,7 @@ uint32_t TextureBase::texture_type() const
 	return GL_TEXTURE_2D;
 }
 
-TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) : name(std::move(in_name))
+TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params) : name(std::move(in_name)), parameters(params)
 {
 	GL_CHECK_ERROR();
 	glGenTextures(1, &texture_id);
@@ -130,7 +130,7 @@ void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const v
 	GL_CHECK_ERROR();
 	bind();
 	GL_CHECK_ERROR();
-	glTexImage2D(texture_type(), 0, data_ptr ? GL_SRGB : image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(texture_type(), 0, data_ptr ? (parameters.srgb ? GL_SRGB : in_image_format) : image_format, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_ptr : nullptr);
 	GL_CHECK_ERROR();
 	glBindTexture(texture_type(), 0);

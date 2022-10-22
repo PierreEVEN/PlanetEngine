@@ -15,7 +15,7 @@ layout(location = 4) uniform float grid_cell_count;
 layout(location = 5) uniform sampler2D height_map;
 layout(location = 6) uniform sampler2D normal_map;
 layout(location = 7) uniform vec4 debug_vector;
-layout(location = 15) uniform mat4 planet_world_orientation;
+layout(location = 8) uniform mat4 planet_world_orientation;
 
 // Outputs
 layout(location = 0) out vec3 g_Normal;
@@ -35,6 +35,13 @@ vec2 pack_normal(vec3 normal) {
 vec3 unpack_normal(vec2 packed_normal) {
     return vec3(packed_normal, 1 - packed_normal.x - packed_normal.y);
 }
+
+void waves(vec2 uvs, out vec3 offset, out vec3 normal, out vec3 color) {
+    return;
+    float pos = world_time + uvs.y * 1000;
+    offset.z = sin(pos) * 2;
+}
+
 
 void main()
 {
@@ -82,9 +89,15 @@ void main()
     // Compute texture coordinates (still some artefacts to fix)
     vec2 text_coords = vec2(mod(seamless_uv_from_sphere_normal(dvec3((mat3(planet_world_orientation) * normalize(planet_pos))) * 1000), 1));
 
+    vec3 wave_offset = vec3(0);
+    vec3 wave_color = vec3(1);
+    vec3 wave_normal = tex_normal;
+    if (real_height <= 0)
+        waves(text_coords, wave_offset, wave_normal, wave_color);
+
     // Compute vertex position (with altitude)
-    vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, vertex_height), 0);
-    vec3 world_normals = sphere_TBN * tex_normal;
+    vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, vertex_height), 0) + vec4(sphere_TBN * wave_offset, 0);
+    vec3 world_normals = sphere_TBN * wave_normal;
 
     /**
     /*  OUTPUTS
@@ -92,7 +105,7 @@ void main()
 
     // To fragment shader
 	g_WorldPosition = world_position.xyz;
-    g_LocalNormal = tex_normal;
+    g_LocalNormal = wave_normal;
     g_Normal = world_normals;
     g_Altitude = real_height;
     g_PlanetRadius = radius;

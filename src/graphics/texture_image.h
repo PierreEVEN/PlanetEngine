@@ -33,6 +33,7 @@ struct TextureCreateInfos
 	TextureWrapping wrapping = TextureWrapping::Repeat;
 	TextureMagFilter filtering_mag = TextureMagFilter::Linear;
 	TextureMinFilter filtering_min = TextureMinFilter::MipMap_LinearLinear;
+	bool srgb = false;
 };
 
 class TextureBase
@@ -49,8 +50,9 @@ public:
 	[[nodiscard]] uint32_t internal_format() const { return image_format; }
 	const std::string name;
 	virtual void bind(uint32_t unit = 0);
-	bool is_depth() const;
-	virtual uint32_t texture_type() const;
+	[[nodiscard]] bool is_depth() const;
+	[[nodiscard]] virtual uint32_t texture_type() const;
+	const TextureCreateInfos parameters;
 protected:
 	TextureBase(std::string name, const TextureCreateInfos& params = {});
 	int32_t image_width;

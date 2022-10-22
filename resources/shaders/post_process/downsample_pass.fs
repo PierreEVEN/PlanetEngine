@@ -22,5 +22,5 @@ void main()
     color1 = texture(Color, uv + vec2(1, -1) / input_resolution).rgb;
     color1/= 4;
 
-    oFragmentColor.rgb = color1 * 0.5 + color2 * 0.5;
+    oFragmentColor.rgb = max(vec3(0), color1 * 0.5 + color2 * 0.5);
 }
