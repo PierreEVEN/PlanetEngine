@@ -18,6 +18,7 @@ static std::unordered_map<std::string, std::shared_ptr<Material>> post_process_m
 
 void PostProcessPass::init(const std::string& fragment_shader)
 {
+	STAT_ACTION("Init post process pass [" +  name + "]");
 	if (post_process_materials.contains(fragment_shader))
 		pass_material = post_process_materials.find(fragment_shader)->second;
 	else
@@ -31,7 +32,7 @@ void PostProcessPass::init(const std::string& fragment_shader)
 		                                    .filtering_mag = TextureMagFilter::Linear,
 		                                    .filtering_min = TextureMinFilter::Linear
 	                                    });
-	texture->set_data_interface(1920, 1080, GL_RGB16F);
+	texture->set_data_interface(1, 1, GL_RGB16F);
 	framebuffer = EZCOGL::FBO::create({texture});
 }
 
@@ -104,6 +105,7 @@ PostProcessPass::PostProcessPass(std::string in_name, Renderer& in_parent,
 
 void PostProcessPass::resolution_changed(int x, int y)
 {
+	STAT_ACTION("Resize post process pass [" + name + "]");
 	if (resolution_changed_callback)
 		resolution_changed_callback(x, y);
 	if (x < 1) x = 1;

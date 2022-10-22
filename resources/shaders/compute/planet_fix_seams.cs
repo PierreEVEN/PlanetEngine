@@ -5,11 +5,14 @@
 
 layout (local_size_x = 1, local_size_y = 1) in;
 
-layout (r32f, binding = 0) uniform image2D img_input;
+layout (rg32f, binding = 0) uniform image2D img_input;
 
 void main() {
+    
+    float h_base = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy)).x;
   // Don't compute on borders
     if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.y == 0 || gl_GlobalInvocationID.x == Chunk_CellCount * 4 + 4 || gl_GlobalInvocationID.y == Chunk_CellCount * 4 + 4) {
+        imageStore(img_input, ivec2(gl_GlobalInvocationID.xy), vec4(max(h_base, 0), h_base, 0, 1));
         return;
     }
 
@@ -42,11 +45,11 @@ void main() {
     }
     weight *= clamp((max(float(abs(vertex_pos_2D.x) - Chunk_CellCount - 1), float(abs(vertex_pos_2D.y) - Chunk_CellCount - 1)) - 1) / (Chunk_CellCount - 2), 0, 1);
 
-    float hl = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) + ivec2(forward)).x;
-    float hr = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) - ivec2(forward)).x;
-    float hc = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy)).x;
+    float hl = max(0, imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) + ivec2(forward)).x);
+    float hr = max(0, imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) - ivec2(forward)).x);
+    float hc = max(0, h_base);
 
     float h0 = mix(hc, (hl + hr) / 2, weight);
 
-    imageStore(img_input, ivec2(gl_GlobalInvocationID.xy), vec4(h0, 0, 0, 1));
+    imageStore(img_input, ivec2(gl_GlobalInvocationID.xy), vec4(h0, h_base, 0, 1));
 }

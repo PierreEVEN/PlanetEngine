@@ -13,13 +13,17 @@
 #include "graphics/storage_buffer.h"
 #include "graphics/texture_image.h"
 #include "ui/widgets.h"
+#include "utils/game_settings.h"
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
 static std::shared_ptr<Material> planet_material = nullptr;
 static std::shared_ptr<Texture2D> grass = nullptr;
+static std::shared_ptr<Texture2D> grass_normal = nullptr;
 static std::shared_ptr<Texture2D> rock = nullptr;
+static std::shared_ptr<Texture2D> rock_normal = nullptr;
 static std::shared_ptr<Texture2D> sand = nullptr;
+static std::shared_ptr<Texture2D> sand_normal = nullptr;
 static std::shared_ptr<ComputeShader> compute_positions = nullptr;
 static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 static std::shared_ptr<ComputeShader> fix_seams = nullptr;
@@ -35,13 +39,22 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	                                  "resources/shaders/planet_material.fs");
 
 	grass = Texture2D::create("terrain grass");
-	grass->from_file("resources/textures/terrain/grass.jpg");
+	grass->from_file("resources/textures/terrain/wispy-grass-meadow_albedo.png");
+
+	grass_normal = Texture2D::create("terrain grass normal");
+	grass_normal->from_file("resources/textures/terrain/wispy-grass-meadow_normal-dx.png");
 
 	rock = Texture2D::create("terrain rock");
-	rock->from_file("resources/textures/terrain/rock_diffuse.jpg");
+	rock->from_file("resources/textures/terrain/pine_forest_ground1_albedo.png");
+
+	rock_normal = Texture2D::create("terrain rock normal");
+	rock_normal->from_file("resources/textures/terrain/pine_forest_ground1_Normal-dx.png");
 
 	sand = Texture2D::create("terrain sand");
-	sand->from_file("resources/textures/terrain/sand_diffuse.jpg");
+	sand->from_file("resources/textures/terrain/wavy-sand_albedo.png");
+
+	sand_normal = Texture2D::create("terrain sand normal");
+	sand_normal->from_file("resources/textures/terrain/wavy-sand_normal-dx.png");
 
 	compute_positions = ComputeShader::create("Planet compute position");
 	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
@@ -152,59 +165,66 @@ void Planet::regenerate()
 	std::vector<Eigen::Vector3f> positions_root;
 	std::vector<uint32_t> indices_root;
 
-	generate_rectangle_area(indices_root, positions_root,
-	                        -cell_count * 2 - 1,
-	                        cell_count * 2 + 1,
-	                        -cell_count * 2 - 1,
-	                        cell_count * 2 + 1,
-	                        0, cell_count * 2);
+	{
+		STAT_ACTION("regenerate root mesh");
+		generate_rectangle_area(indices_root, positions_root,
+			-cell_count * 2 - 1,
+			cell_count * 2 + 1,
+			-cell_count * 2 - 1,
+			cell_count * 2 + 1,
+			0, cell_count * 2);
 
-	root_mesh = Mesh::create("planet root mesh");
-	root_mesh->set_positions(positions_root, 0, true);
-	root_mesh->set_indices(indices_root);
+		root_mesh = Mesh::create("planet root mesh");
+		root_mesh->set_positions(positions_root, 0, true);
+		root_mesh->set_indices(indices_root);
+	}
 
 	GL_CHECK_ERROR();
 
 	std::vector<Eigen::Vector3f> positions_child;
 	std::vector<uint32_t> indices_child;
-	// TOP side (larger)
-	generate_rectangle_area(indices_child, positions_child,
-	                        cell_count,
-	                        cell_count * 2 + 1,
-	                        -cell_count - 1,
-	                        cell_count * 2 + 1,
-	                        cell_count, cell_count * 2 + 1);
 
-	// RIGHT side (larger)
-	generate_rectangle_area(indices_child, positions_child,
-	                        -cell_count * 2 - 1,
-	                        cell_count,
-	                        cell_count,
-	                        cell_count * 2 + 1,
-	                        cell_count, cell_count * 2 + 1);
+	{
+		STAT_ACTION("Generate planet mesh vertices : [" + name + "]");
+		// TOP side (larger)
+		generate_rectangle_area(indices_child, positions_child,
+			cell_count,
+			cell_count * 2 + 1,
+			-cell_count - 1,
+			cell_count * 2 + 1,
+			cell_count, cell_count * 2 + 1);
 
-	// BOTTOM side
-	generate_rectangle_area(indices_child, positions_child,
-	                        -cell_count * 2 - 1,
-	                        -cell_count - 1,
-	                        -cell_count * 2 - 1,
-	                        cell_count,
-	                        cell_count + 1, cell_count * 2 + 1);
+		// RIGHT side (larger)
+		generate_rectangle_area(indices_child, positions_child,
+			-cell_count * 2 - 1,
+			cell_count,
+			cell_count,
+			cell_count * 2 + 1,
+			cell_count, cell_count * 2 + 1);
 
-	// LEFT side
-	generate_rectangle_area(indices_child, positions_child,
-	                        -cell_count - 1,
-	                        cell_count * 2 + 1,
-	                        -cell_count * 2 - 1,
-	                        -cell_count - 1,
-	                        cell_count + 1, cell_count * 2 + 1);
+		// BOTTOM side
+		generate_rectangle_area(indices_child, positions_child,
+			-cell_count * 2 - 1,
+			-cell_count - 1,
+			-cell_count * 2 - 1,
+			cell_count,
+			cell_count + 1, cell_count * 2 + 1);
 
+		// LEFT side
+		generate_rectangle_area(indices_child, positions_child,
+			-cell_count - 1,
+			cell_count * 2 + 1,
+			-cell_count * 2 - 1,
+			-cell_count - 1,
+			cell_count + 1, cell_count * 2 + 1);
+	}
 	child_mesh = Mesh::create("planet child mesh");
 	child_mesh->set_positions(positions_child, 0, true);
 	child_mesh->set_indices(indices_child);
 
 	GL_CHECK_ERROR();
 
+	STAT_ACTION("regenerate planet children chunk : [" + name + "] ");
 	root->regenerate(cell_count);
 	GL_CHECK_ERROR();
 	dirty = false;
@@ -279,34 +299,34 @@ PlanetRegion::PlanetRegion(Planet& in_parent, const World& in_world, uint32_t in
 void PlanetRegion::regenerate(int32_t in_cell_number)
 {
 	cell_number = in_cell_number;
-
-	const int map_size = cell_number * 4 + 5;
-	if (!chunk_height_map || chunk_height_map->width() != map_size)
 	{
-		GL_CHECK_ERROR();
-		chunk_height_map = Texture2D::create("heightmap_LOD_" + std::to_string(current_lod),
-		                                     {
-			                                     .wrapping = TextureWrapping::ClampToEdge,
-			                                     .filtering_mag = TextureMagFilter::Nearest,
-			                                     .filtering_min = TextureMinFilter::Nearest
-		                                     });
-		chunk_height_map->set_data(map_size, map_size, GL_R32F);
-		GL_CHECK_ERROR();
-	}
-	if (!chunk_normal_map || chunk_normal_map->width() != map_size)
-	{
-		GL_CHECK_ERROR();
-		chunk_normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
-			                                     .wrapping = TextureWrapping::ClampToEdge,
-			                                     .filtering_mag = TextureMagFilter::Nearest,
-			                                     .filtering_min = TextureMinFilter::Nearest
-		                                     });
-		chunk_normal_map->set_data(map_size, map_size, GL_RG16F);
-		GL_CHECK_ERROR();
-	}
+		const int map_size = cell_number * 4 + 5;
+		if (!chunk_height_map || chunk_height_map->width() != map_size)
+		{
+			GL_CHECK_ERROR();
+			chunk_height_map = Texture2D::create("heightmap_LOD_" + std::to_string(current_lod),
+				{
+					.wrapping = TextureWrapping::ClampToEdge,
+					.filtering_mag = TextureMagFilter::Nearest,
+					.filtering_min = TextureMinFilter::Nearest
+				});
+			chunk_height_map->set_data(map_size, map_size, GL_RG32F);
+			GL_CHECK_ERROR();
+		}
+		if (!chunk_normal_map || chunk_normal_map->width() != map_size)
+		{
+			GL_CHECK_ERROR();
+			chunk_normal_map = Texture2D::create("normal_LOD_" + std::to_string(current_lod), {
+													 .wrapping = TextureWrapping::ClampToEdge,
+													 .filtering_mag = TextureMagFilter::Nearest,
+													 .filtering_min = TextureMinFilter::Nearest
+				});
+			chunk_normal_map->set_data(map_size, map_size, GL_RG16F);
+			GL_CHECK_ERROR();
+		}
 
-	rebuild_maps();
-
+		rebuild_maps();
+	}
 	if (child)
 		child->regenerate(cell_number);
 }
@@ -392,6 +412,8 @@ void PlanetRegion::render(Camera& camera)
 		glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
 		glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
 		                   lod_local_transform.cast<float>().matrix().data());
+		glUniformMatrix4fv(Planet::get_landscape_material()->binding("planet_world_orientation"), 1, false,
+			planet.local_orientation.cast<float>().matrix().data());
 		Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
 		// Bind maps
@@ -399,12 +421,15 @@ void PlanetRegion::render(Camera& camera)
 		Planet::get_landscape_material()->bind_texture(chunk_normal_map, "normal_map");
 
 		// Bind textures
-		Planet::get_landscape_material()->bind_texture(grass, "grass");
-		Planet::get_landscape_material()->bind_texture(rock, "rock");
-		Planet::get_landscape_material()->bind_texture(sand, "sand");
+		Planet::get_landscape_material()->bind_texture(grass, "grass_color");
+		Planet::get_landscape_material()->bind_texture(rock, "rock_color");
+		Planet::get_landscape_material()->bind_texture(sand, "sand_color");
+		Planet::get_landscape_material()->bind_texture(grass_normal, "grass_normal");
+		Planet::get_landscape_material()->bind_texture(rock_normal, "rock_normal");
+		Planet::get_landscape_material()->bind_texture(sand_normal, "sand_normal");
 
 		glEnable(GL_CULL_FACE);
-		glPolygonMode(GL_FRONT_AND_BACK, Engine::get().get_renderer().wireframe ? GL_LINE : GL_FILL);
+		glPolygonMode(GL_FRONT_AND_BACK, GameSettings::get().wireframe ? GL_LINE : GL_FILL);
 		if (current_lod == 0)
 			planet.root_mesh->draw();
 		else

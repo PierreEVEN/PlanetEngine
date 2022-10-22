@@ -39,8 +39,7 @@ void TextureCube::from_file(const std::string& file_top, const std::string& file
 	for (auto& thread : async_load_thread)
 		if (thread.joinable())
 			thread.join();
-
-	std::lock_guard lock_guard(load_mutex);
+	
 	const auto files = std::vector{file_right, file_left, file_top, file_bottom, file_front, file_back};
 	for (size_t i = 0; i < files.size(); ++i)
 		async_load_thread[i] = std::thread(
@@ -64,7 +63,8 @@ void TextureCube::set_data(int32_t w, int32_t h, uint32_t in_image_format, uint3
 	image_width = w;
 	image_height = h;
 	data_format = tf.second;
-	bind();
+	glBindTexture(texture_type(), TextureBase::id());
+	while (glGetError()); // Skip error messages
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_SRGB, w, h, 0, external_format, data_format,
 	             (w * h > 0) ? image_data : nullptr);
 	glBindTexture(texture_type(), 0);
@@ -73,13 +73,11 @@ void TextureCube::set_data(int32_t w, int32_t h, uint32_t in_image_format, uint3
 
 uint32_t TextureCube::id()
 {
-	if (std::find(finished_loading.begin(), finished_loading.end(), false) == finished_loading.end())
+	for (size_t i = 0; i < finished_loading.size(); ++i)
 	{
-		std::lock_guard lock_guard(load_mutex);
-		finished_loading.fill(false);
-
-		for (size_t i = 0; i < finished_loading.size(); ++i)
-		{
+		if (finished_loading[i]) {
+			STAT_ACTION("Push cubemap data : [" + name + "]::" + std::to_string(i));
+			finished_loading[i] = false;
 			const auto* image = static_cast<EZCOGL::GLImage*>(loaded_image_ptr[i]);
 			switch (image->depth())
 			{
@@ -97,14 +95,19 @@ uint32_t TextureCube::id()
 			}
 			delete image;
 			loaded_image_ptr[i] = nullptr;
+			complete |= 1 << i;
+			GL_CHECK_ERROR();
+			if (complete == 0b111111) {
+
+				STAT_ACTION("Rebuild cubemap mipmaps : [" + name + "]");
+				glBindTexture(texture_type(), TextureBase::id());
+				while (glGetError()); // Skip error messages
+				glGenerateMipmap(texture_type());
+				glBindTexture(texture_type(), 0);
+			}
+			GL_CHECK_ERROR();
 		}
-
-		bind();
-		glGenerateMipmap(texture_type());
-		glBindTexture(texture_type(), 0);
-		GL_CHECK_ERROR();
 	}
-
 
 	return
 		TextureBase::id();

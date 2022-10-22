@@ -183,7 +183,7 @@ void Renderer::resize_framebuffer_internal(GLFWwindow*, int x, int y)
 	if (render_width == x && render_height == y || x <= 0 || y <= 0)
 		return;
 
-	STAT_ACTION("Resize framebuffer");
+	STAT_ACTION("Resize framebufferto " + std::to_string(x) + "x" + std::to_string(y));
 
 	render_width = x;
 	render_height = y;
@@ -208,8 +208,10 @@ void Renderer::init_context()
 {
 	STAT_ACTION("Init render context");
 	glfwSetErrorCallback(glfw_error_callback);
-	if (!glfwInit()) { std::cerr << "Failed to initialize GFLW!" << std::endl; }
-
+	{
+		STAT_ACTION("glfwInit");
+		if (!glfwInit()) { std::cerr << "Failed to initialize GFLW!" << std::endl; }
+	}
 	const char* glsl_version = "#version 330";
 	GLint major = 4, minor = 5;
 #ifdef __APPLE__
@@ -222,9 +224,11 @@ void Renderer::init_context()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
 #endif
 
-	main_window = glfwCreateWindow(default_window_res.x(), default_window_res.y(), "Planet Engine", nullptr, nullptr);
-	if (!main_window) { std::cerr << "Failed to create Window!" << std::endl; }
-
+	{
+		STAT_ACTION("Create main window");
+		main_window = glfwCreateWindow(default_window_res.x(), default_window_res.y(), "Planet Engine", nullptr, nullptr);
+		if (!main_window) { std::cerr << "Failed to create Window!" << std::endl; }
+	}
 	glfwMakeContextCurrent(main_window);
 
 	bool err = gl3wInit() != 0;
@@ -302,14 +306,15 @@ void Renderer::init_context()
 		ImGui::GetIO().FontGlobalScale = highDPIscaleFactor;
 	}
 #endif
+	{
+		STAT_ACTION("Init imgui implementation");
+		GL_CHECK_ERROR();
+		ImGui_ImplGlfw_InitForOpenGL(main_window, true);
 
-	GL_CHECK_ERROR();
-	ImGui_ImplGlfw_InitForOpenGL(main_window, true);
-
-	GL_CHECK_ERROR();
-	ImGui_ImplOpenGL3_Init(glsl_version);
-	while (glGetError() != GL_NO_ERROR);
-
+		GL_CHECK_ERROR();
+		ImGui_ImplOpenGL3_Init(glsl_version);
+		while (glGetError() != GL_NO_ERROR);
+	}
 	GL_CHECK_ERROR();
 	int nb_ext;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &nb_ext);

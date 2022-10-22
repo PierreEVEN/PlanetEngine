@@ -15,6 +15,8 @@ layout(location = 4) uniform float grid_cell_count;
 layout(location = 5) uniform sampler2D height_map;
 layout(location = 6) uniform sampler2D normal_map;
 layout(location = 7) uniform vec4 debug_vector;
+layout(location = 15) uniform mat4 planet_world_orientation;
+
 // Outputs
 layout(location = 0) out vec3 g_Normal;
 layout(location = 1) out vec3 g_WorldPosition;
@@ -23,6 +25,8 @@ layout(location = 3) out vec2 g_TextureCoordinates;
 layout(location = 4) out float g_PlanetRadius;
 layout(location = 5) out vec3 g_DebugScalar;
 layout(location = 6) out vec3 g_LocalNormal;
+layout(location = 7) out vec3 g_Tangent;
+layout(location = 8) out vec3 g_BiTangent;
 
 vec2 pack_normal(vec3 normal) {
     return normal.xy;
@@ -67,17 +71,19 @@ void main()
 
     // Load chunk normals and heightmap
     vec3 tex_normal = normalize(unpack_normal(texelFetch(normal_map, coords, 0).xy)); // Normals are encoded into RG16f pixels
-    float height = texelFetch(height_map, coords, 0).r;
+    vec2 altitudes = texelFetch(height_map, coords, 0).rg;
+    float vertex_height = altitudes.r;
+    float real_height = altitudes.g;
 
     /**
     /* Compute world space data
     **/
 
     // Compute texture coordinates (still some artefacts to fix)
-    vec2 text_coords = vec2(mod(seamless_uv_from_sphere_normal(dvec3(normalize(planet_pos))) * 1000, 1));
+    vec2 text_coords = vec2(mod(seamless_uv_from_sphere_normal(dvec3((mat3(planet_world_orientation) * normalize(planet_pos))) * 1000), 1));
 
     // Compute vertex position (with altitude)
-    vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, height < 0 ? 0 : height), 0);
+    vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, vertex_height), 0);
     vec3 world_normals = sphere_TBN * tex_normal;
 
     /**
@@ -88,9 +94,11 @@ void main()
 	g_WorldPosition = world_position.xyz;
     g_LocalNormal = tex_normal;
     g_Normal = world_normals;
-    g_Altitude = height;
+    g_Altitude = real_height;
     g_PlanetRadius = radius;
     g_TextureCoordinates = text_coords;
+    g_Tangent = sphere_tangent;
+    g_BiTangent = sphere_bitangent;
     
     // Vertex position
 	gl_Position = pv_matrix * world_position; 

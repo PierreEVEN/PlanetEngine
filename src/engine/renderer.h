@@ -43,8 +43,7 @@ public:
 	[[nodiscard]] bool is_fullscreen() const { return fullscreen; }
 
 	void resize_framebuffer_internal(GLFWwindow*, int x, int y);
-
-	bool wireframe = false;
+	
 	EventFullscreen on_fullscreen;
 	EventResolutionChanged on_resolution_changed;
 

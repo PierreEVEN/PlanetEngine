@@ -112,7 +112,7 @@ void Texture2D::from_file(const std::string& filename, int force_nb_channel)
 	async_load_thread = std::thread([&, filename, force_nb_channel]
 	{
 		std::lock_guard lock_guard(load_mutex);
-		STAT_ACTION("set texture data [" + filename + "]");
+		STAT_ACTION("Load texture data [" + filename + "]");
 		finished_loading = false;
 		loading_image_ptr = new EZCOGL::GLImage(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
 		finished_loading = true;

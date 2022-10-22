@@ -7,8 +7,7 @@
 #include "world/world.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
-
-static bool enable_vsync = true;
+#include "utils/game_settings.h"
 
 GraphicDebugger::GraphicDebugger()
 {
@@ -17,14 +16,17 @@ GraphicDebugger::GraphicDebugger()
 
 void GraphicDebugger::draw()
 {
-	if (ImGui::Checkbox("Enable VSync", &enable_vsync))
-		glfwSwapInterval(enable_vsync ? 1 : 0);
+	if (ImGui::Checkbox("Enable VSync", &GameSettings::get().v_sync))
+		glfwSwapInterval(GameSettings::get().v_sync ? 1 : 0);
 
-	if (ImGui::Checkbox("Wireframe", &Engine::get().get_renderer().wireframe))
-		glfwSwapInterval(enable_vsync ? 1 : 0);
+	ImGui::Checkbox("Wireframe", &GameSettings::get().wireframe);
 
-	ImGui::DragInt("Framerate limit", &Engine::get().get_world().framerate_limit);
-	if (Engine::get().get_world().framerate_limit < 0) Engine::get().get_world().framerate_limit = 0;
+	ImGui::SliderFloat("Bloom intensity", &GameSettings::get().bloom_intensity, 0, 3);
+	ImGui::SliderFloat("Exposure", &GameSettings::get().exposure, 0.1f, 4);
+	ImGui::SliderFloat("Gamma", &GameSettings::get().gamma, 0.5f, 4);
+
+	ImGui::DragInt("Framerate limit", &GameSettings::get().max_fps);
+	if (GameSettings::get().max_fps < 0) GameSettings::get().max_fps = 0;
 
 	const auto framebuffer = Engine::get().get_renderer().framebuffer();
 	const float available_width = ImGui::GetContentRegionAvail().x;

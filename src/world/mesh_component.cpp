@@ -9,6 +9,7 @@
 #include "graphics/camera.h"
 #include "graphics/mesh.h"
 #include "graphics/material.h"
+#include "utils/game_settings.h"
 
 void MeshComponent::render(Camera& camera)
 {
@@ -17,7 +18,7 @@ void MeshComponent::render(Camera& camera)
 	if (!mesh || !material)
 		return;
 
-	if (Engine::get().get_renderer().wireframe)
+	if (GameSettings::get().wireframe)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	material->bind();

@@ -72,6 +72,7 @@ static void compute_record_data(ui::RecordData& output, int level, std::vector<R
 static ui::RecordData compute_record(const std::vector<Record>& records, bool main_thread = true)
 {
 	ui::RecordData result;
+	result.label = main_thread ? "main thread" : "secondary threads";
 
 	if (records.empty())
 		return result;
@@ -85,6 +86,10 @@ static ui::RecordData compute_record(const std::vector<Record>& records, bool ma
 		while (begin != records_copy.end() && begin->thread_id == std::this_thread::get_id()) ++begin;
 
 	compute_record_data(result, 0, begin, records_copy, (records_copy.end() - 1)->end, main_thread);
+
+	result.min_display_value = 0;
+	result.max_display_value = result.max_value;
+
 	return result;
 }
 
@@ -107,47 +112,43 @@ void SessionFrontend::draw()
 	if (record_first_frame >= 0)
 		record_first_frame--;
 
-	if (!realtime)
-		ImGui::SameLine();
-	ImGui::Checkbox("realtime", &realtime);
-	if (use_custom_width)
-		ImGui::DragFloat("scale", &custom_width, 1);
-	else
-		ImGui::DragFloat("zoom", &zoom);
-	ImGui::SameLine();
-	if (ImGui::Checkbox("manual scale", &use_custom_width))
-		recorded_max = 0;
-
-	if (frame_record.max_value > recorded_max)
-		recorded_max = frame_record.max_value;
-
 	if (ImGui::BeginTabBar("SessionFrontendTab"))
 	{
 		if (ImGui::BeginTabItem("Frame events"))
 		{
 			ImGui::Separator();
 			// Update displayed record
-			if (realtime || ImGui::Button("refresh") || record_first_frame == 0)
+			if (ImGui::Button("refresh") || record_first_frame == 0)
 				frame_record = compute_record(Profiler::get().get_last_frame(), true);
-
-			frame_record.display(zoom, use_custom_width, recorded_max);
+			frame_record.display();
 			ImGui::EndTabItem();
 		}
 		if (ImGui::BeginTabItem("Actions"))
 		{
 			ImGui::Separator();
 			// Update displayed record
-			if (realtime || ImGui::Button("refresh") || record_first_frame == 0)
+			if (ImGui::Button("refresh") || record_first_frame == 0)
 			{
 				action_record_main_thread = compute_record(Profiler::get().get_actions(), true);
 				action_record_other_threads = compute_record(Profiler::get().get_actions(), false);
+				const float max = std::max(action_record_main_thread.max_display_value, action_record_other_threads.max_display_value);
+				const float min = std::min(action_record_main_thread.min_display_value, action_record_other_threads.min_display_value);
+				action_record_other_threads.max_display_value = max;;
+				action_record_other_threads.min_display_value = min;
+				action_record_main_thread.max_display_value = max;
+				action_record_main_thread.min_display_value = min;
 			}
 
-			float display_max = std::max(action_record_main_thread.max_value, action_record_other_threads.max_value);
-
-			action_record_main_thread.display(zoom, use_custom_width, recorded_max);
+			if (action_record_main_thread.display())
+			{
+				action_record_other_threads.max_display_value = action_record_main_thread.max_display_value;
+				action_record_other_threads.min_display_value = action_record_main_thread.min_display_value;
+			}
 			ImGui::Separator();
-			action_record_other_threads.display(zoom, use_custom_width, recorded_max);
+			if (action_record_other_threads.display()) {
+				action_record_main_thread.max_display_value = action_record_other_threads.max_display_value;
+				action_record_main_thread.min_display_value = action_record_other_threads.min_display_value;
+			}
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();

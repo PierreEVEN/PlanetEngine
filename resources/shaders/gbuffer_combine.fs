@@ -71,7 +71,7 @@ void main()
 	else {
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
-		oFragmentColor = vec4(col * pow(max(0.015, dot(norm, light_dir) + 0.1), 2), 1) * 1.2;
+		oFragmentColor = vec4(col * pow(max(0, clamp(dot(norm, light_dir) + 0.2, 0, 1)), 2), 1);
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());

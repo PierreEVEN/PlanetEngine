@@ -4,13 +4,12 @@
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-layout (r32f, binding = 0) uniform image2D heightmap_input;
+layout (rg32f, binding = 0) uniform image2D heightmap_input;
 layout (rg16f, binding = 1) uniform image2D img_output;
 
 void main() {
     // Don't compute on borders
       if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.y == 0 || gl_GlobalInvocationID.x == Chunk_CellCount * 4 + 4 || gl_GlobalInvocationID.y == Chunk_CellCount * 4 + 4) {
-      imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), normalize(vec4(1)));
           return;
       }
 

@@ -8,6 +8,7 @@
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
 #include "utils/gl_tools.h"
+#include "utils/profiler.h"
 
 Mesh::~Mesh()
 {
@@ -20,6 +21,7 @@ Mesh::~Mesh()
 
 void Mesh::set_positions(std::vector<Eigen::Vector3f> in_positions, int location, bool no_update)
 {
+	STAT_ACTION("Set mesh positions : [" + name + "]");
 	positions = std::move(in_positions);
 	att_pos = location;
 	if (!no_update)
@@ -28,6 +30,7 @@ void Mesh::set_positions(std::vector<Eigen::Vector3f> in_positions, int location
 
 void Mesh::set_texture_coordinates(std::vector<Eigen::Vector2f> in_texture_coordinates, int location, bool no_update)
 {
+	STAT_ACTION("Set mesh texture coordinates : [" + name + "]");
 	texture_coordinates = std::move(in_texture_coordinates);
 	att_text_coords = location;
 	if (!no_update)
@@ -36,6 +39,7 @@ void Mesh::set_texture_coordinates(std::vector<Eigen::Vector2f> in_texture_coord
 
 void Mesh::set_normals(std::vector<Eigen::Vector3f> in_normals, int location, bool no_update)
 {
+	STAT_ACTION("Set mesh texture normals : [" + name + "]");
 	normals = std::move(in_normals);
 	att_norms = location;
 	if (!no_update)
@@ -44,6 +48,7 @@ void Mesh::set_normals(std::vector<Eigen::Vector3f> in_normals, int location, bo
 
 void Mesh::set_tangents(std::vector<Eigen::Vector3f> in_tangents, int location, bool no_update)
 {
+	STAT_ACTION("Set mesh texture tangents : [" + name + "]");
 	tangents = std::move(in_tangents);
 	att_tang = location;
 	if (!no_update)
@@ -52,6 +57,7 @@ void Mesh::set_tangents(std::vector<Eigen::Vector3f> in_tangents, int location, 
 
 void Mesh::set_colors(std::vector<Eigen::Vector3f> in_colors, int location, bool no_update)
 {
+	STAT_ACTION("Set mesh texture colors : [" + name + "]");
 	colors = std::move(in_colors);
 	att_colors = location;
 	if (!no_update)
@@ -60,6 +66,7 @@ void Mesh::set_colors(std::vector<Eigen::Vector3f> in_colors, int location, bool
 
 void Mesh::set_indices(std::vector<uint32_t> in_indices, bool no_update)
 {
+	STAT_ACTION("Set mesh texture indices : [" + name + "]");
 	indices = std::move(in_indices);
 	if (!no_update)
 		rebuild_mesh_data();
@@ -90,6 +97,7 @@ Mesh::Mesh(const std::string& in_name, const std::string& path) : Mesh(in_name)
 
 void Mesh::rebuild_mesh_data() const
 {
+	STAT_ACTION("Submit mesh data : [" + name + "]");
 	GL_CHECK_ERROR();
 	glBindVertexArray(vao);
 

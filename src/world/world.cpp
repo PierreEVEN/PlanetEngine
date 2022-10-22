@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 #include "graphics/camera.h"
+#include "utils/game_settings.h"
 #include "utils/profiler.h"
 
 struct WorldDataStructure
@@ -39,17 +40,17 @@ void World::tick_world()
 	STAT_FRAME("World tick");
 
 	{
-		const double required_delta_s = 1.0 / framerate_limit;
+		const double required_delta_s = 1.0 / GameSettings::get().max_fps;
 		STAT_FRAME("Framerate limiter");
 		do
 		{
 			delta_seconds = std::min(glfwGetTime() - last_time, 1.0);
-			if (framerate_limit > 1)
+			if (GameSettings::get().max_fps > 1)
 				std::this_thread::sleep_for(
 					std::chrono::microseconds(
 						static_cast<size_t>(std::max(0.0, required_delta_s - delta_seconds) * 1000000)));
 		}
-		while (framerate_limit > 1 && delta_seconds < required_delta_s);
+		while (GameSettings::get().max_fps > 1 && delta_seconds < required_delta_s);
 	}
 	last_time = glfwGetTime();
 

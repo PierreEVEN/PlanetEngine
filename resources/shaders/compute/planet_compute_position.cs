@@ -4,7 +4,7 @@
 #include "../libs/compute_base.cginc"
 
 layout (local_size_x = 1, local_size_y = 1) in;
-layout (r32f, binding = 0) uniform image2D img_output;
+layout (rg32f, binding = 0) uniform image2D img_output;
 
 void main() {
 
@@ -20,5 +20,5 @@ void main() {
   vec3 world_normal = normalize(mat3(Chunk_PlanetModel) * (vertex_3d_pos + vec3(Chunk_PlanetRadius, 0, 0)));
 
   float h0 = get_height_at_location(world_normal);
-  imageStore(img_output, ivec2(gl_GlobalInvocationID), vec4(h0, 0, 0, 1));
+  imageStore(img_output, ivec2(gl_GlobalInvocationID), vec4(h0, h0, 0, 1));
 }

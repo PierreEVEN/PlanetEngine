@@ -118,20 +118,15 @@ static void material_manager()
 	const float total_width = ImGui::GetContentRegionAvail().x;
 
 	constexpr float field_a_width = 180;
-	constexpr float field_b_width = 210;
-	constexpr float field_c_width = 370;
-	constexpr float field_d_width = 460;
-	constexpr float field_e_width = 540;
+	constexpr float field_c_width = 170;
+	constexpr float field_d_width = 260;
+	constexpr float field_e_width = 340;
 
 	ImGui::Text("name");
 	ImGui::SameLine();
 	ImGui::Dummy(ImVec2(std::max(field_a_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 	ImGui::SameLine();
 	ImGui::Text("status");
-	ImGui::SameLine();
-	ImGui::Dummy(ImVec2(std::max(field_b_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
-	ImGui::SameLine();
-	ImGui::Text("hot reload");
 	ImGui::SameLine();
 	ImGui::Dummy(ImVec2(std::max(field_c_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
 	ImGui::SameLine();
@@ -173,12 +168,6 @@ static void material_manager()
 		}
 		else
 			ImGui::Text("%s", "ready");
-		ImGui::SameLine();
-
-		ImGui::Dummy(ImVec2(std::max(field_b_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
-		ImGui::SameLine();
-		if (ImGui::Button(("reload##" + std::to_string(material->program_id())).c_str(), ImVec2(120, 0)))
-			material->check_updates();
 		ImGui::SameLine();
 
 		ImGui::Dummy(ImVec2(std::max(field_c_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
@@ -238,12 +227,6 @@ static void material_manager()
 		}
 		else
 			ImGui::Text("%s", "ready");
-		ImGui::SameLine();
-
-		ImGui::Dummy(ImVec2(std::max(field_b_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));
-		ImGui::SameLine();
-		if (ImGui::Button(("reload##" + std::to_string(compute_shader->program_id())).c_str(), ImVec2(120, 0)))
-			compute_shader->check_updates();
 		ImGui::SameLine();
 
 		ImGui::Dummy(ImVec2(std::max(field_c_width - total_width + ImGui::GetContentRegionAvail().x, 0.f), 0));

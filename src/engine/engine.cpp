@@ -7,6 +7,7 @@
 
 #include "asset_manager.h"
 #include "renderer.h"
+#include "utils/game_settings.h"
 #include "world/world.h"
 
 static std::unique_ptr<Engine> engine;
@@ -44,7 +45,7 @@ void Engine::init()
 			                   get().renderer->switch_fullscreen();
 
 						   if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
-							   get().renderer->wireframe = !get().renderer->wireframe;
+							   GameSettings::get().wireframe = !GameSettings::get().wireframe;
 	                   }
 	);
 

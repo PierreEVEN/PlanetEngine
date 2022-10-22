@@ -32,5 +32,5 @@ private:
 	std::array<bool, 6> finished_loading = { false };
 	std::array<void*, 6> loaded_image_ptr = { nullptr };
 	std::array<std::thread, 6> async_load_thread;
-	std::mutex load_mutex;
+	uint8_t complete = 0;
 };

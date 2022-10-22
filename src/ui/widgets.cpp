@@ -1,6 +1,7 @@
 #include "widgets.h"
 
 #include <imgui.h>
+#include <iostream>
 
 namespace ui
 {
@@ -91,15 +92,15 @@ namespace ui
 	}
 
 
-	static void draw_record(const ui::RecordData::RecordItem& record, int line_index, float scale, int index,
+	static void draw_record(const ui::RecordData::RecordItem& record, int line_index, float min_value, float scale, int index,
 	                        size_t line_count)
 	{
 		const auto draw_start_pos = ImGui::GetWindowPos();
 
 		ImGui::BeginGroup();
 
-		ImVec2 min = ImVec2(draw_start_pos.x + record.start * scale, draw_start_pos.y + line_index * 25.f);
-		ImVec2 max = ImVec2(draw_start_pos.x + record.end * scale + 2.f, draw_start_pos.y + line_index * 25.f + 24.f);
+		ImVec2 min = ImVec2(draw_start_pos.x + (record.start - min_value) * scale, draw_start_pos.y + line_index * 25.f);
+		ImVec2 max = ImVec2(draw_start_pos.x + (record.end - min_value) * scale + 2.f, draw_start_pos.y + line_index * 25.f + 24.f);
 
 		float r, g, b;
 
@@ -117,7 +118,7 @@ namespace ui
 			min, max,
 			ImGui::ColorConvertFloat4ToU32(ImVec4(r, g, b, 1)));
 		ImGui::GetWindowDrawList()->AddText(
-			ImVec2(draw_start_pos.x + record.start * scale + 2, draw_start_pos.y + line_index * 25.f),
+			ImVec2(std::max(5.f, draw_start_pos.x + (record.start - min_value) * scale + 2), draw_start_pos.y + line_index * 25.f),
 			ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 1)), record.name.c_str());
 		ImGui::PopClipRect();
 		ImGui::EndGroup();
@@ -136,35 +137,85 @@ namespace ui
 		}
 	}
 
-	void RecordData::display(float zoom, bool custom_width, float display_max) const
+	bool RecordData::display()
 	{
-		const float zoom_scale = custom_width ? 1 : std::exp(zoom / 200);
-		const float zoom_width = custom_width
-			                         ? std::exp(display_max / 200) * 1000
-			                         : ImGui::GetContentRegionAvail().x - 20;
-		const float box_scales = zoom_width / (custom_width ? display_max : max_value) * zoom_scale;
-		const float window_width = zoom_width * zoom_scale;
+		bool updated = false;
+		const float zoom_width = ImGui::GetContentRegionAvail().x - 2;
+		const float box_scales = zoom_width / (max_display_value - min_display_value);
 
+		const float height = lines.size() * 25.f + 30.f;
+		const float width = ImGui::GetContentRegionAvail().x;
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 1)));
-		if (ImGui::BeginChild(("record" + std::to_string(rand())).c_str(), ImVec2(ImGui::GetContentRegionAvail().x, lines.size() * 25 + static_cast<float>(30)), false,
-			ImGuiWindowFlags_HorizontalScrollbar))
+		if (ImGui::BeginChild(("record" + std::to_string(rand())).c_str(), ImVec2(width, height), false))
 		{
-			if (ImGui::BeginChild("scrollArea", ImVec2(window_width, lines.size() * static_cast<float>(25)), false,
-			                      ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
+			const auto draw_start_pos = ImGui::GetWindowPos();
+			if (ImGui::BeginChild("scrollArea", ImVec2(width, height), false, ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
 			{
 				int record_index = 0;
 				int line_index = 0;
 				for (const auto& line : lines)
 				{
 					for (const auto& record : line)
-						draw_record(record, line_index, box_scales, record_index++, lines.size());
+						draw_record(record, line_index, min_display_value, box_scales, record_index++, lines.size());
 					line_index++;
 				}
+
+
+				// Draw label
+				ImGui::GetWindowDrawList()->AddText(
+					ImVec2(draw_start_pos.x + 2, draw_start_pos.y + height - 20),
+					ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
+					label.c_str());
+
+
+				// Draw cursor pos
+				if (ImGui::IsMouseHoveringRect(draw_start_pos, ImVec2(draw_start_pos.x + width, draw_start_pos.y + height))) {
+					const float mouse_x = ImGui::GetIO().MousePos.x;
+					ImGui::GetWindowDrawList()->AddLine(
+						ImVec2(mouse_x, draw_start_pos.y),
+						ImVec2(mouse_x, draw_start_pos.y + height),
+						ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 0.5)),
+						2
+					);
+
+					// Don't stack with label
+					const float offset = mouse_x < draw_start_pos.x + ImGui::CalcTextSize(label.c_str()).x + 2 ? 40.f : 20.f;
+
+					ImGui::GetWindowDrawList()->AddText(
+						ImVec2(mouse_x + 2, draw_start_pos.y + height - offset),
+						ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
+						(std::to_string(((mouse_x - draw_start_pos.x) / width * (max_display_value - min_display_value) + min_display_value) * 1000) + "ms").c_str());
+
+					if (!pressed)
+						drag_start_x = mouse_x;
+
+					if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+						pressed = true;
+					if (pressed)
+					{
+						ImGui::GetWindowDrawList()->AddRectFilled(
+							ImVec2(drag_start_x, draw_start_pos.y),
+							ImVec2(mouse_x, draw_start_pos.y + height),
+							ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 0.3f)));
+					}
+					if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && pressed)
+					{
+						const float min = std::min(drag_start_x, mouse_x);
+						const float max = std::max(drag_start_x, mouse_x);
+						min_display_value = (min - draw_start_pos.x) / width * (max_display_value - min_display_value) + min_display_value;
+						max_display_value = (max - draw_start_pos.x) / width * (max_display_value - min_display_value) + min_display_value;
+						pressed = false;
+						updated = true;
+					}
+				}
+				else
+					pressed = false;
 			}
 			ImGui::EndChild();
 		}
 		ImGui::PopStyleColor();
 		ImGui::EndChild();
+		return updated;
 	}
 
 	void GraphData::push_value(float value)

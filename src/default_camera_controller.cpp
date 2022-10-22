@@ -124,8 +124,8 @@ void DefaultCameraController::process_mouse_wheel(GLFWwindow* window, double x_p
 	if (!capture_input)
 		return;
 	movement_speed *= y_pos / 3 + 1;
-	if (movement_speed < 0.001)
-		movement_speed = 0.001;
+	if (movement_speed < 0.1)
+		movement_speed = 0.1;
 }
 
 void DefaultCameraController::tick(double delta_time)

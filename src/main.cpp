@@ -20,11 +20,13 @@
 #include "ui/ui.h"
 #include "ui/viewport.h"
 #include "ui/world_outliner.h"
+#include "utils/game_settings.h"
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
 
 int main()
 {
+	std::unique_ptr<ActionRecord> main_initialization = std::make_unique<ActionRecord>("main initialization");
 	Engine::get().get_renderer().set_icon("resources/textures/icon.png");
 
 	const auto pass_g_buffer_combine = PostProcessPass::create("GBuffer_Combine", Engine::get().get_renderer());
@@ -105,10 +107,7 @@ int main()
 		upsample_passes.emplace_back(upsample_pass);
 	}
 
-	float bloom_strength = 0.5f;
-	float gamma = 2.2f;
-	float exposure = 1.0f;
-
+	main_initialization = nullptr;
 	while (!Engine::get().get_renderer().should_close())
 	{
 		Engine::get().get_asset_manager().refresh_dirty_assets();
@@ -153,8 +152,8 @@ int main()
 				pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_depth(),
 				                                                   "GBUFFER_depth");
 				pass_g_buffer_combine->material()->bind_texture(cubemap,"WORLD_Cubemap");
-				glUniform1f(pass_g_buffer_combine->material()->binding("gamma"), gamma);
-				glUniform1f(pass_g_buffer_combine->material()->binding("exposure"), exposure);
+				glUniform1f(pass_g_buffer_combine->material()->binding("gamma"), GameSettings::get().gamma);
+				glUniform1f(pass_g_buffer_combine->material()->binding("exposure"), GameSettings::get().exposure);
 				pass_g_buffer_combine->draw();
 			}
 			{
@@ -176,10 +175,9 @@ int main()
 				}
 				// Up Samples
 				{
-					ImGui::SliderFloat("bloom strength", &bloom_strength, 0, 1);
 					upsample_passes.back()->bind();
 					glUniform2f(upsample_passes.back()->material()->binding("input_resolution"), static_cast<float>(downsample_passes.back()->width()), static_cast<float>(downsample_passes.back()->height()));
-					glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), bloom_strength);
+					glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"), GameSettings::get().bloom_intensity);
 					glUniform1f(upsample_passes.back()->material()->binding("step"), 1 - (static_cast<float>(upsample_passes.size()) - 1) / static_cast<float>(upsample_passes.size()));
 					upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(), "LastSample");
 					upsample_passes.back()->material()->bind_texture_ex(downsample_passes[downsample_passes.size() - 2]->result(), "Color");
@@ -188,7 +186,7 @@ int main()
 					{
 						upsample_passes[i]->bind();
 						glUniform2f(upsample_passes[i]->material()->binding("input_resolution"), static_cast<float>(upsample_passes[i + 1]->width()), static_cast<float>(upsample_passes[i + 1]->height()));
-						glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), bloom_strength);
+						glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"), GameSettings::get().bloom_intensity);
 						glUniform1f(upsample_passes[i]->material()->binding("step"), 1 - i / static_cast<float>(upsample_passes.size()));
 						upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
 						upsample_passes[i]->material()->bind_texture_ex(i == 0 ? pass_g_buffer_combine->result() : downsample_passes[i - 1]->result(), "Color");
@@ -199,11 +197,9 @@ int main()
 			// Post process
 			{
 				STAT_FRAME("Post process");
-				ImGui::SliderFloat("Exposure", &exposure, 0.1f, 4);
-				ImGui::SliderFloat("Gamma", &gamma, 0.5f, 4);
 				post_process_pass->bind(Engine::get().get_renderer().is_fullscreen());
-				glUniform1f(post_process_pass->material()->binding("gamma"), gamma);
-				glUniform1f(post_process_pass->material()->binding("exposure"), exposure);
+				glUniform1f(post_process_pass->material()->binding("gamma"), GameSettings::get().gamma);
+				glUniform1f(post_process_pass->material()->binding("exposure"), GameSettings::get().exposure);
 				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneBloom");
 				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneColor");
 				post_process_pass->draw();

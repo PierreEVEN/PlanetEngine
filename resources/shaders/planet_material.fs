@@ -14,49 +14,76 @@ layout(location = 3) in vec2 coordinates;
 layout(location = 4) in float planet_radius;
 layout(location = 5) in vec3 debug_scalar;
 layout(location = 6) in vec3 g_LocalNormal;
+layout(location = 7) in vec3 g_Tangent;
+layout(location = 8) in vec3 g_BiTangent;
 
-layout(location = 8) uniform sampler2D grass;
-layout(location = 9) uniform sampler2D sand;
-layout(location = 10) uniform sampler2D rock;
+layout(location = 8) uniform sampler2D grass_color;
+layout(location = 9) uniform sampler2D sand_color;
+layout(location = 10) uniform sampler2D rock_color;
+
+layout(location = 11) uniform sampler2D rock_normal;
+layout(location = 12) uniform sampler2D grass_normal;
+layout(location = 13) uniform sampler2D sand_normal;
+
+struct LandData {
+	vec3 color;
+	vec3 normal;
+	vec3 mrao;
+};
+
+LandData mix(LandData a, LandData b, float value) {
+	value = clamp(value, 0, 1);
+	LandData res;
+	res.color = mix(a.color, b.color, value);
+	res.normal = mix(a.normal, b.normal, value);
+	res.mrao = mix(a.mrao, b.mrao, value);
+	return res;
+}
+
+
+LandData make_ld_tex(sampler2D color, sampler2D normal, vec2 tc) {
+	LandData res;
+	res.color = texture(color, tc).rgb;
+	res.normal = texture(normal, tc).rgb;
+	res.mrao = vec3(0, 1, 1);
+	return res;
+}
+
+LandData make_ld_col(vec3 color) {
+	LandData res;
+	res.color = color;
+	res.normal = vec3(0, 0, 1);
+	res.mrao = vec3(0, 1, 1);
+	return res;
+}
 
 void main()
 {
+	mat3 TBN = mat3(g_Tangent, g_BiTangent, normal);
+	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) - 0.0001, 64);
+	float camera_distance = length(position);
 
-	vec3 rock_color = texture(rock, coordinates * 1000).rgb;
-	vec3 sand_color = texture(sand, coordinates * 1000).rgb;
-	vec3 grass_color = texture(grass, coordinates * 1000).rgb;
-	vec3 snow_color = vec3(0.8, 0.75, 0.8);
-	vec3 rock_color_bis = texture(rock, coordinates * 1398.48945).rgb;
-	vec3 water_deep = vec3(20, 50, 150) / 350;
-	vec3 water = vec3(40, 80, 150) / 265;
-	if (planet_radius < 2000000) {
-		rock_color = vec3(1,1,1);
-		rock_color_bis = vec3(0.7, 0.7, 0.5);
-		grass_color = vec3(0.5,0.5,0.47) * 1.2;
-		sand_color = vec3(0.5);
-		snow_color = vec3(0.7,0.68,0.65);
-		water = vec3(0.7,0.7,0.7) * 0.9;
-		water_deep = vec3(0.4,0.4,0.37);
-	}
+	float textures_scale = 1000;
+	LandData rock = make_ld_tex(rock_color, rock_normal, coordinates * textures_scale);
+	LandData grass = make_ld_tex(grass_color, rock_normal, coordinates * textures_scale);
+	LandData sand = make_ld_tex(sand_color, sand_normal, coordinates * textures_scale);
+	LandData water = make_ld_col(vec3(60, 100, 150) / 505);
+	LandData water_deep = make_ld_col(vec3(30, 30, 150) / 750);
+
+	// Ajust grass color value;
+	//grass.color *= 2;
+	//rock.color *= 2;
+
+	LandData ground = mix(grass, rock, slope); // Grass rock
+	ground = mix(ground, sand, (-altitude + 100) / 50); // Add beach
+	LandData ocean = mix(water, water_deep, pow(-altitude / 10000, 0.5)); // Ocean
+	LandData ground_ocean = mix(ground, ocean, -altitude * 10); // Mix all
+	LandData result = ground_ocean;
+
+	// Disable normals by distance
+	vec3 output_normal = mix(result.normal, vec3(0, 0, 1), vec3(pow(clamp(camera_distance / 10000, 0, 1), 0.5)));
 
 
-	vec3 normal_vector = g_LocalNormal;
-
-	vec2 uv = position.xy / 2 + camera_pos.zx;
-
-	float slope = pow(dot(normal_vector, vec3(0,0,1)), 1);
-
-	gColor = mix((rock_color_bis + rock_color) / 2, grass_color, clamp(slope, 0, 1));
-
-	gColor = mix(sand_color, gColor, clamp((altitude - 5 ) / 10 , 0, 1));
-
-	gColor = mix(gColor, snow_color, clamp((altitude - 4000) / 800, 0, 1));
-
-	float depth_scale = clamp(-altitude / 300, 0, 1);
-
-	if (altitude < 0.001) {
-		gColor = mix(water, water_deep, depth_scale);
-	}
-
-	gNormal = normal;
+	gNormal = TBN * output_normal;
+	gColor = result.color;
 }

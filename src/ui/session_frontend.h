@@ -19,11 +19,6 @@ private:
 	ui::RecordData frame_record;
 	ui::RecordData action_record_main_thread;
 	ui::RecordData action_record_other_threads;
-	float zoom = 0;
-	bool realtime = false;
-	float custom_width = 0;
-	bool use_custom_width = false;
-	float recorded_max = 0;
 
 	int record_first_frame = 5;
 	

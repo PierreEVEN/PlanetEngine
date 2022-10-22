@@ -21,13 +21,22 @@ namespace ui
 		float min_value = FLT_MIN;
 		float max_value = FLT_MIN;
 
+		float min_display_value = 0;
+		float max_display_value = 1;
+
+		std::string label;
+
 		std::vector<RecordItem>& get_line(int index)
 		{
 			if (index >= static_cast<int>(lines.size()))
 				lines.resize(index + 1);
 			return lines[index];
 		}
-		void display(float zoom, bool custom_width, float display_max) const;
+		// Return true when display min and max have been changed
+		bool display();
+	private:
+		float drag_start_x = 0;
+		bool pressed = false;
 	};
 
 

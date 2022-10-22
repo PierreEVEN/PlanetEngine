@@ -26,9 +26,7 @@ public:
 	{
 		return delta_seconds;
 	}
-
-	int framerate_limit = 0;
-
+	
 private:
 	uint32_t world_uniform;
 	std::shared_ptr<Camera> camera;
