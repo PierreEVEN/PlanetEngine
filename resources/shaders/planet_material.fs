@@ -80,14 +80,14 @@ void main()
 	grass.mrao = make_mrao(0.03, 0.7, 0);
 	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
 	sand.mrao = make_mrao(0.2, 0.4, 0);
-	LandData water = make_ld_col(vec3(60, 100, 150) / 505);
-	water.mrao = make_mrao(0.8, 0.1, 0);
+	LandData water = make_ld_col(vec3(30, 30, 150) / 256);
+	water.mrao = make_mrao(0.6, 0.3, 0);
 	LandData water_deep = make_ld_col(vec3(30, 30, 150) / 750);
-	water_deep.mrao = make_mrao(0.8, 0.1, 0);
+	water_deep.mrao = make_mrao(0.8, 0.2, 0);
 
 	LandData ground = mix_ld(grass, rock, slope); // Grass rock
 	ground = mix_ld(ground, sand, (-altitude + 100) / 50); // Add beach
-	LandData ocean = mix_ld(water, water_deep, pow(-altitude / 10000, 0.5)); // Ocean
+	LandData ocean = mix_ld(water, water_deep, pow(-altitude / 200000, 0.5)); // Ocean
 	LandData ground_ocean = mix_ld(ground, ocean, -altitude * 10); // Mix all
 	LandData result = ground_ocean;
 

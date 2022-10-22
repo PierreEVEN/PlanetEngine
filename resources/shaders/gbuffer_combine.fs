@@ -20,7 +20,7 @@ int NumOpticalDepthPoints = 5;
 vec3 planetCenter = vec3(0,0, 0);
 float atmosphereRadius = 6200000;
 float planetRadius = 6000000;
-float atmosphereDensityFalloff = 5;
+float atmosphereDensityFalloff = 6;
 float scatter_strength = 2;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
@@ -73,16 +73,17 @@ void main()
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
 		vec3 mrao = texture(GBUFFER_mrao, uv).rgb;
-		//oFragmentColor = vec4(col * pow(max(0, clamp(dot(norm, light_dir) + 0.2, 0, 1)), 2), 1);
 
+        /*
+        // Blinn-phong
         PhongParams phong_params;
         phong_params.ambiant_strength = 0.001;
         phong_params.specular_strength = (mrao.r) * 32;
         phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
         oFragmentColor = vec4(blinn_phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
-
-        oFragmentColor = vec4(pbr_lighting(col, norm, light_dir, -getSceneWorldDirection(), mrao), 1);
-        //return;
+        */
+        vec3 ambient = vec3(mix(0.0, 0.01, clamp(dot(norm, light_dir) + 0.3, 0, 1)));
+        oFragmentColor = vec4(pbr_lighting(col, norm, light_dir, -getSceneWorldDirection(), mrao, ambient), 1);
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());

@@ -84,7 +84,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixel_direction, vec3 mrao) {
+vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixel_direction, vec3 mrao, vec3 ambiant) {
     vec3 N = normalize(normal);
     vec3 V = pixel_direction;
 
@@ -95,9 +95,6 @@ vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixe
     
     vec3 F0 = vec3(0.04);
     F0        = mix(F0, pixel_color, metallic);
-
-    // reflectance equation
-    vec3 Lo = vec3(0, 0, 0);
 
     // calculate per-light radiance
     vec3 L           = light_direction;
@@ -112,7 +109,7 @@ vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixe
     vec3 F   = fresnel_schlick(max(dot(H, V), 0.0), F0);
 
     vec3 kS = F;
-    vec3 kD = vec3(1, 1, 1) - kS;
+    vec3 kD = vec3(1) - kS;
     kD *= 1.0 - metallic;
 
     vec3 numerator   = NDF * G * F;
@@ -121,12 +118,11 @@ vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixe
 
     // add to outgoing radiance Lo
     float NdotL = max(dot(N, L), 0.0);
-    Lo += (kD * pixel_color / PI + specular) * radiance * NdotL;
+    vec3 Lo = (kD * pixel_color / PI + specular) * radiance * NdotL;
 
-    vec3 ambient = vec3(0.03, 0.03, 0.03) * pixel_color * ao;
+    vec3 ambient = ambiant;// * pixel_color * ao;
     vec3 color   = ambient + Lo;
 
-    color = color / (color + vec3(1, 1, 1));
     return color;
 }
 

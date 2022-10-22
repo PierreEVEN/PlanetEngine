@@ -94,7 +94,7 @@ void Planet::draw_ui()
 	SceneComponent::draw_ui();
 	ImGui::SliderInt("num LODs : ", &num_lods, 1, 40);
 	ImGui::DragFloat("radius : ", &radius, 10);
-	if (ImGui::SliderInt("cell number", &cell_count, 1, 40) ||
+	if (ImGui::SliderInt("cell number", &cell_count, 1, 60) ||
 		ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
 		dirty = true;
 	ImGui::Separator();
