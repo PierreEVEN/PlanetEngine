@@ -73,7 +73,7 @@ int main()
 
 	// Create camera controller
 	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	camera_controller.teleport_to({-10, 0, earth->get_radius() + 20});
+	camera_controller.teleport_to({0, 0, earth->get_radius() + 2});
 
 
 	const auto cubemap = TextureCube::create("cube map");
