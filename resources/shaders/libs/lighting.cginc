@@ -88,7 +88,7 @@ vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixe
 
     vec3 N = normalize(normal);
     vec3 V = pixel_direction;
-
+    //return V;
     float metallic  = mrao.r;
     float roughness = clamp(mrao.g, 0.02, 1.0);
     float ao        = mrao.b;

@@ -91,9 +91,9 @@ void main()
 	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
 	sand.mrao = make_mrao(0.2, 0.4, 0);
 	LandData water = make_ld_col(water_color() / 256);
-	water.mrao = make_mrao(0.6, 0.3, 0);
+	water.mrao = make_mrao(0.6, 0.15, 0);
 	LandData water_deep = make_ld_col(water_color() / 750);
-	water_deep.mrao = make_mrao(0.8, 0.2, 0);
+	water_deep.mrao = make_mrao(0.8, 0.1, 0);
 
 	LandData ground = mix_ld(grass, rock, slope); // Grass rock
 	ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
@@ -108,9 +108,16 @@ void main()
 	LandData result = ground_ocean;
 
 	// Disable normals by distance
-	vec3 output_normal = mix(result.normal, vec3(0, 0, 1), vec3(pow(clamp(camera_distance / 200000, 0, 1), 0.25)));
+	vec3 output_normal = mix((result.normal), vec3(0, 0, 1), vec3(pow(clamp(camera_distance / 200000, 0, 1), 0.25)));
 
 	gNormal = TBN * output_normal;
+	gColor = vec3(g_BiTangent);
 	gColor = result.color;
+	gNormal = TBN * vec3(0,0,1);
+	//gColor = TBN * output_normal;
+
+	//gColor = vec3(dot(g_Tangent, vec3(1,0,0)));
+
+
 	gMrao = vec4(result.mrao, 1);
 }

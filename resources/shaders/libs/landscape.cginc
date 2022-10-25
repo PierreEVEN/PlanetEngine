@@ -47,8 +47,6 @@ float get_height_at_location__b(vec3 pos) {
         return float(glob_height * 1000);
 }
 
-float clamp_01(float a) { return clamp(a, 0, 1); }
-
 float normalized_layer(vec3 pos, float scale) {
     return fma(cnoise(pos * scale), 0.5, 0.5);
 }
@@ -89,7 +87,7 @@ float get_height_at_location(vec3 pos) {
 
         float land = 50 + highlands * 10000 + hill * 500 + mini_noise * 5;
 
-        return mix(continents, land, clamp_01(transition));
+        return mix(continents, land, clamp_01(transition)) * 10;
     }
 
 

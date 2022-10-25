@@ -29,12 +29,53 @@ int main()
 	std::unique_ptr<ActionRecord> main_initialization = std::make_unique<ActionRecord>("main initialization");
 	Engine::get().get_renderer().set_icon("resources/textures/icon.png");
 
+	// Create post process framegraph
+
 	const auto pass_g_buffer_combine = PostProcessPass::create("GBuffer_Combine", Engine::get().get_renderer());
 	pass_g_buffer_combine->init("resources/shaders/gbuffer_combine.fs");
 
-	const auto post_process_pass = PostProcessPass::create("PostProcess", Engine::get().get_renderer());
-	post_process_pass->init("resources/shaders/post_process.fs");
+	const auto ssr_pas = PostProcessPass::create("SSR", pass_g_buffer_combine);
+	ssr_pas->init("resources/shaders/post_process/screen_space_reflections.fs");
 
+	const auto ssr_combine = PostProcessPass::create("SSR Combine", pass_g_buffer_combine);
+	ssr_combine->init("resources/shaders/post_process/ssr_combine.fs");
+
+	std::vector<std::shared_ptr<PostProcessPass>> downsample_passes;
+	for (int i = 0; i < 9; ++i)
+	{
+		std::shared_ptr<PostProcessPass> pass = nullptr;
+		if (i == 0)
+			pass = PostProcessPass::create("DownSample_" + std::to_string(i), ssr_combine);
+		else
+			pass = PostProcessPass::create("DownSample_" + std::to_string(i), downsample_passes[i - 1]);
+		pass->init("resources/shaders/post_process/downsample_pass.fs");
+		pass->on_resolution_changed([i](int& x, int& y)
+		{
+			x /= static_cast<int>(std::pow(2, i + 1));
+			y /= static_cast<int>(std::pow(2, i + 1));
+		});
+		downsample_passes.emplace_back(pass);
+	}
+
+	std::vector<std::shared_ptr<PostProcessPass>> upsample_passes(9);
+	for (int i = 8; i >= 0; --i)
+	{
+		std::shared_ptr<PostProcessPass> pass = nullptr;
+		if (i == 8)
+			pass = PostProcessPass::create("UpSample_" + std::to_string(i), downsample_passes.back());
+		else
+			pass = PostProcessPass::create("UpSample_" + std::to_string(i), upsample_passes[i + 1]);
+		pass->init("resources/shaders/post_process/upsample_pass.fs");
+		pass->on_resolution_changed([i](int& x, int& y)
+		{
+			x /= static_cast<int>(std::pow(2, i));
+			y /= static_cast<int>(std::pow(2, i));
+		});
+		upsample_passes[i] = pass;
+	}
+
+	const auto post_process_pass = PostProcessPass::create("PostProcess", ssr_combine);
+	post_process_pass->init("resources/shaders/post_process/post_process.fs");
 
 	ImGuiWindow::create_window<GraphicDebugger>();
 	ImGuiWindow::create_window<MaterialManagerUi>();
@@ -63,7 +104,7 @@ int main()
 	// Create camera controller
 	const auto camera_controller = std::make_shared<DefaultCameraController>(Engine::get().get_world().get_camera());
 	camera_controller->add_child(Engine::get().get_world().get_camera());
-	camera_controller->teleport_to({ 0, 0, earth->get_radius() + 2 });
+	camera_controller->teleport_to({0, 0, earth->get_radius() + 2});
 	earth->add_child(camera_controller);
 
 	const auto default_material = Material::create("standard_material");
@@ -75,39 +116,11 @@ int main()
 	cube->set_local_position({0, 0, earth->get_radius()});
 	Engine::get().get_world().get_scene_root().add_child(cube);
 	earth->add_child(cube);
-	
+
 	const auto cubemap = TextureCube::create("cube map");
 	cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
 	                   "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
 	                   "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
-
-	std::vector<std::shared_ptr<PostProcessPass>> downsample_passes;
-	for (int i = 0; i < 9; ++i)
-	{
-		const auto downsample_pass = PostProcessPass::create("DownSample_" + std::to_string(i),
-		                                                     Engine::get().get_renderer());
-		downsample_pass->init("resources/shaders/post_process/downsample_pass.fs");
-		downsample_pass->on_resolution_changed([i](int& x, int& y)
-		{
-			x /= static_cast<int>(std::pow(2, i + 1));
-			y /= static_cast<int>(std::pow(2, i + 1));
-		});
-		downsample_passes.emplace_back(downsample_pass);
-	}
-
-	std::vector<std::shared_ptr<PostProcessPass>> upsample_passes;
-	for (int i = 0; i < 9; ++i)
-	{
-		const auto upsample_pass = PostProcessPass::create("UpSample_" + std::to_string(i),
-		                                                   Engine::get().get_renderer());
-		upsample_pass->init("resources/shaders/post_process/upsample_pass.fs");
-		upsample_pass->on_resolution_changed([i](int& x, int& y)
-		{
-			x /= static_cast<int>(std::pow(2, i));
-			y /= static_cast<int>(std::pow(2, i));
-		});
-		upsample_passes.emplace_back(upsample_pass);
-	}
 
 	main_initialization = nullptr;
 	while (!Engine::get().get_renderer().should_close())
@@ -149,54 +162,43 @@ int main()
 				pass_g_buffer_combine->draw();
 			}
 			{
+				STAT_FRAME("Screen space reflections");
+				ssr_pas->bind();
+				ssr_pas->material()->bind_texture_ex(Engine::get().get_renderer().world_normal(),
+					"NormalMap");
+				ssr_pas->material()->bind_texture_ex(Engine::get().get_renderer().world_depth(),
+					"DepthMap");
+				ssr_pas->material()->bind_texture_ex(Engine::get().get_renderer().world_mrao(), "GBUFFER_mrao");
+				glUniform1f(ssr_pas->material()->binding("z_near"),
+					static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
+				ssr_pas->draw();
+
+				ssr_combine->bind();
+				ssr_combine->material()->bind_texture_ex(ssr_pas->result(),"SSR_Coordinates");
+				ssr_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_mrao(), "GBUFFER_mrao");
+				ssr_combine->draw();
+			}
+			{
 				STAT_FRAME("Bloom");
 				// Down Samples
 				{
-					downsample_passes[0]->bind();
-					glUniform2f(downsample_passes[0]->material()->binding("input_resolution"),
-					            static_cast<float>(pass_g_buffer_combine->width()),
-					            static_cast<float>(pass_g_buffer_combine->height()));
-					downsample_passes[0]->material()->bind_texture_ex(pass_g_buffer_combine->result(), "Color");
-					downsample_passes[0]->draw();
-					for (int i = 1; i < downsample_passes.size(); ++i)
+					for (int i = 0; i < downsample_passes.size(); ++i)
 					{
 						downsample_passes[i]->bind();
-						downsample_passes[i]->material()->bind_texture_ex(downsample_passes[i - 1]->result(), "Color");
-						glUniform2f(downsample_passes[i]->material()->binding("input_resolution"),
-						            static_cast<float>(downsample_passes[i - 1]->width()),
-						            static_cast<float>(downsample_passes[i - 1]->height()));
 						downsample_passes[i]->draw();
 					}
 				}
 				// Up Samples
 				{
-					upsample_passes.back()->bind();
-					glUniform2f(upsample_passes.back()->material()->binding("input_resolution"),
-					            static_cast<float>(downsample_passes.back()->width()),
-					            static_cast<float>(downsample_passes.back()->height()));
-					glUniform1f(upsample_passes.back()->material()->binding("bloom_strength"),
-					            GameSettings::get().bloom_intensity);
-					glUniform1f(upsample_passes.back()->material()->binding("step"),
-					            1 - (static_cast<float>(upsample_passes.size()) - 1) / static_cast<float>(
-						            upsample_passes.size()));
-					upsample_passes.back()->material()->bind_texture_ex(downsample_passes.back()->result(),
-					                                                    "LastSample");
-					upsample_passes.back()->material()->bind_texture_ex(
-						downsample_passes[downsample_passes.size() - 2]->result(), "Color");
-					upsample_passes.back()->draw();
-					for (int i = static_cast<int>(upsample_passes.size()) - 2; i >= 0; --i)
+					for (int i = static_cast<int>(upsample_passes.size()) - 1; i >= 0; --i)
 					{
 						upsample_passes[i]->bind();
-						glUniform2f(upsample_passes[i]->material()->binding("input_resolution"),
-						            static_cast<float>(upsample_passes[i + 1]->width()),
-						            static_cast<float>(upsample_passes[i + 1]->height()));
 						glUniform1f(upsample_passes[i]->material()->binding("bloom_strength"),
 						            GameSettings::get().bloom_intensity);
 						glUniform1f(upsample_passes[i]->material()->binding("step"),
 						            1 - i / static_cast<float>(upsample_passes.size()));
-						upsample_passes[i]->material()->bind_texture_ex(upsample_passes[i + 1]->result(), "LastSample");
 						upsample_passes[i]->material()->bind_texture_ex(
-							i == 0 ? pass_g_buffer_combine->result() : downsample_passes[i - 1]->result(), "Color");
+							i == 0 ? ssr_combine->result() : downsample_passes[i - 1]->result(), "Color");
 						upsample_passes[i]->draw();
 					}
 				}
@@ -207,8 +209,7 @@ int main()
 				post_process_pass->bind(Engine::get().get_renderer().is_fullscreen());
 				glUniform1f(post_process_pass->material()->binding("gamma"), GameSettings::get().gamma);
 				glUniform1f(post_process_pass->material()->binding("exposure"), GameSettings::get().exposure);
-				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneBloom");
-				post_process_pass->material()->bind_texture_ex(upsample_passes[0]->result(), "SceneColor");
+				post_process_pass->material()->bind_texture_ex(upsample_passes.front()->result(), "SceneBloom");
 				post_process_pass->draw();
 			}
 			// UI

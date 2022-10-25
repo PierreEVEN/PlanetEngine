@@ -179,4 +179,9 @@ RaySphereTraceResult raySphereIntersection(vec3 spherePosition, float sphereRadi
     return res;
 }
 
+float clamp_01(float a) { return clamp(a, 0, 1); }
+vec2 clamp_01(vec2 a) { return clamp(a, vec2(0), vec2(1)); }
+vec3 clamp_01(vec3 a) { return clamp(a, vec3(0), vec3(1)); }
+vec4 clamp_01(vec4 a) { return clamp(a, vec4(0), vec4(1)); }
+
 #endif // MATH_H_

@@ -51,15 +51,15 @@ void main()
     vec2 grid_2d_pos_base = (lod_local_transform * vec4(pos, 1)).xz;
     // Clamp position to [-PI/2, PI/2] (don't loop around planet)
     vec2 grid_2d_pos = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2);
-    vec2 grid_2d_pos_tx = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(radius * PI / 2 * 1 * 0, 0); // 2D pos 90° along x axis
-    vec2 grid_2d_pos_ty = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(0, radius * PI / 2 * 0); // 2D pos 90° along y axis
+    vec2 grid_2d_pos_tx = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(radius * PI / 2, 0); // 2D pos 90° along x axis
+    vec2 grid_2d_pos_ty = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(0, radius * PI / 2 * 1); // 2D pos 90° along y axis
     
-	vec3 planet_view_pos = grid_to_sphere(grid_2d_pos, radius); //@TODO not actually a readable value    
+	vec3 planet_view_pos = grid_to_sphere(grid_2d_pos, radius);
 
     // Used to compute tangent and bitangent
     vec3 planet_pos = planet_view_pos + vec3(radius, 0, 0);
-    vec3 planet_pos_tx = grid_to_sphere_centered(grid_2d_pos_tx + vec2(radius * PI / 2, 0), radius);
-    vec3 planet_pos_ty = grid_to_sphere_centered(grid_2d_pos_ty + vec2(0, radius * PI / 2), radius);
+    vec3 planet_pos_tx = grid_to_sphere_centered(grid_2d_pos_tx, radius);
+    vec3 planet_pos_ty = vec3(grid_to_sphere_centered(grid_2d_pos_ty, radius));
     
     // Compute normals, tangent and bi-tangent
     vec3 sphere_normal = normalize(planet_pos);

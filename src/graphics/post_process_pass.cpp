@@ -58,9 +58,9 @@ void PostProcessPass::bind(bool to_back_buffer) const
 	pass_material->bind();
 	if (previous_texture)
 	{
-		glUniform2f(material()->binding("input_resolution"), static_cast<float>(previous_texture->width_interface()),
+		glUniform2f(material()->binding("InputResolution"), static_cast<float>(previous_texture->width_interface()),
 		            static_cast<float>(previous_texture->height_interface()));
-		material()->bind_texture_ex(previous_texture, "previous_pass");
+		material()->bind_texture_ex(previous_texture, "InputTexture");
 	}
 	GL_CHECK_ERROR();
 }
