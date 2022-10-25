@@ -55,9 +55,9 @@ int main()
 	moon->set_radius(1700000);
 	moon->set_max_lods(18);
 	moon->set_cell_count(30);
-	double moon_orbit = 0;
-	double moon_rotation = 0;
-	double hearth_rotation = 0;
+	moon->set_orbit_distance(30000000.f);
+	moon->set_orbit_speed(0.02f);
+	moon->set_rotation_speed(0.05f);
 
 	earth->add_child(Engine::get().get_world().get_camera());
 
@@ -120,17 +120,6 @@ int main()
 			// Gameplay
 			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
-
-			moon_orbit += Engine::get().get_world().get_delta_seconds() * 0.02;
-			moon_rotation += Engine::get().get_world().get_delta_seconds() * 0.2;
-			hearth_rotation += Engine::get().get_world().get_delta_seconds() * 0.002;
-
-			moon->set_local_position(
-				Eigen::Vector3d(std::cos(moon_orbit), 0, std::sin(moon_orbit)) * 30000000);
-			moon->set_local_rotation(
-				Eigen::Quaterniond(Eigen::AngleAxisd(moon_rotation, Eigen::Vector3d::UnitY())));
-			earth->set_local_rotation(
-				Eigen::Quaterniond(Eigen::AngleAxisd(hearth_rotation, Eigen::Vector3d::UnitY())));
 
 			// Rendering
 

@@ -36,6 +36,20 @@ public:
 		dirty = true;
 	}
 
+	void set_orbit_distance(float distance)
+	{
+		orbit_distance = distance;
+	}
+
+	void set_rotation_speed(float speed)
+	{
+		rotation_speed = speed;
+	}
+
+	void set_orbit_speed(float speed)
+	{
+		orbit_speed = speed;
+	}
 protected:
 	void tick(double delta_time) override;
 	void render(Camera& camera) override;
@@ -51,6 +65,13 @@ private:
 	int num_lods = 14;
 	float cell_width = 1.0f;
 	int cell_count = 10;
+
+	// Orbit settings
+	float rotation_speed = 0.001f;
+	float orbit_distance = 0;
+	float orbit_speed = 0;
+	double current_rotation = 0;
+	double current_orbit = 0;
 
 	// debug
 	bool freeze_camera = false;

@@ -27,6 +27,8 @@ static std::shared_ptr<Texture2D> rock_mrao = nullptr;
 static std::shared_ptr<Texture2D> sand_albedo = nullptr;
 static std::shared_ptr<Texture2D> sand_normal = nullptr;
 static std::shared_ptr<Texture2D> sand_mrao = nullptr;
+static std::shared_ptr<Texture2D> water_normal = nullptr;
+static std::shared_ptr<Texture2D> water_displacement = nullptr;
 static std::shared_ptr<ComputeShader> compute_positions = nullptr;
 static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 static std::shared_ptr<ComputeShader> fix_seams = nullptr;
@@ -60,6 +62,11 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	sand_normal->from_file("resources/textures/terrain/wavy-sand_normal-dx.png");
 	sand_mrao = Texture2D::create("terrain sand mrao");
 	sand_mrao->from_file("resources/textures/terrain/wavy-sand_mrao.jpg");
+
+	water_normal = Texture2D::create("water normal");
+	water_normal->from_file("resources/textures/water/water_normal.png");
+	water_displacement = Texture2D::create("water displacement");
+	water_displacement->from_file("resources/textures/water/water_distortion.png");
 
 	compute_positions = ComputeShader::create("Planet compute position");
 	compute_positions->load_from_source("resources/shaders/compute/planet_compute_position.cs");
@@ -243,12 +250,9 @@ static Eigen::Quaterniond closest_rotation_to(const Eigen::Quaterniond& from, co
 
 	const double forward_angle = acos(forward_step.dot(Eigen::Vector3d(0, 0, 1)));
 	const double right_angle = acos(left_step.dot(Eigen::Vector3d(0, 1, 0)));
-
-	ImGui::Text("F = %f R = %f", forward_angle, right_angle);
-
-	if (forward_angle > 0.2 || right_angle > 0.2)
+	
+	if (forward_angle > min_delta || right_angle > min_delta)
 		return delta * from;
-
 
 	return from;
 }
@@ -259,6 +263,13 @@ void Planet::tick(double delta_time)
 {
 	STAT_FRAME("Planet_Tick");
 	SceneComponent::tick(delta_time);
+
+	current_orbit += orbit_speed * delta_time;
+	current_rotation += rotation_speed * delta_time;
+	set_local_position(
+		Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit) * orbit_distance, 0));
+	set_local_rotation(
+		Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
 
 	if (dirty)
 	{
@@ -276,22 +287,7 @@ void Planet::tick(double delta_time)
 
 			// Compute global rotation snapping step
 			const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
-
-			/*
-			// Compute global planet rotation (orient planet mesh toward camera)
-			const auto pitch = asin(camera_direction.z());
-			const auto yaw = atan2(camera_direction.y(), camera_direction.x());
-
-			auto snap = [](double value, double delta) { return round(value / delta) * delta; };
-			
-			local_orientation = Eigen::Affine3d(
-				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
-				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
-			);
-			*/
-
-			//if (ImGui::Button(("test refresh : " + name).c_str()))
-				rotation_to_camera = closest_rotation_to(rotation_to_camera, camera_direction, max_cell_radian_step);
+			rotation_to_camera = closest_rotation_to(rotation_to_camera, camera_direction, max_cell_radian_step);
 			local_orientation = Eigen::Affine3d::Identity();
 			local_orientation.rotate(rotation_to_camera);
 
@@ -465,6 +461,8 @@ void PlanetRegion::render(Camera& camera)
 		Planet::get_landscape_material()->bind_texture(grass_mrao, "grass_mrao");
 		Planet::get_landscape_material()->bind_texture(rock_mrao, "rock_mrao");
 		Planet::get_landscape_material()->bind_texture(sand_mrao, "sand_mrao");
+		Planet::get_landscape_material()->bind_texture(water_normal, "water_normal");
+		Planet::get_landscape_material()->bind_texture(water_displacement, "water_displacement");
 
 		glEnable(GL_CULL_FACE);
 		glPolygonMode(GL_FRONT_AND_BACK, GameSettings::get().wireframe ? GL_LINE : GL_FILL);

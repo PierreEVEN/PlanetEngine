@@ -37,6 +37,7 @@ vec3 unpack_normal(vec2 packed_normal) {
 }
 
 void waves(vec2 uvs, out vec3 offset, out vec3 normal, out vec3 color) {
+    return;
     float pos = world_time + uvs.y * 1000;
     offset.z = sin(pos) * 2;
 }
