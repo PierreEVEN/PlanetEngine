@@ -73,7 +73,8 @@ void main()
 		vec3 col = texture(GBUFFER_color, uv).rgb;
 		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
 		vec3 mrao = texture(GBUFFER_mrao, uv).rgb;
-
+        //oFragmentColor = vec4(col, 1);
+        //return;
         /*
         // Blinn-phong
         PhongParams phong_params;

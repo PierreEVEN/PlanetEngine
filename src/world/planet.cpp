@@ -31,7 +31,6 @@ static std::shared_ptr<ComputeShader> compute_positions = nullptr;
 static std::shared_ptr<ComputeShader> compute_normals = nullptr;
 static std::shared_ptr<ComputeShader> fix_seams = nullptr;
 
-
 std::shared_ptr<Material> Planet::get_landscape_material()
 {
 	if (planet_material)
@@ -74,8 +73,6 @@ std::shared_ptr<Material> Planet::get_landscape_material()
 	return planet_material;
 }
 
-
-static double snap(double value, double delta) { return round(value / delta) * delta; }
 
 Planet::Planet(const std::string& name) : SceneComponent(name), world(Engine::get().get_world())
 {
@@ -236,6 +233,28 @@ void Planet::regenerate()
 	dirty = false;
 }
 
+static Eigen::Quaterniond closest_rotation_to(const Eigen::Quaterniond& from, const Eigen::Vector3d& forward, double min_delta)
+{
+	const Eigen::Vector3d current_front = from * Eigen::Vector3d(1, 0, 0);
+	const Eigen::Quaterniond delta = Eigen::Quaterniond::FromTwoVectors(current_front, forward);
+
+	const auto forward_step = delta * Eigen::Vector3d(0, 0, 1);
+	const auto left_step = delta * Eigen::Vector3d(0, 1, 0);
+
+	const double forward_angle = acos(forward_step.dot(Eigen::Vector3d(0, 0, 1)));
+	const double right_angle = acos(left_step.dot(Eigen::Vector3d(0, 1, 0)));
+
+	ImGui::Text("F = %f R = %f", forward_angle, right_angle);
+
+	if (forward_angle > 0.2 || right_angle > 0.2)
+		return delta * from;
+
+
+	return from;
+}
+
+
+
 void Planet::tick(double delta_time)
 {
 	STAT_FRAME("Planet_Tick");
@@ -258,13 +277,24 @@ void Planet::tick(double delta_time)
 			// Compute global rotation snapping step
 			const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
 
+			/*
 			// Compute global planet rotation (orient planet mesh toward camera)
 			const auto pitch = asin(camera_direction.z());
 			const auto yaw = atan2(camera_direction.y(), camera_direction.x());
+
+			auto snap = [](double value, double delta) { return round(value / delta) * delta; };
+			
 			local_orientation = Eigen::Affine3d(
 				Eigen::AngleAxisd(snap(yaw, max_cell_radian_step), Eigen::Vector3d::UnitZ()) *
 				Eigen::AngleAxisd(snap(-pitch, max_cell_radian_step), Eigen::Vector3d::UnitY())
 			);
+			*/
+
+			//if (ImGui::Button(("test refresh : " + name).c_str()))
+				rotation_to_camera = closest_rotation_to(rotation_to_camera, camera_direction, max_cell_radian_step);
+			local_orientation = Eigen::Affine3d::Identity();
+			local_orientation.rotate(rotation_to_camera);
+
 			world_orientation = get_world_rotation() * local_orientation;
 		}
 
@@ -355,7 +385,6 @@ void PlanetRegion::tick(double delta_time, int in_num_lods, double in_width)
 		child->tick(delta_time, num_lods, cell_size * 2);
 
 	STAT_FRAME("Planet Tick LOD :" + std::to_string(current_lod));
-
 	// Compute camera position in local space
 	const Eigen::Vector3d camera_local_position = planet.planet_inverse_rotation * (world.get_camera()->
 		get_world_position() - planet.get_world_position());

@@ -61,6 +61,7 @@ private:
 	Eigen::Affine3d planet_global_transform = Eigen::Affine3d::Identity();
 	Eigen::Affine3d world_orientation = Eigen::Affine3d::Identity();
 	Eigen::Affine3d local_orientation = Eigen::Affine3d::Identity();
+	Eigen::Quaterniond rotation_to_camera = Eigen::Quaterniond::Identity();
 	Eigen::Affine3d planet_inverse_rotation = Eigen::Affine3d::Identity();
 	Eigen::Vector4f debug_vector = Eigen::Vector4f::Zero();
 };
