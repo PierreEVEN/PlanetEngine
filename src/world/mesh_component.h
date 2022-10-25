@@ -30,7 +30,7 @@ public:
 	}
 
 	virtual void render(Camera& camera) override;
-
+	virtual Class get_class() override { return Class(this); }
 	void draw_ui() override;
 private:
 	std::shared_ptr<Material> material;

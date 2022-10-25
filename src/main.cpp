@@ -59,7 +59,12 @@ int main()
 	moon->set_orbit_speed(0.02f);
 	moon->set_rotation_speed(0.05f);
 
-	earth->add_child(Engine::get().get_world().get_camera());
+
+	// Create camera controller
+	const auto camera_controller = std::make_shared<DefaultCameraController>(Engine::get().get_world().get_camera());
+	camera_controller->add_child(Engine::get().get_world().get_camera());
+	camera_controller->teleport_to({ 0, 0, earth->get_radius() + 2 });
+	earth->add_child(camera_controller);
 
 	const auto default_material = Material::create("standard_material");
 	default_material->load_from_source("resources/shaders/standard_material.vs",
@@ -70,12 +75,7 @@ int main()
 	cube->set_local_position({0, 0, earth->get_radius()});
 	Engine::get().get_world().get_scene_root().add_child(cube);
 	earth->add_child(cube);
-
-	// Create camera controller
-	DefaultCameraController camera_controller(Engine::get().get_world().get_camera());
-	camera_controller.teleport_to({0, 0, earth->get_radius() + 2});
-
-
+	
 	const auto cubemap = TextureCube::create("cube map");
 	cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
 	                   "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
@@ -118,7 +118,6 @@ int main()
 			Engine::get().get_renderer().initialize();
 
 			// Gameplay
-			camera_controller.tick(Engine::get().get_world().get_delta_seconds());
 			Engine::get().get_world().tick_world();
 
 			// Rendering

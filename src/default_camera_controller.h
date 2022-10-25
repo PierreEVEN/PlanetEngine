@@ -1,12 +1,12 @@
 #pragma once
 #include <memory>
 
-#include <Eigen/Dense>
+#include "world/scene_component.h"
 
 class Camera;
 struct GLFWwindow;
 
-class DefaultCameraController final
+class DefaultCameraController : public SceneComponent
 {
 public:
 	DefaultCameraController(const std::shared_ptr<Camera>& camera);
@@ -16,11 +16,15 @@ public:
 	void process_mouse_input(GLFWwindow* window, double x_pos, double y_pos);
 	void process_mouse_wheel(GLFWwindow* window, double x_pos, double y_pos);
 
-	void tick(double delta_time);
+	void tick(double delta_time) override;
 
 	void teleport_to(const Eigen::Vector3d& new_location);
 
+	virtual Class get_class() override { return Class(this); }
 private:
+
+	std::shared_ptr<Camera> get_camera() const;
+
 	bool set_last_mouse = false;
 	double last_mouse_x = 0;
 	double last_mouse_y = 0;

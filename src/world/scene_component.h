@@ -7,6 +7,22 @@
 
 class Camera;
 
+class Class
+{
+public:
+	const std::string class_name;
+	
+	template<typename T>
+	Class(T*) : class_name(typeid(T).name())
+	{
+	}
+
+	template<typename T>
+	static Class of() { return Class(reinterpret_cast<T*>(0)); }
+
+	bool operator==(const Class& other) const { return class_name == other.class_name; }
+};
+
 class SceneComponent
 {
 	friend class World;
@@ -108,6 +124,8 @@ public:
 	const std::string name;
 
 	virtual void draw_ui();
+
+	virtual Class get_class() { return Class(this); }
 
 protected:
 	virtual void tick(double delta_time)

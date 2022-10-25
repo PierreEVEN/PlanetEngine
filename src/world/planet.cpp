@@ -267,7 +267,7 @@ void Planet::tick(double delta_time)
 	current_orbit += orbit_speed * delta_time;
 	current_rotation += rotation_speed * delta_time;
 	set_local_position(
-		Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit) * orbit_distance, 0));
+		Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit), 0) * orbit_distance);
 	set_local_rotation(
 		Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
 

@@ -9,7 +9,7 @@
 #include "utils/maths.h"
 #include "utils/profiler.h"
 
-DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera) : camera(in_camera),
+DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera) : SceneComponent("camera controller"), camera(in_camera),
                                                                                              camera_desired_position(0, 0, 0)
 {
 	Engine::get().on_key_down.add_object(this, &DefaultCameraController::process_key);
@@ -146,4 +146,12 @@ void DefaultCameraController::teleport_to(const Eigen::Vector3d& new_location)
 {
 	camera->set_local_position(new_location);
 	camera_desired_position = new_location;
+}
+
+std::shared_ptr<Camera> DefaultCameraController::get_camera() const
+{
+	for (const auto& child : get_children())
+		if (child->get_class() == Class::of<Camera>())
+			return dynamic_pointer_cast<Camera>(child);
+	return nullptr;
 }

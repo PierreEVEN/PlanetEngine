@@ -50,6 +50,8 @@ public:
 	{
 		orbit_speed = speed;
 	}
+
+	virtual Class get_class() override { return Class(this); }
 protected:
 	void tick(double delta_time) override;
 	void render(Camera& camera) override;
