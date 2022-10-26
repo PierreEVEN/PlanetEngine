@@ -27,7 +27,7 @@ void main() {
 
     // Compute local right and left vectors
     mat3 rot = mat3(Chunk_LocalTransform);
-    vec2 f0 = normalize((rot * vec3(1, 0, 0)).xz);
+    vec2 f0 = normalize(round(rot * vec3(1, 0, 0)).xz);
     ivec2 dirx = ivec2(f0.x, -f0.y);
     ivec2 diry = ivec2(f0.y, f0.x);
 

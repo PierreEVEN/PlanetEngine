@@ -118,6 +118,5 @@ void main()
 
 	//gColor = vec3(dot(g_Tangent, vec3(1,0,0)));
 
-
 	gMrao = vec4(result.mrao, 1);
 }

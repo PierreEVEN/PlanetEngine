@@ -25,23 +25,25 @@ void main() {
 
     vec2 texSize  = InputResolution;
     vec2 texCoord = gl_FragCoord.xy / texSize;
-    vec4 uv = texture(SSR_Coordinates, texCoord);
+    vec4 ssr_uv = texture(SSR_Coordinates, texCoord);
 
     // Removes holes in the UV map.
-    if (uv.b <= 0.0) {
-        uv = vec4(0.0);
+    if (ssr_uv.b <= 0.0) {
+        ssr_uv = vec4(0.0);
         float count = 0.0;
 
         for (int i = -size; i <= size; ++i) {
             for (int j = -size; j <= size; ++j) {
-                uv  += texture(SSR_Coordinates, ((vec2(i, j) * separation) + gl_FragCoord.xy) / texSize);
+                ssr_uv  += texture(SSR_Coordinates, ((vec2(i, j) * separation) + gl_FragCoord.xy) / texSize);
                 count += 1.0;
             }
         }
 
-        uv.xyz /= count;
+        ssr_uv.xyz /= count;
     }
 
-    vec4  color = texture(InputTexture, uv.xy);
-    oFragmentColor = color;
+    if (ssr_uv.b <= 0)
+        oFragmentColor = texture(InputTexture, uv.xy);
+    else
+        oFragmentColor = texture(InputTexture, ssr_uv.xy);
 }

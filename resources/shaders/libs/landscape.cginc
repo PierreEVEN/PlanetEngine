@@ -87,7 +87,7 @@ float get_height_at_location(vec3 pos) {
 
         float land = 50 + highlands * 10000 + hill * 500 + mini_noise * 5;
 
-        return mix(continents, land, clamp_01(transition)) * 10;
+        return mix(continents, land, clamp_01(transition));
     }
 
 
