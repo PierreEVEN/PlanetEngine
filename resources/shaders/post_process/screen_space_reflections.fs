@@ -52,6 +52,7 @@ void main() {
 
     float world_depth = depth_at(uv);
 
+
     //oFragmentColor = vec4(mod(vec3(world_position) / 10000, 1), 1); return; 
 
     /* Skip pixel if not used with SSR */
