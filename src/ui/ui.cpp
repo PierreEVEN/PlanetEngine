@@ -25,10 +25,11 @@ public:
 	{
 		window_name = "demo window";
 	}
+
 	void draw() override
 	{
 		ImGui::ShowDemoWindow(&open);
-		
+
 		if (!open)
 			close();
 	}
@@ -53,7 +54,8 @@ namespace ui
 			}
 			if (ImGui::BeginMenu("Window"))
 			{
-				if (ImGui::MenuItem("World outliner")) ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
+				if (ImGui::MenuItem("World outliner")) ImGuiWindow::create_window<WorldOutliner>(
+					&Engine::get().get_world());
 				ImGui::Separator();
 				if (ImGui::MenuItem("Texture view")) ImGuiWindow::create_window<TextureManagerUi>();
 				if (ImGui::MenuItem("Material view")) ImGuiWindow::create_window<MaterialManagerUi>();
@@ -85,6 +87,7 @@ namespace ui
 
 static std::vector<std::shared_ptr<ImGuiWindow>> imgui_windows;
 static size_t current_window_id = 0;
+
 size_t ImGuiWindow::make_window_id()
 {
 	return current_window_id++;
@@ -101,8 +104,8 @@ void ImGuiWindow::draw_all()
 		if (!imgui_windows[i]->is_open)
 			imgui_windows.erase(imgui_windows.begin() + i);
 
-	for (const auto& window : imgui_windows)
-		window->draw_internal();
+	for (size_t i = 0; i < imgui_windows.size(); ++i)
+		imgui_windows[i]->draw_internal();
 }
 
 void ImGuiWindow::draw_internal()

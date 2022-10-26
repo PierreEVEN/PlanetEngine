@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <iostream>
 
+#include "texture_viewer.h"
 #include "graphics/compute_shader.h"
 #include "graphics/material.h"
 #include "graphics/mesh.h"
@@ -267,8 +268,10 @@ static void texture_manager()
 		ImGui::BeginGroup();
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.4f, 0.2f, 0.8f));
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 4));
-		ImGui::ImageButton(reinterpret_cast<ImTextureID>(static_cast<size_t>(texture->id())), ImVec2(64, 64),
-		                   ImVec2(0, 1), ImVec2(1, 0));
+		if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(static_cast<size_t>(texture->id())), ImVec2(64, 64),
+		                   ImVec2(0, 1), ImVec2(1, 0)))
+			ImGuiWindow::create_window<TextureViewer>(texture);
+
 		ImGui::PopStyleColor();
 		ImGui::PopStyleVar();
 		ImGui::TextWrapped(texture->name.c_str());
