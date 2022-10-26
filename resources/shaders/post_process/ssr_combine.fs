@@ -19,7 +19,7 @@ void main() {
     }
 
     oFragmentColor = mix(texture(InputTexture, uvs.xy), texture(InputTexture, uv), mrao.g);
-    return;
+    
     int   size       = 6;
     float separation = 2.0;
 
@@ -42,13 +42,6 @@ void main() {
         uv.xyz /= count;
     }
 
-    if (uv.b <= 0.0) { 
-        oFragmentColor = vec4(0.0);
-        return;
-    }
-
     vec4  color = texture(InputTexture, uv.xy);
-    float alpha = clamp(uv.b, 0.0, 1.0);
-
-    oFragmentColor = vec4(mix(vec3(0.0), color.rgb, alpha), alpha);
+    oFragmentColor = color;
 }
