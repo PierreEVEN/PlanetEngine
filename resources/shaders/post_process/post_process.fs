@@ -2,15 +2,14 @@
 
 out vec4 oFragmentColor;
 layout(location = 0) in vec2 uv;
-layout(location = 1) uniform sampler2D InputTexture;
-layout(location = 2) uniform sampler2D SceneBloom;
+layout(location = 1) uniform sampler2D Input_Color;
 
 layout(location = 3) uniform float gamma;
 layout(location = 4) uniform float exposure;
 
 void main()
 {
-    vec3 color = texture(SceneBloom, uv).rgb;
+    vec3 color = texture(Input_Color, uv).rgb;
 
     oFragmentColor.a = 1;
 

@@ -127,13 +127,23 @@ void PostProcessPassV2::render(bool to_back_buffer) {
     EZCOGL::VAO::none()->bind();
     ImGui::Text("pass : %s", name.c_str());
     pass_material->bind();
-    for (const auto& dep : dependencies) {
+    for (size_t i = 0; i < dependencies.size(); ++i) {
+
+        const auto& dep = dependencies[i];
 
         const std::string dep_name = dependencies.size() == 1 ? "" : dep->name + "_";
-        ImGui::Text("dep : %s", dep_name.c_str());
-        for (const auto& attachment : dep->get_color_attachments()) {
+        const auto& bind_point = bind_points.find(i);
+
+        for (size_t j = 0; j < dep->get_color_attachments().size(); ++j) {
+
+            const auto& attachment = dep->get_color_attachments()[j];
+
             const std::string att_name    = dep->get_color_attachments().size() == 1 ? "Color" : attachment->name;
-            const std::string final_name  = "Input_" + dep_name + att_name;
+            std::string final_name  = "Input_" + dep_name + att_name;
+            
+            if (bind_point != bind_points.end())
+                final_name = bind_point->second.first[j];
+
             const int         res_binding = material()->binding(final_name + "_Res");
             GL_CHECK_ERROR();
             if (res_binding >= 0)
@@ -145,17 +155,24 @@ void PostProcessPassV2::render(bool to_back_buffer) {
             GL_CHECK_ERROR();
         }
         if (dep->get_depth_attachment()) {
-            const std::string final_name  = "Input_Depth";
+            std::string final_name  = "Input_Depth";
+            if (bind_point != bind_points.end())
+                final_name = bind_point->second.second;
+
+            ImGui::Text("BIND DEPTH : %s", final_name.c_str());
             const int         res_binding = material()->binding(final_name + "_Res");
             if (res_binding >= 0)
                 glUniform2i(res_binding, dep->get_width(), dep->get_height());
             if (dep->get_depth_attachment()->get_render_target())
-                material()->bind_texture(dep->get_depth_attachment()->get_render_target(), final_name);
+                if (!material()->bind_texture(dep->get_depth_attachment()->get_render_target(), final_name))
+                    ImGui::Text("failed to bind");
+            else
+                ImGui::Text("No render target");
         }
     }
 
     GL_CHECK_ERROR();
-    on_draw.execute();
+    on_bind_material.execute(pass_material);
 
     GL_CHECK_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -163,10 +180,10 @@ void PostProcessPassV2::render(bool to_back_buffer) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-PostProcessPassV2::PostProcessPassV2(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader)
+PostProcessPassV2::PostProcessPassV2(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader, TextureCreateInfos create_infos)
     : RenderPass(in_name, width, height) {
 
-    add_attachment("", ImageFormat::RGB_F16, {.wrapping = TextureWrapping::ClampToEdge, .filtering_mag = TextureMagFilter::Nearest, .filtering_min = TextureMinFilter::Nearest});
+    add_attachment("", ImageFormat::RGB_F16, create_infos);
 
     if (post_process_materials.contains(fragment_shader))
         pass_material = post_process_materials.find(fragment_shader)->second;

@@ -69,6 +69,7 @@ void main()
 	float depth = texture(Input_Depth, uv).r;
 	float linear_depth = z_near / depth;
 
+
 	if (depth <= 0) {
 		oFragmentColor = vec4(0);
 	}

@@ -10,6 +10,7 @@
 class Texture2D;
 enum class ImageFormat;
 struct TextureCreateInfos;
+class Material;
 
 DECLARE_DELEGATE_MULTICAST(EventDraw);
 
@@ -22,7 +23,7 @@ public:
     }
 
     virtual void init(uint32_t width, uint32_t height) = 0;
-    
+
     [[nodiscard]] virtual std::shared_ptr<Texture2D> get_render_target() const = 0;
 
     const std::string name;
@@ -64,21 +65,32 @@ public:
     void         resize(uint32_t width, uint32_t height);
 
     void add_attachment(const std::string& attachment_name, ImageFormat image_format, const TextureCreateInfos& create_infos, bool write_only = false);
-    void link_dependency(const std::shared_ptr<RenderPass>& dependency) { dependencies.emplace_back(dependency); }
+
+    void link_dependency(const std::shared_ptr<RenderPass>& dependency) {
+        dependencies.emplace_back(dependency);
+    }
+
+    void link_dependency(const std::shared_ptr<RenderPass>& dependency, const std::vector<std::string>& color_bind_points, const std::string& depth_bind_point = "") {
+        if (dependency->get_depth_attachment() && !depth_bind_point.empty() || color_bind_points.size() == dependency->get_color_attachments().size())
+            bind_points[dependencies.size()] = {color_bind_points, depth_bind_point};
+        dependencies.emplace_back(dependency);
+    }
+
     void on_compute_resolution(const std::function<void(uint32_t&, uint32_t&)>& callback) { compute_resolution = callback; }
 
-    [[nodiscard]] uint32_t                          get_width() const { return width; }
-    [[nodiscard]] uint32_t                          get_height() const { return height; }
-    const std::vector<std::unique_ptr<Attachment>>& get_color_attachments() const { return color_attachments; };
-    const std::unique_ptr<Attachment>&              get_depth_attachment() const { return depth_attachment; };
+    [[nodiscard]] uint32_t                                        get_width() const { return width; }
+    [[nodiscard]] uint32_t                                        get_height() const { return height; }
+    [[nodiscard]] const std::vector<std::unique_ptr<Attachment>>& get_color_attachments() const { return color_attachments; };
+    [[nodiscard]] const std::unique_ptr<Attachment>&              get_depth_attachment() const { return depth_attachment; };
 
     EventDraw         on_draw;
     const std::string name;
 
 protected:
     RenderPass(std::string name, uint32_t width, uint32_t height);
-    std::vector<std::shared_ptr<RenderPass>> dependencies;
-    uint32_t                                 framebuffer_id = 0;
+    std::vector<std::shared_ptr<RenderPass>>                                     dependencies;
+    uint32_t                                                                     framebuffer_id = 0;
+    std::unordered_map<size_t, std::pair<std::vector<std::string>, std::string>> bind_points;
 
 private:
     void     init_attachments();

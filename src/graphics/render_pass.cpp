@@ -121,15 +121,18 @@ void RenderPass::resize(uint32_t in_width, uint32_t in_height) {
 
 void RenderPass::add_attachment(const std::string& attachment_name, ImageFormat image_format, const TextureCreateInfos& create_infos, bool write_only) {
     const int binding_index = static_cast<int>(color_attachments.size());
-    if (is_depth_format(image_format))
+    if (is_depth_format(image_format)) {
         if (write_only)
             depth_attachment = std::make_unique<RenderBufferAttachment>(attachment_name, image_format, binding_index, framebuffer_id);
         else
             depth_attachment = std::make_unique<TextureAttachment>(name, attachment_name, create_infos, image_format, binding_index, framebuffer_id);
-    else if (write_only)
-        color_attachments.emplace_back(std::make_unique<RenderBufferAttachment>(attachment_name, image_format, binding_index, framebuffer_id));
-    else
-        color_attachments.emplace_back(std::make_unique<TextureAttachment>(name, attachment_name, create_infos, image_format, binding_index, framebuffer_id));
+    }
+    else {
+        if (write_only)
+            color_attachments.emplace_back(std::make_unique<RenderBufferAttachment>(attachment_name, image_format, binding_index, framebuffer_id));
+        else
+            color_attachments.emplace_back(std::make_unique<TextureAttachment>(name, attachment_name, create_infos, image_format, binding_index, framebuffer_id));
+    }
 
     is_dirty = true;
 }
