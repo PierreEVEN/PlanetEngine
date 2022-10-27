@@ -125,23 +125,24 @@ void PostProcessPassV2::render(bool to_back_buffer) {
     glClearDepth(0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     EZCOGL::VAO::none()->bind();
-
+    ImGui::Text("pass : %s", name.c_str());
     pass_material->bind();
-
     for (const auto& dep : dependencies) {
 
         const std::string dep_name = dependencies.size() == 1 ? "" : dep->name + "_";
-
-        ImGui::Text("depname = %s", dep_name.c_str());
-
+        ImGui::Text("dep : %s", dep_name.c_str());
         for (const auto& attachment : dep->get_color_attachments()) {
             const std::string att_name    = dep->get_color_attachments().size() == 1 ? "Color" : attachment->name;
             const std::string final_name  = "Input_" + dep_name + att_name;
             const int         res_binding = material()->binding(final_name + "_Res");
+            GL_CHECK_ERROR();
             if (res_binding >= 0)
                 glUniform2i(res_binding, dep->get_width(), dep->get_height());
+            GL_CHECK_ERROR();
             if (attachment->get_render_target())
                 material()->bind_texture(attachment->get_render_target(), final_name);
+            ImGui::Text("try to bind : %s", final_name.c_str());
+            GL_CHECK_ERROR();
         }
         if (dep->get_depth_attachment()) {
             const std::string final_name  = "Input_Depth";
@@ -165,7 +166,7 @@ void PostProcessPassV2::render(bool to_back_buffer) {
 PostProcessPassV2::PostProcessPassV2(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader)
     : RenderPass(in_name, width, height) {
 
-    add_attachment("", ImageFormat::RGB_F16, {});
+    add_attachment("", ImageFormat::RGB_F16, {.wrapping = TextureWrapping::ClampToEdge, .filtering_mag = TextureMagFilter::Nearest, .filtering_min = TextureMinFilter::Nearest});
 
     if (post_process_materials.contains(fragment_shader))
         pass_material = post_process_materials.find(fragment_shader)->second;

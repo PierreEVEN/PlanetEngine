@@ -1,6 +1,3 @@
-#include "graphics/camera.h"
-#include <imgui.h>
-#include <GL/gl3w.h>
 
 #include "graphics/material.h"
 
@@ -20,12 +17,11 @@
 #include "ui/ui.h"
 #include "ui/viewport.h"
 #include "ui/world_outliner.h"
-#include "utils/game_settings.h"
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
+#include "graphics/camera.h"
 
 #include <fbo.h>
-#include <iostream>
 
 int main() {
 
@@ -40,12 +36,11 @@ int main() {
 
     const auto lighting = PostProcessPassV2::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
     lighting->link_dependency(g_buffer_pass);
-
-    /*
+    
     const auto ssr_pass = PostProcessPassV2::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
     ssr_pass->link_dependency(g_buffer_pass);
 
-    const auto ssr_combine_pass = PostProcessPassV2::create("SSR Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");
+    const auto ssr_combine_pass = PostProcessPassV2::create("SSR_Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");
     ssr_combine_pass->link_dependency(lighting);
     ssr_combine_pass->link_dependency(ssr_pass);
 
@@ -62,20 +57,22 @@ int main() {
 
     std::vector<std::shared_ptr<PostProcessPassV2>> up_sample_passes(9);
     for (int i = 8; i >= 0; --i) {
-        std::shared_ptr<PostProcessPassV2> pass = PostProcessPassV2::create("UpSample_" + std::to_string(i), 1, 1, "resources/shaders/post_process/upsample_pass.fs");
+        std::shared_ptr<PostProcessPassV2> pass = PostProcessPassV2::create("UpSample_", 1, 1, "resources/shaders/post_process/upsample_pass.fs");
         pass->link_dependency(i == 8 ? down_sample_passes.back() : up_sample_passes[i + 1]);
+        pass->link_dependency(i == 0 ? ssr_combine_pass : down_sample_passes[i - 1]);
         pass->on_compute_resolution([i](uint32_t& x, uint32_t& y) {
             x /= static_cast<int>(std::pow(2, i));
             y /= static_cast<int>(std::pow(2, i));
         });
         up_sample_passes[i] = pass;
     }
+    //@TODO : add named bind points
 
     const auto final_post_process_pass = PostProcessPassV2::create("PostProcess", 1, 1, "resources/shaders/post_process/post_process.fs");
     final_post_process_pass->link_dependency(ssr_combine_pass);
     final_post_process_pass->link_dependency(up_sample_passes.front());
-    */
-    const auto framegraph = FrameGraph::create("main framegraph", lighting);
+
+    const auto framegraph = FrameGraph::create("main framegraph", final_post_process_pass);
 
     g_buffer_pass->on_draw.add_lambda([] { Engine::get().get_world().render_world(); });
 
@@ -181,34 +178,17 @@ int main() {
 
             // Rendering
             framegraph->render();
-
-            // G_buffers
-            {
-                STAT_FRAME("Deferred GBuffers");
-                Engine::get().get_renderer().bind_g_buffers();
-                Engine::get().get_world().render_world();
-            }
-
+            
             // Deferred combine
+            /*
             {
                 STAT_FRAME("Deferred combine");
                 pass_g_buffer_combine->bind();
-                glUniform1f(pass_g_buffer_combine->material()->binding("z_near"),
-                            static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
-                pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_color(),
-                                                                   "GBUFFER_color");
-                pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_normal(),
-                                                                   "GBUFFER_normal");
-                pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_mrao(),
-                                                                   "GBUFFER_mrao");
-                pass_g_buffer_combine->material()->bind_texture_ex(Engine::get().get_renderer().world_depth(),
-                                                                   "GBUFFER_depth");
-                pass_g_buffer_combine->material()->bind_texture(cubemap, "WORLD_Cubemap");
+                glUniform1f(pass_g_buffer_combine->material()->binding("z_near"), static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
                 glUniform1f(pass_g_buffer_combine->material()->binding("gamma"), GameSettings::get().gamma);
                 glUniform1f(pass_g_buffer_combine->material()->binding("exposure"), GameSettings::get().exposure);
                 pass_g_buffer_combine->draw();
             }
-            /*
             {
                 STAT_FRAME("Screen space reflections");
                 ssr_pas->bind();

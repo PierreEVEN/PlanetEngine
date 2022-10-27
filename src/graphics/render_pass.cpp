@@ -53,12 +53,6 @@ void RenderPass::init_attachments() {
     for (const auto& color_attachment : color_attachments)
         color_attachment->init(width, height);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
-    std::vector<uint32_t> attachment_ids(color_attachments.size());
-    for (int i            = 0; i < color_attachments.size(); ++i)
-        attachment_ids[i] = GL_COLOR_ATTACHMENT0 + i;
-    glDrawBuffers(static_cast<GLsizei>(attachment_ids.size()), attachment_ids.data());
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     is_dirty = false;
 }
 
@@ -81,8 +75,14 @@ void RenderPass::render(bool to_back_buffer) {
         init_attachments();
 
     GL_CHECK_ERROR();
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer_id);
     glViewport(0, 0, width, height);
+        
+    std::vector<uint32_t> attachment_ids(color_attachments.size());
+    for (int i = 0; i < color_attachments.size(); ++i)
+        attachment_ids[i] = GL_COLOR_ATTACHMENT0 + i;
+    glDrawBuffers(static_cast<GLsizei>(attachment_ids.size()), attachment_ids.data());
+    
     glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
@@ -120,7 +120,7 @@ void RenderPass::resize(uint32_t in_width, uint32_t in_height) {
 }
 
 void RenderPass::add_attachment(const std::string& attachment_name, ImageFormat image_format, const TextureCreateInfos& create_infos, bool write_only) {
-    const int         binding_index = static_cast<int>(color_attachments.size());
+    const int binding_index = static_cast<int>(color_attachments.size());
     if (is_depth_format(image_format))
         if (write_only)
             depth_attachment = std::make_unique<RenderBufferAttachment>(attachment_name, image_format, binding_index, framebuffer_id);
