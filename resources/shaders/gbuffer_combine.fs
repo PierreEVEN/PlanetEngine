@@ -1,10 +1,13 @@
 #version 430
 precision highp float;
 
-#include "libs/deferred_input.cginc"
 #include "libs/world_data.cginc"
 #include "libs/lighting.cginc"
 
+layout(location = 1) uniform sampler2D Input_color;
+layout(location = 2) uniform sampler2D Input_normal;
+layout(location = 3) uniform sampler2D Input_mrao;
+layout(location = 4) uniform sampler2D Input_Depth;
 layout(location = 5) uniform samplerCube WORLD_Cubemap;
 
 out vec4 oFragmentColor;
@@ -63,16 +66,16 @@ vec3 getSceneWorldDirection() {
 
 void main()
 {
-	float depth = texture(GBUFFER_depth, uv).r;
+	float depth = texture(Input_Depth, uv).r;
 	float linear_depth = z_near / depth;
 
 	if (depth <= 0) {
 		oFragmentColor = vec4(0);
 	}
 	else {
-		vec3 col = texture(GBUFFER_color, uv).rgb;
-		vec3 norm = normalize(texture(GBUFFER_normal, uv).rgb);
-		vec3 mrao = texture(GBUFFER_mrao, uv).rgb;
+		vec3 col = texture(Input_color, uv).rgb;
+		vec3 norm = normalize(texture(Input_normal, uv).rgb);
+		vec3 mrao = texture(Input_mrao, uv).rgb;
         //oFragmentColor = vec4(col, 1);
         //return;
         /*

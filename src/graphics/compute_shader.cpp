@@ -65,7 +65,7 @@ void ComputeShader::bind_texture(const std::shared_ptr<TextureBase>& texture, Bi
 		in_out = GL_READ_WRITE;
 		break;
 	}
-	glBindImageTexture(binding, texture->id(), 0, GL_FALSE, 0, in_out, texture->internal_format());
+	glBindImageTexture(binding, texture->id(), 0, GL_FALSE, 0, in_out, static_cast<GLenum>(texture->internal_format()));
 }
 
 ComputeShader::ComputeShader(const std::string& in_name) : name(in_name), compute_shader_id(0)

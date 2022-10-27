@@ -29,11 +29,6 @@ void TextureBase::bind(uint32_t unit)
 	}
 }
 
-bool TextureBase::is_depth() const
-{
-	return image_format == GL_DEPTH_COMPONENT32F || image_format == GL_DEPTH_COMPONENT24;
-}
-
 uint32_t TextureBase::texture_type() const
 {
 	return GL_TEXTURE_2D;
@@ -119,18 +114,17 @@ void Texture2D::from_file(const std::string& filename, int force_nb_channel)
 	});
 }
 
-void Texture2D::set_data(int32_t w, int32_t h, uint32_t in_image_format, const void* data_ptr)
-{
-	image_format = in_image_format;
-	auto tf = EZCOGL::Texture::texture_formats[image_format];
+void Texture2D::set_data(uint32_t w, uint32_t h, ImageFormat in_image_format, const void* data_ptr) {
+	image_format    = in_image_format;
+	auto tf         = EZCOGL::Texture::texture_formats[static_cast<int>(image_format)];
 	external_format = tf.first;
-	image_width = w;
-	image_height = h;
-	data_format = tf.second;
+	image_width     = w;
+	image_height    = h;
+	data_format     = tf.second;
 	GL_CHECK_ERROR();
 	bind();
 	GL_CHECK_ERROR();
-	glTexImage2D(texture_type(), 0, data_ptr ? (parameters.srgb ? GL_SRGB : in_image_format) : image_format, w, h, 0, external_format, data_format,
+	glTexImage2D(texture_type(), 0, data_ptr ? (parameters.srgb ? GL_SRGB : static_cast<int>(in_image_format)) : static_cast<int>(image_format), w, h, 0, external_format, data_format,
 	             (w * h > 0) ? data_ptr : nullptr);
 	GL_CHECK_ERROR();
 	glBindTexture(texture_type(), 0);
@@ -151,13 +145,13 @@ uint32_t Texture2D::id()
 		switch (image->depth())
 		{
 		case 1:
-			set_data(image->width(), image->height(), GL_R8, image->data());
+                    set_data(image->width(), image->height(), ImageFormat::R_U8, image->data());
 			break;
 		case 3:
-			set_data(image->width(), image->height(), GL_RGB8, image->data());
+                    set_data(image->width(), image->height(), ImageFormat::RGB_U8, image->data());
 			break;
 		case 4:
-			set_data(image->width(), image->height(), GL_RGBA8, image->data());
+                    set_data(image->width(), image->height(), ImageFormat::RGBA_U8, image->data());
 			break;
 		default:
 			delete image;

@@ -40,6 +40,6 @@ public:
 	}
 	void set_data_interface(int32_t w, int32_t h, uint32_t image_format, const void* data_ptr = nullptr) override
 	{
-		return set_data(w, h, image_format, data_ptr);
+		return set_data(w, h, static_cast<ImageFormat>(image_format), data_ptr);
 	}
 };

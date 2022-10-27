@@ -42,6 +42,7 @@ void main() {
 
     /* PARAMS */
     float maxDistance = 100000;
+    int max_iterations = 50;
     float resolution  = 0.2;
 
     /* World infos */
@@ -50,47 +51,31 @@ void main() {
     vec3 normal = texture(NormalMap, uv).xyz;
     vec3 reflected_ray = reflect(camera_to_pixel, normal);
 
-    float world_depth = depth_at(uv);
-
-
-    //oFragmentColor = vec4(mod(vec3(world_position) / 10000, 1), 1); return; 
-    //oFragmentColor = vec4(normal, 1); return; 
-    //oFragmentColor = vec4(vec3(dot(normal, reflected_ray)), 1); return; 
-
     /* Skip pixel if not used with SSR */
     vec3 mrao = texture(GBUFFER_mrao, uv).rgb;    
-    if (world_depth <= 0.0 || mrao.g >= 0.2) { 
+    if (length(world_position) <= 0.0 || mrao.g >= 0.2) { 
         oFragmentColor = vec4(uv, 0, 1); return; 
     }
-
-    //maxDistance = world_depth;
 
     // Compute reflection end point from world space to screen space
     vec3 world_start = world_position;
     vec3 world_end = world_position + reflected_ray * maxDistance;
 
-    vec4 begin_screen_space = pv_matrix * vec4(world_start, 1.0);
-    vec4 end_screen_space = pv_matrix * vec4(world_end, 1.0);
-
     /* compute ray start and end point in screen space */
-    vec2 ray_start = (begin_screen_space.xy / begin_screen_space.w * 0.5 + 0.5);
+    vec2 ray_start = uv;
+    vec4 end_screen_space = pv_matrix * vec4(world_end, 1.0);
     vec2 ray_end = (end_screen_space.xy / end_screen_space.w * 0.5 + 0.5);
 
-    if (ray_end.x < 0 || ray_end.y < 0 || ray_end.x > InputResolution.x || ray_end.y > InputResolution.y)
-       ;// ray_end = ray_start + normalize(ray_end - ray_start) * InputResolution;
-
     float delta = max(abs(ray_end.x - ray_start.x) * InputResolution.x, abs(ray_end.y - ray_start.y) * InputResolution.y);
-    int sp_steps = int(delta * clamp_01(resolution));
+    int sp_steps = min(max_iterations, int(delta * clamp_01(resolution)));
 
     vec2 out_uv = uv;
-    if (sp_steps > 500) {out_uv = vec2(0); sp_steps = 0;}
     for (float i = 1; i <= sp_steps; ++i) {
         // Compare pixel depth vs expected depth
         vec3 expected_world_pos = mix(world_start, world_end, i / float(sp_steps));
-        vec4 pos_test = pv_matrix * vec4(expected_world_pos, 1);
-        vec2 pos_2d_test = pos_test.xy / pos_test.w * 0.5 + 0.5;
+        vec4 screen_space_position = pv_matrix * vec4(expected_world_pos, 1);
+        out_uv = fma(screen_space_position.xy / screen_space_position.w, vec2(0.5), vec2(0.5));
 
-        out_uv = pos_2d_test;
         float expected_depth = length(expected_world_pos);
         float pixel_depth = length(getSceneWorldPosition(out_uv));
         

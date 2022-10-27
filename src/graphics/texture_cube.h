@@ -14,7 +14,7 @@ public:
 		return std::shared_ptr<TextureCube>(new TextureCube(name, params));
 	}
 
-	[[nodiscard]] int32_t depth() const override { return 6; }
+	[[nodiscard]] uint32_t depth() const override { return 6; }
 
 	[[nodiscard]] uint32_t texture_type() const override;
 	void bind(uint32_t unit = 0) override;
@@ -23,7 +23,7 @@ public:
 	               const std::string& file_left, const std::string& file_front, const std::string& file_back,
 	               int force_nb_channel = 0);
 
-	void set_data(int32_t w, int32_t h, uint32_t image_format, uint32_t index, const void* image_data = nullptr);
+	void     set_data(int32_t w, int32_t h, ImageFormat image_format, uint32_t index, const void* image_data = nullptr);
 	uint32_t id() override;
 protected:
 	TextureCube(std::string name, const TextureCreateInfos& params = {});
