@@ -1,5 +1,3 @@
-
-
 #include "default_camera_controller.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
@@ -35,7 +33,7 @@ int main() {
 
     const auto lighting = PostProcessPassV2::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
     lighting->link_dependency(g_buffer_pass);
-    
+
     const auto ssr_pass = PostProcessPassV2::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
     ssr_pass->link_dependency(g_buffer_pass);
 
@@ -82,7 +80,7 @@ int main() {
     /*
     ImGuiWindow::create_window<Viewport>(post_process_pass->result());
     */
-    
+
     ImGuiWindow::create_window<GraphicDebugger>();
     ImGuiWindow::create_window<MaterialManagerUi>();
     ImGuiWindow::create_window<TextureManagerUi>();
@@ -139,7 +137,7 @@ int main() {
 
             // Rendering
             framegraph->render();
-            
+
             // UI
             ui::draw();
 
