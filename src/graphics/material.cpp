@@ -6,7 +6,6 @@
 
 #include <shader_program.h>
 
-#include "easycppogl_texture.h"
 #include "texture_image.h"
 #include "engine/asset_manager.h"
 #include "engine/engine.h"
@@ -33,11 +32,6 @@ int Material::bind_texture(const std::shared_ptr<TextureBase>& texture, const st
     }
     GL_CHECK_ERROR();
     return binding_location;
-}
-
-int Material::bind_texture_ex(const std::shared_ptr<EZCOGL::TextureInterface>& texture,
-                              const std::string&                               binding_name) const {
-    return bind_texture(dynamic_pointer_cast<EasyCppOglTexture>(texture), binding_name);
 }
 
 Material::Material(const std::string& in_name)

@@ -46,7 +46,6 @@ public:
 	[[nodiscard]] int binding(const std::string& binding_name) const;
 
 	int bind_texture(const std::shared_ptr<TextureBase>& texture, const std::string& binding_name) const;
-	int bind_texture_ex(const std::shared_ptr<EZCOGL::TextureInterface>& texture, const std::string& binding_name) const;
 
 private:
 
