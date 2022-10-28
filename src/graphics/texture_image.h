@@ -3,7 +3,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include <gl/gl3w.h>
+#include <GL/gl3w.h>
 
 enum class TextureWrapping {
     Repeat,
