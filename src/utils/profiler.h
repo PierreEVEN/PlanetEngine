@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <thread>
 
 #define CONCAT(x, y) x ## y
 #define CONCAT_2(x, y) CONCAT(x, y)
