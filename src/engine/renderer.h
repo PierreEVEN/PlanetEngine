@@ -10,60 +10,35 @@ DECLARE_DELEGATE_MULTICAST(EventResolutionChanged, int, int);
 
 class Material;
 
-namespace EZCOGL
-{
-	class TextureInterface;
-	class FBO;
-	class FBO_DepthTexture;
-}
-
 struct GLFWwindow;
 struct ImGuiContext;
 
-class Renderer final
-{
+class Renderer final {
 public:
-	Renderer();
-	~Renderer();
+    Renderer();
+    ~Renderer();
 
-	void initialize() const;
-	void bind_g_buffers() const;
+    void initialize() const;
 
-	void submit() const;
+    void submit() const;
 
-	[[nodiscard]] bool should_close() const;
-	[[nodiscard]] GLFWwindow* get_window() const { return main_window; }
+    [[nodiscard]] bool        should_close() const;
+    [[nodiscard]] GLFWwindow* get_window() const { return main_window; }
 
-	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_color() const { return g_buffer_color; }
-	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_normal() const { return g_buffer_normal; }
-	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_depth() const { return g_buffer_depth; }
-	[[nodiscard]] std::shared_ptr<EZCOGL::TextureInterface> world_mrao() const { return g_buffer_mrao; }
-	[[nodiscard]] std::shared_ptr<EZCOGL::FBO_DepthTexture> framebuffer() const { return g_buffer; }
+    EventResolutionChanged on_resolution_changed;
 
-	void switch_fullscreen();
-	[[nodiscard]] bool is_fullscreen() const { return fullscreen; }
+    void set_icon(const std::string& file_path);
 
-	void resize_framebuffer_internal(GLFWwindow*, int x, int y);
-	
-	EventFullscreen on_fullscreen;
-	EventResolutionChanged on_resolution_changed;
-
-	void set_icon(const std::string& file_path);
+    [[nodiscard]] uint32_t window_height() const { return render_height; }
+    [[nodiscard]] uint32_t window_width() const { return render_width; }
 
 private:
-	void init_context();
+    void init_context();
 
-	std::shared_ptr<EZCOGL::FBO_DepthTexture> g_buffer;
-	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_color;
-	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_normal;
-	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_depth;
-	std::shared_ptr<EZCOGL::TextureInterface> g_buffer_mrao;
-
-	bool fullscreen = false;
-	GLFWwindow* main_window = nullptr;
-	ImGuiContext* imgui_context = nullptr;
-	bool uniform_explicit_location_support;
-	int render_width = 0;
-	int render_height = 0;
-
+    GLFWwindow*   main_window   = nullptr;
+    ImGuiContext* imgui_context = nullptr;
+    bool          uniform_explicit_location_support;
+    int           render_width  = 0;
+    int           render_height = 0;
+    void          resize_framebuffer_internal(GLFWwindow*, int x, int y);
 };

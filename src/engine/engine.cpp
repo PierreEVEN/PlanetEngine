@@ -42,7 +42,7 @@ void Engine::init()
 		                   get().on_key_down.execute(window, key, scan_code, action, mode);
 
 		                   if (key == GLFW_KEY_F11 && action == GLFW_PRESS)
-			                   get().renderer->switch_fullscreen();
+                                       GameSettings::get().fullscreen = !GameSettings::get().fullscreen;
 
 						   if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
 							   GameSettings::get().wireframe = !GameSettings::get().wireframe;

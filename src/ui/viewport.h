@@ -2,19 +2,19 @@
 #include "ui.h"
 #include <Eigen/Dense>
 
-namespace EZCOGL
-{
-	class TextureInterface;
-}
 
-class Viewport : public ImGuiWindow
-{
+class Texture2D;
+
+class Viewport : public ImGuiWindow {
 public:
-	Viewport(const std::shared_ptr<EZCOGL::TextureInterface>& framebuffer_texture);
-	virtual ~Viewport() override;
-	void draw() override;
+    Viewport(const std::shared_ptr<Texture2D>& framebuffer_texture);
+    void draw() override;
+
+    [[nodiscard]] uint32_t width() const { return viewport_width; };
+    [[nodiscard]] uint32_t height() const { return viewport_height; }
+
 private:
-	Eigen::Vector2i last_viewport_res;
-	void on_fullscreen(bool fullscreen);
-	std::shared_ptr<EZCOGL::TextureInterface> framebuffer_texture;
+    uint32_t                   viewport_width  = 0;
+    uint32_t                   viewport_height = 0;
+    std::shared_ptr<Texture2D> framebuffer_texture;
 };

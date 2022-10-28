@@ -87,6 +87,9 @@ public:
     const std::string name;
 
 protected:
+    bool pre_render();
+  void bind(bool back_buffer);
+
     RenderPass(std::string name, uint32_t width, uint32_t height);
     std::vector<std::shared_ptr<RenderPass>>                                     dependencies;
     uint32_t                                                                     framebuffer_id = 0;

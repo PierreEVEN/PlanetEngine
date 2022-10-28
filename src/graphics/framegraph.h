@@ -11,11 +11,14 @@ public:
         return std::shared_ptr<FrameGraph>(new FrameGraph(std::move(in_name), std::move(in_root)));
     }
 
-    void render();
+    void render(bool to_back_buffer, uint32_t in_width, uint32_t in_height);
+    void render(bool to_back_buffer);
 
     const std::string name;
 
     void resize(uint32_t width, uint32_t height);
+
+    [[nodiscard]] const std::shared_ptr<RenderPass>& get_root() const { return root; }
 
 private:
     std::shared_ptr<RenderPass> root;

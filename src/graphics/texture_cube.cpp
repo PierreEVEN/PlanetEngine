@@ -67,7 +67,6 @@ void TextureCube::set_data(int32_t w, int32_t h, ImageFormat in_image_format, ui
 uint32_t TextureCube::id() {
     for (size_t i = 0; i < finished_loading.size(); ++i) {
         if (finished_loading[i]) {
-            STAT_ACTION("Push cubemap data : [" + name + "]::" + std::to_string(i));
             finished_loading[i] = false;
             const auto* image   = static_cast<EZCOGL::GLImage*>(loaded_image_ptr[i]);
             switch (image->depth()) {
@@ -88,7 +87,6 @@ uint32_t TextureCube::id() {
             complete |= 1 << i;
             GL_CHECK_ERROR();
             if (complete == 0b111111) {
-
                 STAT_ACTION("Rebuild cubemap mipmaps : [" + name + "]");
                 glBindTexture(texture_type(), TextureBase::id());
                 while (glGetError()); // Skip error messages

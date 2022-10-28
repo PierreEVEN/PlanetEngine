@@ -1,4 +1,4 @@
-#include <fbo.h>
+
 #include <imgui.h>
 #include <ImGuizmo.h>
 #include <iostream>
@@ -13,6 +13,7 @@
 #include "world_outliner.h"
 #include "engine/engine.h"
 #include "engine/renderer.h"
+#include "utils/game_settings.h"
 #include "utils/profiler.h"
 #include "world/world.h"
 
@@ -110,7 +111,7 @@ void ImGuiWindow::draw_all()
 
 void ImGuiWindow::draw_internal()
 {
-	if (Engine::get().get_renderer().is_fullscreen())
+	if (GameSettings::get().fullscreen)
 		return;
 
 	if (ImGui::Begin((window_name + "##" + std::to_string(window_id)).c_str(), &is_open))
