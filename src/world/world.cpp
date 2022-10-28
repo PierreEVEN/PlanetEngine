@@ -22,7 +22,8 @@ struct WorldDataStructure
 
 World::World() : camera(std::make_shared<Camera>()), root_component(std::make_unique<SceneComponent>("root"))
 {
-	glGenBuffers(1, &world_uniform);
+    glGenBuffers(1, &world_uniform);
+    glObjectLabel(GL_BUFFER, world_uniform, -1, "UBO_World");
 	glBindBuffer(GL_UNIFORM_BUFFER, world_uniform);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(WorldDataStructure), nullptr, GL_STATIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);

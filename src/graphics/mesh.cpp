@@ -86,9 +86,10 @@ void Mesh::draw() const
 Mesh::Mesh(const std::string& in_name) : name(in_name)
 {
 	Engine::get().get_asset_manager().meshes.emplace_back(this);
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
-	glGenBuffers(1, &ebo);
+    glGenVertexArrays(1, &vao);
+    glObjectLabel(GL_VERTEX_ARRAY, vao, -1, ("Vao_" + name).c_str());
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
 }
 
 Mesh::Mesh(const std::string& in_name, const std::string& path) : Mesh(in_name)

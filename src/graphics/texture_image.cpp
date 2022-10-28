@@ -34,7 +34,7 @@ TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params)
     : name(std::move(in_name)), parameters(params) {
     GL_CHECK_ERROR();
     glGenTextures(1, &texture_id);
-    //glObjectLabel(GL_TEXTURE, texture_id, -1, in_name.c_str());
+    glObjectLabel(GL_TEXTURE, texture_id, -1, ("Texture_" + name).c_str());
 
     bind();
 
