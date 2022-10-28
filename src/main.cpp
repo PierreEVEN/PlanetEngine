@@ -28,7 +28,7 @@ int main() {
     const auto framegraph = setup_renderer();
 
     const auto viewport = ImGuiWindow::create_window<Viewport>(framegraph->get_root()->get_color_attachments()[0]->get_render_target());
-    ImGuiWindow::create_window<GraphicDebugger>();
+    ImGuiWindow::create_window<GraphicDebugger>(framegraph);
     ImGuiWindow::create_window<MaterialManagerUi>();
     ImGuiWindow::create_window<TextureManagerUi>();
     ImGuiWindow::create_window<SessionFrontend>();

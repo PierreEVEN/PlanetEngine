@@ -62,7 +62,6 @@ namespace ui
 				if (ImGui::MenuItem("Material view")) ImGuiWindow::create_window<MaterialManagerUi>();
 				if (ImGui::MenuItem("Mesh view")) ImGuiWindow::create_window<MeshManagerUi>();
 				ImGui::Separator();
-				if (ImGui::MenuItem("Graphic debugger")) ImGuiWindow::create_window<GraphicDebugger>();
 				if (ImGui::MenuItem("Session frontend")) ImGuiWindow::create_window<SessionFrontend>();
 				ImGui::EndMenu();
 			}

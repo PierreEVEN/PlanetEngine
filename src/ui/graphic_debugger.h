@@ -1,13 +1,15 @@
 #pragma once
 #include "ui.h"
 
-class GraphicDebugger : public ImGuiWindow
-{
-public:
-	GraphicDebugger();
+class FrameGraph;
 
-	void draw() override;
+class GraphicDebugger : public ImGuiWindow {
+public:
+    GraphicDebugger(const std::shared_ptr<FrameGraph>& framegraph);
+
+    void draw() override;
 
 
 private:
+    std::shared_ptr<FrameGraph> framegraph;
 };
