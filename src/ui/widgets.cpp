@@ -146,7 +146,6 @@ bool RecordData::display() {
 
         if (ImGui::IsMouseHoveringRect(container_min, container_max)) {
             if (fabsf(io.MouseWheel) > FLT_EPSILON) {
-
                 const float display_delta = max_display_value - min_display_value;
                 const float added_value   = display_delta * -io.MouseWheel * 0.5f;
                 const float offset        = (io.MousePos.x - container_min.x) / (container_max.x - container_min.x);

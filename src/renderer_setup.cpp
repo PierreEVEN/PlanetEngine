@@ -1,6 +1,7 @@
 #include "renderer_setup.h"
 
 #include "engine/engine.h"
+#include "graphics/camera.h"
 #include "graphics/material.h"
 #include "graphics/post_process_pass.h"
 #include "graphics/render_pass.h"
@@ -23,11 +24,14 @@ std::shared_ptr<FrameGraph> setup_renderer() {
                        "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
 
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
-    lighting->link_dependency(g_buffer_pass);
-    lighting->on_bind_material.add_lambda([cubemap](std::shared_ptr<Material> material) { material->bind_texture(cubemap, "WORLD_Cubemap"); });
+    lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "Input_Depth"});
+    lighting->on_bind_material.add_lambda([cubemap](std::shared_ptr<Material> material) {
+        glUniform1f(material->binding("z_near"),static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
+        material->bind_texture(cubemap, "WORLD_Cubemap");
+    });
 
     const auto ssr_pass = PostProcessPass::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
-    ssr_pass->link_dependency(g_buffer_pass);
+    ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "Input_Depth"});
 
     const auto ssr_combine_pass = PostProcessPass::create("SSR_Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");
     ssr_combine_pass->link_dependency(lighting);
@@ -53,8 +57,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
             x /= static_cast<int>(std::pow(2, i));
             y /= static_cast<int>(std::pow(2, i));
         });
-        size_t pass_count = up_sample_passes.size();
-
+        size_t                                                                      pass_count = up_sample_passes.size();
         pass->on_bind_material.add_lambda([i, pass_count](std::shared_ptr<Material> material) {
             glUniform1f(material->binding("step"), 1 - i / static_cast<float>(pass_count));
             glUniform1f(material->binding("bloom_strength"), GameSettings::get().bloom_intensity);

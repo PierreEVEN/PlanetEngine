@@ -31,45 +31,18 @@ void PostProcessPass::render(bool to_back_buffer) {
     EZCOGL::VAO::bind_none();
     GL_CHECK_ERROR();
     pass_material->bind();
-    for (size_t i = 0; i < dependencies.size(); ++i) {
 
-        const auto& dep = dependencies[i];
-
-        const std::string dep_name   = dependencies.size() == 1 ? "" : dep->name + "_";
-        const auto&       bind_point = bind_points.find(i);
-
-        for (size_t j = 0; j < dep->get_color_attachments().size(); ++j) {
-
-            const auto& attachment = dep->get_color_attachments()[j];
-
-            const std::string att_name   = dep->get_color_attachments().size() == 1 ? "Color" : attachment->name;
-            std::string       final_name = "Input_" + dep_name + att_name;
-
-            if (bind_point != bind_points.end())
-                final_name = bind_point->second.first[j];
-
-            const int res_binding = material()->binding(final_name + "_Res");
-            GL_CHECK_ERROR();
-            if (res_binding >= 0)
+    for (const auto& dep : dependencies) {
+        const auto& bp = bind_point_names(dep);
+        const auto& rt = dep->get_all_render_targets();
+        for (size_t i = 0; i < rt.size(); ++i) {
+            if (const int res_binding = material()->binding(bp[i] + "_Res"); res_binding >= 0)
                 glUniform2i(res_binding, dep->get_width(), dep->get_height());
             GL_CHECK_ERROR();
-            if (attachment->get_render_target())
-                material()->bind_texture(attachment->get_render_target(), final_name);
-            GL_CHECK_ERROR();
+            material()->bind_texture(rt[i], bp[i]);
         }
-        if (dep->get_depth_attachment()) {
-            std::string final_name = "Input_Depth";
-            if (bind_point != bind_points.end())
-                final_name = bind_point->second.second;
 
-            const int res_binding = material()->binding(final_name + "_Res");
-            if (res_binding >= 0)
-                glUniform2i(res_binding, dep->get_width(), dep->get_height());
-            if (dep->get_depth_attachment()->get_render_target())
-                material()->bind_texture(dep->get_depth_attachment()->get_render_target(), final_name);
-        }
     }
-
     GL_CHECK_ERROR();
     on_bind_material.execute(pass_material);
 

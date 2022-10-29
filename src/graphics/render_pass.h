@@ -70,9 +70,9 @@ public:
         dependencies.emplace_back(dependency);
     }
 
-    void link_dependency(const std::shared_ptr<RenderPass>& dependency, const std::vector<std::string>& color_bind_points, const std::string& depth_bind_point = "") {
-        if (dependency->get_depth_attachment() && !depth_bind_point.empty() || color_bind_points.size() == dependency->get_color_attachments().size())
-            bind_points[dependencies.size()] = {color_bind_points, depth_bind_point};
+    void link_dependency(const std::shared_ptr<RenderPass>& dependency, const std::vector<std::string>& in_bind_points) {
+        if (in_bind_points.size() == dependency->get_all_render_targets().size())
+            bind_points[dependency] = in_bind_points;
         dependencies.emplace_back(dependency);
     }
 
@@ -83,6 +83,9 @@ public:
     [[nodiscard]] const std::vector<std::unique_ptr<Attachment>>& get_color_attachments() const { return color_attachments; }
     [[nodiscard]] const std::unique_ptr<Attachment>&              get_depth_attachment() const { return depth_attachment; }
     [[nodiscard]] const std::vector<std::shared_ptr<RenderPass>>& get_dependencies() const { return dependencies; }
+    [[nodiscard]] std::vector<std::shared_ptr<Texture2D>>         get_all_render_targets() const;
+    [[nodiscard]] std::vector<std::string>                        bind_point_names(const std::shared_ptr<RenderPass>& target_dependency);
+
 
     EventDraw         on_draw;
     const std::string name;
@@ -92,9 +95,9 @@ protected:
     void bind(bool back_buffer);
 
     RenderPass(std::string name, uint32_t width, uint32_t height);
-    std::vector<std::shared_ptr<RenderPass>>                                     dependencies;
-    uint32_t                                                                     framebuffer_id = 0;
-    std::unordered_map<size_t, std::pair<std::vector<std::string>, std::string>> bind_points;
+    std::vector<std::shared_ptr<RenderPass>>                                  dependencies;
+    uint32_t                                                                  framebuffer_id = 0;
+    std::unordered_map<std::shared_ptr<RenderPass>, std::vector<std::string>> bind_points;
 
 private:
     void     init_attachments();

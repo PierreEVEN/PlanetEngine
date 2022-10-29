@@ -478,6 +478,7 @@ void PlanetRegion::rebuild_maps() {
 
     force_rebuild = false;
 
+    GL_CHECK_ERROR();
     const auto ssbo = StorageBuffer::create("PlanetChunkData");
     ssbo->set_data(chunk_data);
     last_chunk_data = chunk_data;
@@ -489,7 +490,7 @@ void PlanetRegion::rebuild_maps() {
     compute_positions->bind();
     compute_positions->bind_texture(chunk_height_map, BindingMode::Out, 0);
     compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
-
+    
     // Fix seams
     fix_seams->bind();
     fix_seams->bind_texture(chunk_height_map, BindingMode::InOut, 0);

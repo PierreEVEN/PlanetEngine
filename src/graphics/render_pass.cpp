@@ -41,6 +41,33 @@ void RenderBufferAttachment::init(uint32_t width, uint32_t height) {
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
+std::vector<std::shared_ptr<Texture2D>> RenderPass::get_all_render_targets() const {
+    std::vector<std::shared_ptr<Texture2D>> rt;
+    for (const auto& attachment : color_attachments)
+        if (attachment->get_render_target())
+            rt.emplace_back(attachment->get_render_target());
+    if (depth_attachment && depth_attachment->get_render_target())
+        rt.emplace_back(depth_attachment->get_render_target());
+    return rt;
+}
+
+std::vector<std::string> RenderPass::bind_point_names(const std::shared_ptr<RenderPass>& target_dependency) {
+
+    const auto& bp = bind_points.find(target_dependency);
+    if (bp != bind_points.end()) {
+        return bp->second;
+    }
+    std::vector<std::string> names;
+    const auto&              rts      = target_dependency->get_all_render_targets();
+    const std::string        dep_name = dependencies.size() == 1 ? "" : target_dependency->name + "_";
+
+    for (const auto& rt : rts) {
+        const std::string att_name = rts.size() == 1 ? "Color" : rt->name;
+        names.emplace_back("Input_" + dep_name + att_name);
+    }
+    return names;
+}
+
 bool RenderPass::pre_render() {
     if (width == 0 || height == 0)
         return false;
@@ -64,12 +91,11 @@ void RenderPass::bind(bool back_buffer) {
     if (back_buffer) {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-    else {
+    } else {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer_id);
 
         std::vector<uint32_t> attachment_ids(color_attachments.size());
-        for (int i = 0; i < color_attachments.size(); ++i)
+        for (int i            = 0; i < color_attachments.size(); ++i)
             attachment_ids[i] = GL_COLOR_ATTACHMENT0 + i;
         glDrawBuffers(static_cast<GLsizei>(attachment_ids.size()), attachment_ids.data());
     }
