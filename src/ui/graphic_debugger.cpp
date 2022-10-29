@@ -40,6 +40,7 @@ void GraphicDebugger::draw() {
         glfwSwapInterval(GameSettings::get().v_sync ? 1 : 0);
 
     ImGui::Checkbox("Wireframe", &GameSettings::get().wireframe);
+    ImGui::Checkbox("Screen Space Reflections", &GameSettings::get().screen_space_reflections);
 
     ImGui::SliderFloat("Bloom intensity", &GameSettings::get().bloom_intensity, 0, 3);
     ImGui::SliderFloat("Exposure", &GameSettings::get().exposure, 0.1f, 4);
@@ -191,7 +192,7 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
         ImGui::SameLine();
         ImGui::BeginGroup();
         for (const auto& dep : render_pass->get_all_render_targets()) {
-            ImGui::Text("%s | format = %d", dep->name.c_str(), static_cast<int>(dep->internal_format()));
+            ImGui::Text("%s | format = %s", dep->name.c_str(), image_format_to_string(dep->internal_format()).c_str());
         }
         ImGui::EndGroup();
         ImGui::EndTooltip();
@@ -235,7 +236,7 @@ void GraphicDebugger::Node::draw_target(const std::shared_ptr<Texture2D>& target
     const auto& draw_list = ImGui::GetWindowDrawList();
     draw_list->AddImage(reinterpret_cast<ImTextureID>(static_cast<size_t>(target->id())), min, max, ImVec2(0, 1), ImVec2(1, 0));
 
-    std::string text      = target->name + "\n" + std::to_string(target->width()) + " x " + std::to_string(target->height());
+    std::string text      = target->name + "\n" + std::to_string(target->width()) + " x " + std::to_string(target->height()) + "\n" + image_format_to_string(target->internal_format());
     const auto  text_size = ImGui::CalcTextSize(text.c_str());
 
     if (text_size.x < (max.x - min.x) * 0.5f)

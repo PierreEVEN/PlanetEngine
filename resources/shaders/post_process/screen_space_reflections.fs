@@ -9,9 +9,7 @@ layout(location = 1) uniform ivec2 Input_normal_Res;
 layout(location = 2) uniform sampler2D Input_normal;
 layout(location = 3) uniform sampler2D Input_mrao;
 layout(location = 4) uniform sampler2D Input_Depth;
-layout(location = 5) uniform float z_near;
-
-uniform vec2 enabled;
+layout(location = 6) uniform int enabled;
 
 vec3 getSceneWorldPosition(vec2 uvs) {
 	float linear_depth = texture(Input_Depth, uvs).r;
@@ -33,16 +31,17 @@ vec3 getSceneWorldDirection(vec2 uvs) {
     return normalize(getSceneWorldPosition(uvs));
 }
 
-float depth_at(vec2 uvs) {
-	return z_near / texture(Input_Depth, uvs).r;
-}
-
 void main() {
+
+    if (enabled == 0) {
+        oFragmentColor = vec4(uv, 1, 1);
+        return;
+    }
 
     /* PARAMS */
     float maxDistance = 100000;
     int max_iterations = 50;
-    float resolution  = 0.2;
+    float resolution  = 0.3;
 
     /* World infos */
     vec3 world_position = getSceneWorldPosition(uv);
@@ -59,6 +58,10 @@ void main() {
     // Compute reflection end point from world space to screen space
     vec3 world_start = world_position;
     vec3 world_end = world_position + reflected_ray * maxDistance;
+    
+    if (dot(camera_to_pixel, world_end) < 0) { 
+        oFragmentColor = vec4(uv, 0, 1); return; 
+    }
 
     /* compute ray start and end point in screen space */
     vec2 ray_start = uv;
@@ -69,6 +72,8 @@ void main() {
     int sp_steps = min(max_iterations, int(delta * clamp_01(resolution)));
 
     vec2 out_uv = uv;
+    int finished = 0;
+    float pixel_depth = 0;
     for (float i = 1; i <= sp_steps; ++i) {
         // Compare pixel depth vs expected depth
         vec3 expected_world_pos = mix(world_start, world_end, i / float(sp_steps));
@@ -76,14 +81,17 @@ void main() {
         out_uv = fma(screen_space_position.xy / screen_space_position.w, vec2(0.5), vec2(0.5));
 
         float expected_depth = length(expected_world_pos);
-        float pixel_depth = length(getSceneWorldPosition(out_uv));
+        pixel_depth = length(getSceneWorldPosition(out_uv));
         
-        if (pixel_depth > 0 && pixel_depth < expected_depth)
+        if (pixel_depth > 0 && pixel_depth < expected_depth) {
+            finished = 1;
             break;
+        }
     }
 
     float visibility = 
-            (out_uv.x <= 0 || out_uv.x >= 1 ? 0 : 1)
+            (finished + (pixel_depth <= 0 ? 1 : 0))
+            * (out_uv.x <= 0 || out_uv.x >= 1 ? 0 : 1)
             * (out_uv.y <= 0 || out_uv.y >= 1 ? 0 : 1);
 
     visibility = clamp_01(visibility);

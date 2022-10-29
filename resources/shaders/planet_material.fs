@@ -89,9 +89,9 @@ void main()
 	LandData grass = make_ld_tex(grass_color, grass_normal, grass_mrao, coordinates * textures_scale);
 	grass.mrao = make_mrao(0.03, 0.7, 0);
 	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
-	sand.mrao = make_mrao(0.2, 0.4, 0);
+	sand.mrao = make_mrao(0.2, 0.5, 0);
 	LandData water = make_ld_col(water_color() / 256);
-	water.mrao = make_mrao(0.6, 0.15, 0);
+	water.mrao = make_mrao(0.6, 0.1, 0);
 	LandData water_deep = make_ld_col(water_color() / 750);
 	water_deep.mrao = make_mrao(0.8, 0.1, 0);
 

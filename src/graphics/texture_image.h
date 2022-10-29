@@ -42,6 +42,8 @@ enum class ImageFormat {
     Depth_F32 = GL_DEPTH_COMPONENT32F,
 };
 
+std::string image_format_to_string(ImageFormat format);
+
 inline bool is_depth_format(ImageFormat format) {
     return format == ImageFormat::Depth_F32;
 }

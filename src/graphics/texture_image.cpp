@@ -10,6 +10,39 @@
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
+std::string image_format_to_string(ImageFormat format) {
+    switch (format) {
+    case ImageFormat::R_U8:
+        return "R_U8";
+    case ImageFormat::RG_U8:
+        return "RG_U8";
+    case ImageFormat::RGB_U8:
+        return "RGB_U8";
+    case ImageFormat::RGBA_U8:
+        return "RGBA_U8";
+    case ImageFormat::R_F16:
+        return "R_F16";
+    case ImageFormat::RG_F16:
+        return "RG_F16";
+    case ImageFormat::RGB_F16:
+        return "RGB_F16";
+    case ImageFormat::RGBA_F16:
+        return "RGBA_F16";
+    case ImageFormat::R_F32:
+        return "R_F32";
+    case ImageFormat::RG_F32:
+        return "RG_F32";
+    case ImageFormat::RGB_F32:
+        return "RGB_F32";
+    case ImageFormat::RGBA_F32:
+        return "RGBA_F32";
+    case ImageFormat::Depth_F32:
+        return "Depth_F32";
+    default:
+        return "undefined format";
+    }
+}
+
 TextureBase::~TextureBase() {
     glDeleteTextures(1, &texture_id);
 }
