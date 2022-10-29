@@ -8,9 +8,8 @@
 - Eigen3
 - glfw3
 
-** Generate :** 
-
+**Generate :**
 `cmake -B build`
 
-** Build :**
+**Build :**
 `cmake --build build`
