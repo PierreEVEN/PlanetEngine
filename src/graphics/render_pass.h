@@ -80,15 +80,16 @@ public:
 
     [[nodiscard]] uint32_t                                        get_width() const { return width; }
     [[nodiscard]] uint32_t                                        get_height() const { return height; }
-    [[nodiscard]] const std::vector<std::unique_ptr<Attachment>>& get_color_attachments() const { return color_attachments; };
-    [[nodiscard]] const std::unique_ptr<Attachment>&              get_depth_attachment() const { return depth_attachment; };
+    [[nodiscard]] const std::vector<std::unique_ptr<Attachment>>& get_color_attachments() const { return color_attachments; }
+    [[nodiscard]] const std::unique_ptr<Attachment>&              get_depth_attachment() const { return depth_attachment; }
+    [[nodiscard]] const std::vector<std::shared_ptr<RenderPass>>& get_dependencies() const { return dependencies; }
 
     EventDraw         on_draw;
     const std::string name;
 
 protected:
     bool pre_render();
-  void bind(bool back_buffer);
+    void bind(bool back_buffer);
 
     RenderPass(std::string name, uint32_t width, uint32_t height);
     std::vector<std::shared_ptr<RenderPass>>                                     dependencies;

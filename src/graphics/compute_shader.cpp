@@ -81,7 +81,6 @@ void ComputeShader::reload_internal()
 		glDeleteProgram(compute_shader_id);
 	GL_CHECK_ERROR();
         compute_shader_id = glCreateProgram();
-        glObjectLabel(GL_PROGRAM, compute_shader_id, -1, ("Compute_Shader_" + name).c_str());
 	GL_CHECK_ERROR();
 	compilation_error.reset();
 	std::string fragment_error;

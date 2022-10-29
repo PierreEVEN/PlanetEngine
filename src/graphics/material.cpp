@@ -52,7 +52,6 @@ void Material::reload_internal() {
     bindings.clear();
     // Compile shader
     shader_program_id = glCreateProgram();
-    glObjectLabel(GL_PROGRAM, shader_program_id, -1, ("Program_" + name).c_str());
     program_vertex    = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
     std::string vertex_error;
     size_t      vertex_error_line;

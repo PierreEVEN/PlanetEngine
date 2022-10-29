@@ -25,7 +25,6 @@ void TextureAttachment::init(uint32_t width, uint32_t height) {
 RenderBufferAttachment::RenderBufferAttachment(std::string in_name, ImageFormat in_format, int binding_index, uint32_t framebuffer)
     : Attachment(std::move(in_name), in_format, binding_index), rbo(0) {
     glGenRenderbuffers(1, &rbo);
-    glObjectLabel(GL_RENDERBUFFER, rbo, -1, ("RenderBuffer_" + name).c_str());
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, is_depth_format(format) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0 + binding_index, GL_RENDERBUFFER, rbo);
@@ -81,7 +80,6 @@ void RenderPass::bind(bool back_buffer) {
 RenderPass::RenderPass(std::string name, uint32_t in_width, uint32_t in_height)
     : name(std::move(name)), is_dirty(true), width(in_width), height(in_height) {
     glGenFramebuffers(1, &framebuffer_id);
-    glObjectLabel(GL_FRAMEBUFFER, framebuffer_id, -1, ("Framebuffer_" + name).c_str());
 }
 
 void RenderPass::init_attachments() {

@@ -11,7 +11,7 @@
 
 static std::unordered_map<std::string, std::shared_ptr<Material>> post_process_materials;
 
-void PostProcessPassV2::render(bool to_back_buffer) {
+void PostProcessPass::render(bool to_back_buffer) {
     if (!pre_render())
         return;
     STAT_FRAME("Post processing pass [" + name + "]");
@@ -79,7 +79,7 @@ void PostProcessPassV2::render(bool to_back_buffer) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-PostProcessPassV2::PostProcessPassV2(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader, TextureCreateInfos create_infos)
+PostProcessPass::PostProcessPass(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader, TextureCreateInfos create_infos)
     : RenderPass(in_name, width, height) {
 
     add_attachment("", ImageFormat::RGB_F16, create_infos);

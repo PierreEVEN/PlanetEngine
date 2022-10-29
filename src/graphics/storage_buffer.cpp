@@ -19,5 +19,4 @@ void StorageBuffer::set_data_raw(const void* data_ptr, size_t data_size)
 StorageBuffer::StorageBuffer(const std::string& in_name)
 {
     glGenBuffers(1, &ssbo_id);
-    glObjectLabel(GL_BUFFER, ssbo_id, -1, ("SSBO_" + name).c_str());
 }

@@ -11,15 +11,15 @@ class Renderer;
 class Material;
 DECLARE_DELEGATE_MULTICAST(EventBindMaterial, std::shared_ptr<Material>);
 
-class PostProcessPassV2 : public RenderPass {
+class PostProcessPass : public RenderPass {
 public:
-    static std::shared_ptr<PostProcessPassV2>
+    static std::shared_ptr<PostProcessPass>
     create(const std::string& name, uint32_t width, uint32_t height, const std::string& fragment_shader,
          TextureCreateInfos create_infos = {.wrapping = TextureWrapping::ClampToEdge, .filtering_mag = TextureMagFilter::Linear, .filtering_min = TextureMinFilter::Linear}) {
-        return std::shared_ptr<PostProcessPassV2>(new PostProcessPassV2(name, width, height, fragment_shader, create_infos));
+        return std::shared_ptr<PostProcessPass>(new PostProcessPass(name, width, height, fragment_shader, create_infos));
     }
 
-    virtual ~PostProcessPassV2() = default;
+    virtual ~PostProcessPass() = default;
 
     [[nodiscard]] const std::shared_ptr<Material>& material() const { return pass_material; }
 
@@ -29,7 +29,7 @@ public:
     [[nodiscard]] int height() const;
     void              render(bool to_back_buffer) override;
 private:
-    PostProcessPassV2(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader, TextureCreateInfos create_infos);
+    PostProcessPass(std::string in_name, uint32_t width, uint32_t height, const std::string& fragment_shader, TextureCreateInfos create_infos);
     void resolution_changed(int x, int y);
 
     std::shared_ptr<Material> pass_material;
