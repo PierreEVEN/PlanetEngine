@@ -12,7 +12,7 @@ layout(location = 1) in vec3 position;
 layout(location = 2) in float altitude;
 layout(location = 3) in vec2 coordinates;
 layout(location = 4) in float planet_radius;
-layout(location = 5) in vec3 debug_scalar;
+layout(location = 5) in vec4 g_DebugScalar;
 layout(location = 6) in vec3 g_LocalNormal;
 layout(location = 7) in vec3 g_Tangent;
 layout(location = 8) in vec3 g_BiTangent;
@@ -91,9 +91,9 @@ void main()
 	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
 	sand.mrao = make_mrao(0.2, 0.5, 0);
 	LandData water = make_ld_col(water_color() / 256);
-	water.mrao = make_mrao(0.6, 0.1, 0);
+	water.mrao = make_mrao(0.5, 0.05, 0);
 	LandData water_deep = make_ld_col(water_color() / 750);
-	water_deep.mrao = make_mrao(0.8, 0.1, 0);
+	water_deep.mrao = make_mrao(1, 0.05, 0);
 
 	LandData ground = mix_ld(grass, rock, slope); // Grass rock
 	ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
@@ -113,8 +113,8 @@ void main()
 	gNormal = TBN * output_normal;
 	gColor = vec3(g_BiTangent);
 	gColor = result.color;
-	gNormal = TBN * vec3(0,0,1);
-	//gColor = TBN * output_normal;
+	//gNormal = TBN * vec3(0,0,1);
+	gColor = g_DebugScalar.xyz;
 
 	//gColor = vec3(dot(g_Tangent, vec3(1,0,0)));
 

@@ -5,7 +5,7 @@
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout (rg32f, binding = 0) uniform image2D heightmap_input;
-layout (rg16f, binding = 1) uniform image2D img_output;
+layout (rgba16f, binding = 1) uniform image2D img_output;
 
 void main() {
     // Don't compute on borders
@@ -38,10 +38,7 @@ void main() {
     vec3 v0 = vec3(0, h0, 0);
     vec3 v1 = vec3(Chunk_CellWidth, h1, 0);
     vec3 v2 = vec3(0, h2, Chunk_CellWidth);
-
-    vec3 norm = normalize(normalize(cross(v2 - v0, v1 - v0)));
-
-    vec2 world_norm = vec2(norm.z, norm.x);
-
-    imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), vec4(world_norm, 0, 1));
+    
+    vec2 tangent_bitangent = vec2(normalize(v2 - v0).y, normalize(v1 - v0).y);
+    imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), vec4(tangent_bitangent, 0, 1));
 }

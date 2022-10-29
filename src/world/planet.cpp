@@ -99,6 +99,11 @@ void Planet::draw_ui() {
     if (ImGui::SliderInt("cell number", &cell_count, 1, 60) ||
         ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
         dirty = true;
+
+    ImGui::DragFloat("rotation speed : ", &rotation_speed, 0.01f);
+    ImGui::DragFloat("Orbit speed : ", &orbit_speed, 0.01f);
+    ImGui::DragFloat("Orbit distance : ", &orbit_distance, 100);
+
     ImGui::Separator();
     ImGui::Checkbox("Double sided", &double_sided);
     ImGui::Checkbox("Freeze Camera", &freeze_camera);
@@ -415,8 +420,13 @@ void PlanetRegion::render(Camera& camera) {
         glUniform4fv(Planet::get_landscape_material()->binding("debug_vector"), 1, planet.debug_vector.data());
         glUniformMatrix4fv(Planet::get_landscape_material()->binding("lod_local_transform"), 1, false,
                            lod_local_transform.cast<float>().matrix().data());
-        glUniformMatrix4fv(Planet::get_landscape_material()->binding("planet_world_orientation"), 1, false,
-                           planet.local_orientation.cast<float>().matrix().data());
+        glUniformMatrix4fv(Planet::get_landscape_material()->binding("planet_world_orientation"), 1, false, planet.local_orientation.cast<float>().matrix().data());
+
+        auto inv_test = planet.local_orientation.cast<float>();
+        auto inv_test2 = planet.planet_global_transform.cast<float>();
+
+        glUniformMatrix4fv(Planet::get_landscape_material()->binding("inv_planet_world_orientation"), 1, false, inv_test.inverse().matrix().data());
+        glUniformMatrix4fv(Planet::get_landscape_material()->binding("inv_model"), 1, false, inv_test2.inverse().matrix().data());
         Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
         // Bind maps
@@ -490,7 +500,7 @@ void PlanetRegion::rebuild_maps() {
     compute_positions->bind();
     compute_positions->bind_texture(chunk_height_map, BindingMode::Out, 0);
     compute_positions->execute(chunk_height_map->width(), chunk_height_map->height(), 1);
-    
+
     // Fix seams
     fix_seams->bind();
     fix_seams->bind_texture(chunk_height_map, BindingMode::InOut, 0);
