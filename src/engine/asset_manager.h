@@ -6,6 +6,9 @@ class TextureBase;
 class Mesh;
 class Material;
 
+/**
+ * \brief Handle assets references
+ */
 class AssetManager
 {
 	friend class Engine;

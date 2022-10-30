@@ -9,6 +9,7 @@
 #include "graphics/texture_image.h"
 #include "graphics/framegraph.h"
 #include "utils/game_settings.h"
+#include "world/world.h"
 
 std::shared_ptr<FrameGraph> setup_renderer() {
 

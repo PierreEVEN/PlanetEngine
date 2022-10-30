@@ -12,68 +12,64 @@
 
 using TimeType = std::chrono::steady_clock::time_point;
 
-struct Record
-{
-	std::string name;
-	TimeType start;
-	TimeType end;
-	std::thread::id thread_id;
+struct Record {
+    std::string     name;
+    TimeType        start;
+    TimeType        end;
+    std::thread::id thread_id;
 };
 
-class Profiler
-{
+class Profiler {
 public:
-	bool enabled = true;
+    bool enabled = true;
 
-	void new_frame();
-	void clear_actions();
+    void new_frame();
+    void clear_actions();
 
-	uint64_t begin_frame_event(std::string name);
-	void end_frame_event(uint64_t record);
-	[[nodiscard]] double frame_event_duration(uint64_t record) const;
+    uint64_t             begin_frame_event(std::string name);
+    void                 end_frame_event(uint64_t record);
+    [[nodiscard]] double frame_event_duration(uint64_t record) const;
 
-	uint64_t begin_action(std::string name);
-	void end_action(uint64_t record);
-	[[nodiscard]] double action_duration(uint64_t record);
+    uint64_t             begin_action(std::string name);
+    void                 end_action(uint64_t record);
+    [[nodiscard]] double action_duration(uint64_t record);
 
-	static Profiler& get();
+    static Profiler& get();
 
-	[[nodiscard]] const std::vector<Record>& get_last_frame() const { return last_frame; }
-	[[nodiscard]] const std::vector<Record>& get_actions() const { return actions; }
+    [[nodiscard]] const std::vector<Record>& get_last_frame() const { return last_frame; }
+    [[nodiscard]] const std::vector<Record>& get_actions() const { return actions; }
 
 private:
-	Profiler() = default;
+    Profiler() = default;
 
-	std::vector<Record> frame_events;
-	std::vector<Record> actions;
-	std::vector<Record> last_frame;
-	std::mutex action_mutex;
+    std::vector<Record> frame_events;
+    std::vector<Record> actions;
+    std::vector<Record> last_frame;
+    std::mutex          action_mutex;
 };
 
-class FrameEventRecord final
-{
+class FrameEventRecord final {
 public:
-	FrameEventRecord(std::string in_stat_name);
-	~FrameEventRecord();
+    FrameEventRecord(std::string in_stat_name);
+    ~FrameEventRecord();
 
-	[[nodiscard]] double get_elapsed_milliseconds() const;
+    [[nodiscard]] double get_elapsed_milliseconds() const;
 
 private:
-	std::string stat_name;
-	TimeType record_begin;
-	int64_t self_ref;
+    std::string stat_name;
+    TimeType    record_begin;
+    int64_t     self_ref;
 };
 
-class ActionRecord final
-{
+class ActionRecord final {
 public:
-	ActionRecord(std::string in_action_name);
-	~ActionRecord();
+    ActionRecord(std::string in_action_name);
+    ~ActionRecord();
 
-	[[nodiscard]] double get_elapsed_milliseconds();
+    [[nodiscard]] double get_elapsed_milliseconds();
 
 private:
-	std::string stat_name;
-	TimeType record_begin;
-	int64_t self_ref;
+    std::string stat_name;
+    TimeType    record_begin;
+    int64_t     self_ref;
 };

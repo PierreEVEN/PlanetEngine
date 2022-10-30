@@ -5,7 +5,7 @@
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout (rg32f, binding = 0) uniform image2D heightmap_input;
-layout (rgba16f, binding = 1) uniform image2D img_output;
+layout (rg16f, binding = 1) uniform image2D img_output;
 
 void main() {
     // Don't compute on borders

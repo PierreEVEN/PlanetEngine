@@ -17,9 +17,6 @@ layout(location = 6) uniform sampler2D normal_map;
 layout(location = 7) uniform vec4 debug_vector;
 layout(location = 8) uniform mat4 planet_world_orientation;
 
-layout(location = 21) uniform mat4 inv_planet_world_orientation;
-layout(location = 22) uniform mat4 inv_model;
-
 // Outputs
 layout(location = 0) out vec3 g_Normal;
 layout(location = 1) out vec3 g_WorldPosition;
@@ -83,9 +80,13 @@ void main()
     // Clamp position to [-PI/2, PI/2] (don't loop around planet)
     vec2 grid_2d_pos = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2);    
 	vec3 planet_view_pos = grid_to_sphere(grid_2d_pos, radius);
+    vec2 grid_2d_pos_tx = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(radius * PI / 2, 0); // 2D pos 90° along x axis
+    vec2 grid_2d_pos_ty = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(0, radius * PI / 2 * 1); // 2D pos 90° along y axis
 
     // Used to compute tangent and bitangent
     vec3 planet_pos = planet_view_pos + vec3(radius, 0, 0);
+    vec3 planet_pos_tx = grid_to_sphere_centered(grid_2d_pos_tx, radius);
+    vec3 planet_pos_ty = vec3(grid_to_sphere_centered(grid_2d_pos_ty, radius));
     
     float theta = PI / 2 * 1;//debug_vector.x;
 
@@ -95,12 +96,13 @@ void main()
     wo[2] = normalize(mat3(model)[2]);
 
     // Compute normals, tangent and bi-tangent
-    vec3 sphere_normal = mat3(model) * normalize(planet_pos);
-    vec3 sphere_bitangent = Rx(theta) * mat3(model) * normalize(planet_pos);
-    vec3 sphere_tangent = Ry(theta) * mat3(model) * normalize(planet_pos);
+    vec3 sphere_normal = normalize(planet_pos);
+    vec3 sphere_bitangent = normalize(planet_pos_tx);
+    vec3 sphere_tangent = normalize(planet_pos_ty);
+    
 
     // Compute world space TBN
-    mat3 sphere_TBN = mat3(sphere_tangent, sphere_bitangent, sphere_normal);
+    mat3 sphere_TBN = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
     g_DebugScalar = vec4(sphere_TBN * vec3(1, 0, 0), 1);
     /**
     /*  LOAD CHUNK DATA

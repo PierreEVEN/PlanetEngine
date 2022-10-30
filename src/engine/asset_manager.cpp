@@ -8,6 +8,7 @@
 
 void AssetManager::refresh_dirty_assets() const
 {
+	// Check if files have been modified for hot reload
 	STAT_FRAME("Check asset updates");
 	for (const auto& material : materials)
 		material->check_updates();

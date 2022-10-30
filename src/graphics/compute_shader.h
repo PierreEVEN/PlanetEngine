@@ -10,54 +10,75 @@ DECLARE_DELEGATE_MULTICAST(EventReloadShader);
 
 class TextureBase;
 
-namespace EZCOGL
-{
-	class Shader;
-}
-
-enum class BindingMode
-{
-	In,
-	Out,
-	InOut
+enum class BindingMode {
+    // Read only
+    In,
+    // Write only
+    Out,
+    // Read and write
+    InOut
 };
 
-class ComputeShader
-{
+class ComputeShader {
 public:
-	~ComputeShader();
+    ~ComputeShader();
 
-	static std::shared_ptr<ComputeShader> create(const std::string& name)
-	{
-		return std::shared_ptr<ComputeShader>(new ComputeShader(name));
-	}
+    static std::shared_ptr<ComputeShader> create(const std::string& name) {
+        return std::shared_ptr<ComputeShader>(new ComputeShader(name));
+    }
 
-	// Load or reload shader
-	void load_from_source(const std::string& compute_path);
-	void check_updates();
+    /**
+     * \brief Set shader source file
+     * \param compute_path 
+     */
+    void load_from_source(const std::string& compute_path);
 
-	[[nodiscard]] uint32_t program_id() const { return compute_shader_id; }
-	[[nodiscard]] ShaderSource& get_program_source() { return compute_source; }
+    /**
+     * \brief Check if source file have been changed.
+     */
+    void check_updates();
 
-	const std::string name;
-	std::optional<CompilationErrorInfo> compilation_error;
-	bool auto_reload = false;
+    /**
+     * \brief Shader program source code
+     * \return
+     */
+    [[nodiscard]] ShaderSource& get_program_source() { return compute_source; }
 
-	void bind();
-	void execute(int x, int y, int z);
+    /**
+     * \brief OpenGL Handle
+     */
+    [[nodiscard]] uint32_t program_id() const { return compute_shader_id; }
 
-	void bind_texture(const std::shared_ptr<TextureBase>& texture, BindingMode mode, int32_t binding);
+    const std::string                   name;
+    std::optional<CompilationErrorInfo> compilation_error;
+    bool                                auto_reload = false;
 
-	EventReloadShader on_reload;
+    /**
+     * \brief Bind shader
+     */
+    void bind();
+
+    /**
+     * \brief Run compute shader program.
+     */
+    void execute(int x, int y, int z) const;
+
+    /**
+     * \brief Bind given texture to this shader
+     * \param mode hove it is used
+     */
+    void bind_texture(const std::shared_ptr<TextureBase>& texture, BindingMode mode, int32_t binding);
+
+    /**
+     * \brief Shader source code have been modified
+     */
+    EventReloadShader on_reload;
 private:
+    ComputeShader(const std::string& in_name);
+    ShaderSource compute_source;
 
-	ComputeShader(const std::string& in_name);
-	ShaderSource compute_source;
-
-	void reload_internal();
-	void mark_dirty() { is_dirty = true; }
-	bool is_dirty = true;
-	uint32_t compute_shader_id;
-	std::unique_ptr<EZCOGL::Shader> program_compute;
-	std::unordered_map<std::string, int> bindings;
+    void     reload_internal();
+    void     mark_dirty() { is_dirty = true; }
+    bool     is_dirty = true;
+    uint32_t compute_shader_id;
 };

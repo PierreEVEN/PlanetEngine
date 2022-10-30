@@ -1,6 +1,8 @@
 #pragma once
 
 // SOURCE : https://github.com/PierreEVEN/CppUtils/
+// This is a delegate system I've created for my C++ projects
+// Usage : declare a delegate type using the appropriate macro : DECLARE_DELEGATE_TYPE(EventMyDelegate), then declare a property using this type.
 
 #include <cassert>
 #include <memory>

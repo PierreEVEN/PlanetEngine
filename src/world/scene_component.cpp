@@ -1,7 +1,5 @@
 #include "scene_component.h"
 
-#include <imgui.h>
-#include <iostream>
 #include <Eigen/Core>
 
 #include "ui/widgets.h"

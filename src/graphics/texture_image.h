@@ -61,15 +61,16 @@ public:
 
     static std::shared_ptr<TextureBase> create(const std::string& name, const TextureCreateInfos& params = {});
 
-    [[nodiscard]] uint32_t         width() const { return image_width; }
-    [[nodiscard]] uint32_t         height() const { return image_height; }
+    [[nodiscard]] virtual uint32_t width() const { return image_width; }
+    [[nodiscard]] virtual uint32_t height() const { return image_height; }
     [[nodiscard]] virtual uint32_t depth() const { return image_depth; }
     [[nodiscard]] virtual uint32_t id() { return texture_id; }
     [[nodiscard]] ImageFormat      internal_format() const { return image_format; }
-    const std::string              name;
-    virtual void                   bind(uint32_t unit = 0);
     [[nodiscard]] virtual uint32_t texture_type() const;
-    const TextureCreateInfos       parameters;
+    virtual void                   bind(uint32_t unit = 0);
+
+    const std::string        name;
+    const TextureCreateInfos parameters;
 protected:
     TextureBase(std::string name, const TextureCreateInfos& params = {});
     uint32_t    image_width;
@@ -90,8 +91,8 @@ public:
     }
 
     [[nodiscard]] uint32_t depth() const override { return 1; }
-    void                  from_file(const std::string& filename, int force_nb_channel = 0);
-    void                  set_data(uint32_t w, uint32_t h, ImageFormat image_format, const void* data_ptr = nullptr);
+    void                   from_file(const std::string& filename, int force_nb_channel = 0);
+    void                   set_data(uint32_t w, uint32_t h, ImageFormat image_format, const void* data_ptr = nullptr);
 
     [[nodiscard]] uint32_t id() override;
 

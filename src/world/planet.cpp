@@ -3,6 +3,8 @@
 #include "graphics/camera.h"
 #include "planet.h"
 
+#include "world.h"
+
 #include <imgui.h>
 
 #include "engine/engine.h"

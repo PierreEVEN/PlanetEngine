@@ -1,7 +1,6 @@
 #include "material.h"
 
 #include <filesystem>
-#include <fstream>
 #include <GL/gl3w.h>
 
 #include <shader_program.h>
@@ -12,7 +11,6 @@
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
-#include <imgui.h>
 
 int Material::binding(const std::string& binding_name) const {
     const auto binding = bindings.find(binding_name);
@@ -26,9 +24,7 @@ int Material::bind_texture(const std::shared_ptr<TextureBase>& texture, const st
     const int binding_location = binding(binding_name);
     if (binding_location > 0) {
         glUniform1i(binding_location, binding_location);
-        GL_CHECK_ERROR();
         texture->bind(binding_location);
-        GL_CHECK_ERROR();
     }
     GL_CHECK_ERROR();
     return binding_location;
@@ -52,11 +48,10 @@ void Material::reload_internal() {
     bindings.clear();
     // Compile shader
     shader_program_id = glCreateProgram();
-    program_vertex    = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
+    std::unique_ptr<EZCOGL::Shader> program_vertex = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
     std::string vertex_error;
     size_t      vertex_error_line;
     if (!program_vertex->compile(vertex_source.get_source_code(), name, vertex_error, vertex_error_line)) {
-        std::cout << "error " << vertex_error << std::endl;
         size_t local_line;
         compilation_error = {
             .error = vertex_error,
@@ -71,11 +66,9 @@ void Material::reload_internal() {
         return;
     }
     GL_CHECK_ERROR();
-    glAttachShader(shader_program_id, program_vertex->shaderId());
-
     std::string fragment_error;
     size_t      fragment_error_line;
-    program_fragment = std::make_unique<EZCOGL::Shader>(GL_FRAGMENT_SHADER);
+    std::unique_ptr<EZCOGL::Shader> program_fragment = std::make_unique<EZCOGL::Shader>(GL_FRAGMENT_SHADER);
     if (!program_fragment->compile(fragment_source.get_source_code(), name, fragment_error, fragment_error_line)) {
         size_t local_line;
         compilation_error = {
@@ -90,13 +83,15 @@ void Material::reload_internal() {
         is_dirty          = false;
         return;
     }
+
+    // Link shader
+    glAttachShader(shader_program_id, program_vertex->shaderId());
     glAttachShader(shader_program_id, program_fragment->shaderId());
-
     glLinkProgram(shader_program_id);
-
     glDetachShader(shader_program_id, program_vertex->shaderId());
     glDetachShader(shader_program_id, program_fragment->shaderId());
 
+    // Check link errors
     GL_CHECK_ERROR();
     int infologLength = 0;
     glGetProgramiv(shader_program_id, GL_INFO_LOG_LENGTH, &infologLength);
@@ -123,10 +118,12 @@ void Material::reload_internal() {
     }
     GL_CHECK_ERROR();
 
+    // Make world data uniform accessible by any shader
     const int world_data_id = glGetUniformBlockIndex(shader_program_id, "WorldData");
     if (world_data_id >= 0)
         glUniformBlockBinding(shader_program_id, world_data_id, 0);
 
+    // Get bindings (to avoid openGL calls later)
     GL_CHECK_ERROR();
     int uniform_count;
     glGetProgramiv(shader_program_id, GL_ACTIVE_UNIFORMS, &uniform_count);
@@ -139,8 +136,9 @@ void Material::reload_internal() {
                            uniform_name);
         bindings.insert({uniform_name, glGetUniformLocation(shader_program_id, uniform_name)});
     }
-    is_dirty = false;
     GL_CHECK_ERROR();
+
+    is_dirty = false;
 }
 
 Material::~Material() {

@@ -8,14 +8,12 @@
 #define GL_TABLE_TOO_LARGE 0x8031
 #endif
 
-inline void GL_CHECK_ERROR()
-{
-	int gl_error_id = glGetError();
+inline void GL_CHECK_ERROR() {
+    int gl_error_id = glGetError();
 
     while (gl_error_id != GL_NO_ERROR) {
         std::cerr << "opengl error : ";
-        switch (gl_error_id)
-        {
+        switch (gl_error_id) {
         case GL_NO_ERROR:
             std::cerr << "GL_NO_ERROR";
             break;
