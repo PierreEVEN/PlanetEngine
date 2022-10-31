@@ -71,6 +71,34 @@ mat3 Rz(float theta) {
 }
 
 
+vec2 uv_from_sphere_pos(vec3 sphere_norm, vec3 world_norm, out vec3 tang, out vec3 bitang) {
+
+    vec3 abs_norm = abs(sphere_norm);
+    const float multiplier = 1 / PI * 2;
+        
+    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z > 0 ||true)
+    {
+        sphere_norm = world_norm;
+        float x = fma(atan(sphere_norm.x, sphere_norm.z), multiplier, 0.5);
+        float y = fma(atan(sphere_norm.y, sphere_norm.z), multiplier, 0.5);
+
+        vec3 test = normalize(vec3(sphere_norm.x, 0, sphere_norm.z));
+
+        float xa = asin(test.z) * multiplier;
+        float za = -sphere_norm.x;
+        float ya = (1 - xa - abs(za)) * -sign(sphere_norm.x) * sign(sphere_norm.y);
+
+        tang = (vec3(xa, 0, za));
+        tang = vec3(length(tang), 0, 0);
+        return vec2(x, y);
+    }
+    return vec2(0, 0);
+}
+
+
+
+
+
 void main()
 {
     /* [1] transform 2D pos to 3D pos */
@@ -103,7 +131,6 @@ void main()
 
     // Compute world space TBN
     mat3 sphere_TBN = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
-    g_DebugScalar = vec4(sphere_TBN * vec3(1, 0, 0), 1);
     /**
     /*  LOAD CHUNK DATA
     **/
@@ -126,6 +153,15 @@ void main()
 
     // Compute texture coordinates (still some artefacts to fix)
     vec2 text_coords = vec2(mod(seamless_uv_from_sphere_normal(dvec3((mat3(planet_world_orientation) * normalize(planet_pos))) * 1000), 1));
+
+    text_coords = vec2(uv_from_sphere_normal(dvec3((mat3(planet_world_orientation) * normalize(planet_pos)))));
+
+    vec3 tang = vec3(0);
+    vec3 bitang = vec3(0);
+
+    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), tang, bitang);
+    g_DebugScalar = vec4(tang, 1);
+
 
     vec3 wave_offset = vec3(0);
     vec3 wave_color = vec3(1);

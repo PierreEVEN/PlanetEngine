@@ -114,7 +114,7 @@ void main()
 	gColor = vec3(g_BiTangent);
 	gColor = result.color;
 	gNormal = TBN * vec3(0,0,1);
-	// gColor = g_DebugScalar.xyz;
+	gColor = g_DebugScalar.xyz;
 
 	//gColor = vec3(dot(g_Tangent, vec3(1,0,0)));
 

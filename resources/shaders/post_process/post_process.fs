@@ -9,7 +9,7 @@ layout(location = 4) uniform float exposure;
 
 void main()
 {
-    vec3 color = texture(Input_Color, uv).rgb;
+    vec3 color = max(vec3(0), texture(Input_Color, uv).rgb);
     oFragmentColor.a = 1;
 
     // Tone mapping

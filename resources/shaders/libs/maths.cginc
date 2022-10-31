@@ -5,6 +5,15 @@ float PI = 3.14159265358979323846;
 const float HALF_PI = 3.14159265358979323846 / 2.0;
 const dvec2 sqrt_2_2 = dvec2(double(sqrt(2.0 / 2.0)));
 
+mat3 rotation_from_mat4(mat4 transformation) {
+    mat3 rot;
+    rot[0] = normalize(transformation[0].xyz);
+    rot[1] = normalize(transformation[1].xyz);
+    rot[2] = normalize(transformation[2].xyz);
+    return rot;
+}
+
+
 dvec2 seamless_uv_from_sphere_normal(dvec3 sphere_norm) {
     dvec3 abs_norm = abs(sphere_norm);
 
