@@ -98,7 +98,7 @@ void Planet::draw_ui() {
     SceneComponent::draw_ui();
     ImGui::SliderInt("num LODs : ", &num_lods, 1, 40);
     ImGui::DragFloat("radius : ", &radius, 10);
-    if (ImGui::SliderInt("cell number", &cell_count, 1, 60) ||
+    if (ImGui::SliderInt("cell number", &cell_count, 1, 120) ||
         ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
         dirty = true;
 
@@ -260,10 +260,8 @@ void Planet::tick(double delta_time) {
 
     current_orbit += orbit_speed * delta_time;
     current_rotation += rotation_speed * delta_time;
-    set_local_position(
-        Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit), 0) * orbit_distance);
-    set_local_rotation(
-        Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
+    set_local_position(Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit), 0) * orbit_distance);
+    set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
 
     if (dirty) {
         regenerate();
@@ -274,8 +272,7 @@ void Planet::tick(double delta_time) {
 
         if (!freeze_camera) {
             // Get camera direction from planet center
-            const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->
-                                                                                          get_world_position() - get_world_position()).normalized();
+            const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->get_world_position() - get_world_position()).normalized();
 
             // Compute global rotation snapping step
             const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
@@ -289,8 +286,7 @@ void Planet::tick(double delta_time) {
         planet_inverse_rotation = world_orientation.inverse();
         // Compute global planet transformation (ensure ground is always close to origin)
         planet_global_transform = Eigen::Affine3d::Identity();
-        planet_global_transform.translate(
-            get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
+        planet_global_transform.translate(get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
         planet_global_transform = planet_global_transform * world_orientation;
         planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
     }
@@ -424,11 +420,15 @@ void PlanetRegion::render(Camera& camera) {
                            lod_local_transform.cast<float>().matrix().data());
         glUniformMatrix4fv(Planet::get_landscape_material()->binding("planet_world_orientation"), 1, false, planet.local_orientation.cast<float>().matrix().data());
 
-        auto inv_test = planet.local_orientation.cast<float>();
+        auto inv_test  = planet.local_orientation.cast<float>();
         auto inv_test2 = planet.planet_global_transform.cast<float>();
 
         glUniformMatrix4fv(Planet::get_landscape_material()->binding("inv_planet_world_orientation"), 1, false, inv_test.inverse().matrix().data());
         glUniformMatrix4fv(Planet::get_landscape_material()->binding("inv_model"), 1, false, inv_test2.inverse().matrix().data());
+
+        glUniformMatrix3fv(Planet::get_landscape_material()->binding("scene_rotation"), 1, false, planet.get_world_rotation().cast<float>().matrix().data());
+        glUniformMatrix3fv(Planet::get_landscape_material()->binding("inv_scene_rotation"), 1, false, planet.get_world_rotation().inverse().cast<float>().matrix().data());
+
         Planet::get_landscape_material()->set_model_transform(planet.planet_global_transform);
 
         // Bind maps

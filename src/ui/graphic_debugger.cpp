@@ -131,7 +131,7 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
     const auto& min          = ImVec2(ImGui::GetWindowPos().x + center.x, ImGui::GetWindowPos().y + center.y);
     const float windows_size = ImGui::GetWindowSize().x * zoom;
 
-    const ImVec2 size       = ImVec2(windows_size / layer_count, windows_size / layer_count / res_ratio);
+    const ImVec2 item_size  = ImVec2(windows_size / layer_count, windows_size / layer_count / res_ratio);
     const ImVec2 margin     = ImVec2(3 * zoom, 3 * zoom);
     const ImVec2 padding    = ImVec2(margin.x + 2, margin.y + 2);
     const ImVec2 draw_start = ImVec2(min.x, min.y + ImGui::GetWindowSize().y / 2);
@@ -140,14 +140,14 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
 
     const auto get_min = [&](int x, float y) -> ImVec2 {
         return {
-            windows_size + min.x - (x + 1) * size.x,
-            draw_start.y + y * size.y
+            windows_size + min.x - (x + 1) * item_size.x,
+            draw_start.y + y * item_size.y
         };
     };
     const auto get_max = [&](int x, float y, size_t rt_count) -> ImVec2 {
         return {
-            windows_size + min.x - (x + 1) * size.x + size.x,
-            draw_start.y + y * size.y + size.y + (rt_count - 1) * size.y
+            windows_size + min.x - (x + 1) * item_size.x + item_size.x,
+            draw_start.y + y * item_size.y + item_size.y + (rt_count - 1) * item_size.y
         };
     };
 
@@ -172,8 +172,8 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
     for (size_t index = 0; index < render_targets.size(); ++index) {
         draw_target(
             render_targets[index],
-            ImVec2(p_min.x + padding.x, p_min.y + index * size.y + padding.y),
-            ImVec2(p_max.x - padding.x, p_min.y + (index + 1) * size.y - padding.y)
+            ImVec2(p_min.x + padding.x, p_min.y + index * item_size.y + margin.y),
+            ImVec2(p_max.x - padding.x, p_min.y + (index + 1) * item_size.y - margin.y)
             );
     }
     const std::string text      = render_pass->name;
@@ -236,7 +236,7 @@ void GraphicDebugger::Node::draw_target(const std::shared_ptr<Texture2D>& target
     const auto& draw_list = ImGui::GetWindowDrawList();
     draw_list->AddImage(reinterpret_cast<ImTextureID>(static_cast<size_t>(target->id())), min, max, ImVec2(0, 1), ImVec2(1, 0));
 
-    std::string text      = target->name + "\n" + std::to_string(target->width()) + " x " + std::to_string(target->height()) + "\n" + image_format_to_string(target->internal_format());
+    std::string text = target->name + "\n" + std::to_string(target->width()) + " x " + std::to_string(target->height()) + "\n" + image_format_to_string(target->internal_format());
     const auto  text_size = ImGui::CalcTextSize(text.c_str());
 
     if (text_size.x < (max.x - min.x) * 0.5f)

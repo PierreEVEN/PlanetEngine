@@ -193,4 +193,28 @@ vec2 clamp_01(vec2 a) { return clamp(a, vec2(0), vec2(1)); }
 vec3 clamp_01(vec3 a) { return clamp(a, vec3(0), vec3(1)); }
 vec4 clamp_01(vec4 a) { return clamp(a, vec4(0), vec4(1)); }
 
+
+mat3 Rx(float theta) {    
+    mat3 _rx;
+    _rx[0] = vec3(1,0,0);
+    _rx[1] = vec3(0,cos(theta),-sin(theta));
+    _rx[2] = vec3(0,sin(theta),cos(theta));
+    return _rx;
+}
+
+mat3 Ry(float theta) {    
+    mat3 _ry;
+    _ry[0] = vec3(cos(theta),0,sin(theta));
+    _ry[1] = vec3(0, 1, 0);
+    _ry[2] = vec3(-sin(theta),0,cos(theta));
+    return _ry;
+}
+
+mat3 Rz(float theta) {    
+    mat3 _rz;
+    _rz[0] = vec3(cos(theta),-sin(theta), 0);
+    _rz[1] = vec3(-sin(theta),cos(theta), 0);
+    _rz[2] = vec3(0, 0, 1);
+    return _rz;
+}
 #endif // MATH_H_

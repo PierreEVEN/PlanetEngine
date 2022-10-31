@@ -17,6 +17,9 @@ layout(location = 6) uniform sampler2D normal_map;
 layout(location = 7) uniform vec4 debug_vector;
 layout(location = 8) uniform mat4 planet_world_orientation;
 
+layout(location = 21) uniform mat3 scene_rotation;
+layout(location = 22) uniform mat3 inv_scene_rotation;
+
 // Outputs
 layout(location = 0) out vec3 g_Normal;
 layout(location = 1) out vec3 g_WorldPosition;
@@ -46,52 +49,56 @@ void waves(vec2 uvs, out vec3 offset, out vec3 normal, out vec3 color) {
     offset.z = sin(pos) * 2;
 }
 
-mat3 Rx(float theta) {    
-    mat3 _rx;
-    _rx[0] = vec3(1,0,0);
-    _rx[1] = vec3(0,cos(theta),-sin(theta));
-    _rx[2] = vec3(0,sin(theta),cos(theta));
-    return _rx;
-}
-
-mat3 Ry(float theta) {    
-    mat3 _ry;
-    _ry[0] = vec3(cos(theta),0,sin(theta));
-    _ry[1] = vec3(0, 1, 0);
-    _ry[2] = vec3(-sin(theta),0,cos(theta));
-    return _ry;
-}
-
-mat3 Rz(float theta) {    
-    mat3 _rz;
-    _rz[0] = vec3(cos(theta),-sin(theta), 0);
-    _rz[1] = vec3(-sin(theta),cos(theta), 0);
-    _rz[2] = vec3(0, 0, 1);
-    return _rz;
-}
-
 
 vec2 uv_from_sphere_pos(vec3 sphere_norm, vec3 world_norm, out vec3 tang, out vec3 bitang) {
 
     vec3 abs_norm = abs(sphere_norm);
     const float multiplier = 1 / PI * 2;
-        
-    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z > 0 ||true)
+    world_norm /= multiplier;
+
+    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z > 0)
     {
-        sphere_norm = world_norm;
         float x = fma(atan(sphere_norm.x, sphere_norm.z), multiplier, 0.5);
         float y = fma(atan(sphere_norm.y, sphere_norm.z), multiplier, 0.5);
 
-        vec3 test = normalize(vec3(sphere_norm.x, 0, sphere_norm.z));
+        float xa = cos(abs(world_norm.x));
+        float za = cos(world_norm.y) * sin(-world_norm.x);
+        float ya_square = 1 - xa * xa - za * za;
+        float ya = ya_square > 0 ? sqrt(ya_square) * -sign(world_norm.x) * sign(world_norm.y) : 0;
 
-        float xa = asin(test.z) * multiplier;
-        float za = -sphere_norm.x;
-        float ya = (1 - xa - abs(za)) * -sign(sphere_norm.x) * sign(sphere_norm.y);
+        float yb = cos(abs(world_norm.y));
+        float zb = cos(world_norm.x) * sin(-world_norm.y);
+        float xb_square = 1 - xa * xa - za * za;
+        float xb = xb_square > 0 ? sqrt(xb_square) * -sign(world_norm.y) * sign(world_norm.x) : 0;
 
-        tang = (vec3(xa, 0, za));
-        tang = vec3(length(tang), 0, 0);
+        tang = vec3(xa, ya, za);
+        bitang = vec3(xb, yb, zb);
         return vec2(x, y);
     }
+
+
+    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z < 0)
+    {
+        float x = fma(atan(sphere_norm.x, sphere_norm.z), multiplier, 0.5);
+        float y = fma(atan(sphere_norm.y, sphere_norm.z), multiplier, 0.5);
+
+        float xa = cos(abs(world_norm.x));
+        float za = -cos(world_norm.y) * sin(-world_norm.x);
+        float ya_square = 1 - xa * xa - za * za;
+        float ya = ya_square > 0 ? sqrt(ya_square) * -sign(world_norm.x) * sign(world_norm.y) : 0;
+
+        float yb = cos(abs(world_norm.y));
+        float zb = cos(world_norm.x) * sin(-world_norm.y);
+        float xb_square = 1 - xa * xa - za * za;
+        float xb = xb_square > 0 ? sqrt(xb_square) * -sign(world_norm.y) * sign(world_norm.x) : 0;
+
+        tang = vec3(xa, -ya, za);
+        bitang = vec3(xb, -yb, zb);
+        return vec2(x, y);
+    }
+
+    tang = vec3(0);
+    bitang = vec3(0);
     return vec2(0, 0);
 }
 
@@ -108,29 +115,13 @@ void main()
     // Clamp position to [-PI/2, PI/2] (don't loop around planet)
     vec2 grid_2d_pos = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2);    
 	vec3 planet_view_pos = grid_to_sphere(grid_2d_pos, radius);
-    vec2 grid_2d_pos_tx = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(radius * PI / 2, 0); // 2D pos 90° along x axis
-    vec2 grid_2d_pos_ty = clamp(grid_2d_pos_base, -radius * PI / 2, radius * PI / 2) + vec2(0, radius * PI / 2 * 1); // 2D pos 90° along y axis
 
     // Used to compute tangent and bitangent
     vec3 planet_pos = planet_view_pos + vec3(radius, 0, 0);
-    vec3 planet_pos_tx = grid_to_sphere_centered(grid_2d_pos_tx, radius);
-    vec3 planet_pos_ty = vec3(grid_to_sphere_centered(grid_2d_pos_ty, radius));
     
-    float theta = PI / 2 * 1;//debug_vector.x;
-
-    mat3 wo;
-    wo[0] = normalize(mat3(model)[0]);
-    wo[1] = normalize(mat3(model)[1]);
-    wo[2] = normalize(mat3(model)[2]);
-
     // Compute normals, tangent and bi-tangent
-    vec3 sphere_normal = normalize(planet_pos);
-    vec3 sphere_bitangent = normalize(planet_pos_tx);
-    vec3 sphere_tangent = normalize(planet_pos_ty);
+    vec3 sphere_normal = mat3(model) * normalize(planet_pos);
     
-
-    // Compute world space TBN
-    mat3 sphere_TBN = mat3(model) * mat3(sphere_tangent, sphere_bitangent, sphere_normal);
     /**
     /*  LOAD CHUNK DATA
     **/
@@ -140,8 +131,8 @@ void main()
 
     // Load chunk normals and heightmap
     vec4 tang_bitang = texelFetch(normal_map, coords, 0);
-    vec3 tex_tangent = unpack_tangent(tang_bitang.x);
-    vec3 tex_bi_tangent = unpack_bi_tangent(tang_bitang.y);
+    vec3 tex_tangent = unpack_tangent(-tang_bitang.y);
+    vec3 tex_bi_tangent = unpack_bi_tangent(tang_bitang.x);
     vec3 tex_normal = normalize(cross(tex_tangent, tex_bi_tangent));
     vec2 altitudes = texelFetch(height_map, coords, 0).rg;
     float vertex_height = altitudes.r;
@@ -156,12 +147,17 @@ void main()
 
     text_coords = vec2(uv_from_sphere_normal(dvec3((mat3(planet_world_orientation) * normalize(planet_pos)))));
 
-    vec3 tang = vec3(0);
-    vec3 bitang = vec3(0);
 
-    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), tang, bitang);
-    g_DebugScalar = vec4(tang, 1);
+    vec3 sphere_bitangent = vec3(0);
+    vec3 sphere_tangent = vec3(0);
+    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), sphere_tangent, sphere_bitangent) * 10;
+    sphere_tangent = mat3(scene_rotation) * sphere_tangent;
+    sphere_bitangent = mat3(scene_rotation) * sphere_bitangent;
+    g_DebugScalar = vec4(sphere_tangent, 1);
 
+
+    // Compute world space TBN
+    mat3 sphere_TBN = mat3(sphere_tangent, sphere_bitangent, sphere_normal);
 
     vec3 wave_offset = vec3(0);
     vec3 wave_color = vec3(1);

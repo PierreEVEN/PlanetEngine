@@ -78,7 +78,7 @@ void main()
 		vec3 norm = normalize(texture(Input_normal, uv).rgb);
 		vec3 mrao = texture(Input_mrao, uv).rgb;
         oFragmentColor = vec4(col, 1);
-        return;
+        //return;
         /*
         // Blinn-phong
         PhongParams phong_params;
@@ -89,7 +89,7 @@ void main()
         */
         vec3 ambient = vec3(mix(0.0, 0.01, clamp(dot(norm, light_dir) + 0.3, 0, 1)));
         oFragmentColor = vec4(pbr_lighting(col, norm, light_dir, -getSceneWorldDirection(), mrao, ambient), 1);
-        return;
+        //return;
         //oFragmentColor.xyz = col;
         //return;
 
