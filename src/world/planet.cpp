@@ -19,29 +19,33 @@
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
-static std::shared_ptr<Material>      planet_material    = nullptr;
-static std::shared_ptr<Texture2D>     grass_albedo       = nullptr;
-static std::shared_ptr<Texture2D>     grass_normal       = nullptr;
-static std::shared_ptr<Texture2D>     grass_mrao         = nullptr;
-static std::shared_ptr<Texture2D>     rock_albedo        = nullptr;
-static std::shared_ptr<Texture2D>     rock_normal        = nullptr;
-static std::shared_ptr<Texture2D>     rock_mrao          = nullptr;
-static std::shared_ptr<Texture2D>     sand_albedo        = nullptr;
-static std::shared_ptr<Texture2D>     sand_normal        = nullptr;
-static std::shared_ptr<Texture2D>     sand_mrao          = nullptr;
-static std::shared_ptr<Texture2D>     water_normal       = nullptr;
-static std::shared_ptr<Texture2D>     water_displacement = nullptr;
-static std::shared_ptr<ComputeShader> compute_positions  = nullptr;
-static std::shared_ptr<ComputeShader> compute_normals    = nullptr;
-static std::shared_ptr<ComputeShader> fix_seams          = nullptr;
+static std::shared_ptr<Material>      planet_material                = nullptr;
+static std::shared_ptr<Material>      planet_material_normal_display = nullptr;
+static std::shared_ptr<Texture2D>     grass_albedo                   = nullptr;
+static std::shared_ptr<Texture2D>     grass_normal                   = nullptr;
+static std::shared_ptr<Texture2D>     grass_mrao                     = nullptr;
+static std::shared_ptr<Texture2D>     rock_albedo                    = nullptr;
+static std::shared_ptr<Texture2D>     rock_normal                    = nullptr;
+static std::shared_ptr<Texture2D>     rock_mrao                      = nullptr;
+static std::shared_ptr<Texture2D>     sand_albedo                    = nullptr;
+static std::shared_ptr<Texture2D>     sand_normal                    = nullptr;
+static std::shared_ptr<Texture2D>     sand_mrao                      = nullptr;
+static std::shared_ptr<Texture2D>     water_normal                   = nullptr;
+static std::shared_ptr<Texture2D>     water_displacement             = nullptr;
+static std::shared_ptr<ComputeShader> compute_positions              = nullptr;
+static std::shared_ptr<ComputeShader> compute_normals                = nullptr;
+static std::shared_ptr<ComputeShader> fix_seams                      = nullptr;
 
 std::shared_ptr<Material> Planet::get_landscape_material() {
     if (planet_material)
         return planet_material;
     STAT_ACTION("Create planet resources");
     planet_material = Material::create("planet material");
-    planet_material->load_from_source("resources/shaders/planet_material.vs",
-                                      "resources/shaders/planet_material.fs");
+    planet_material->load_from_source("resources/shaders/planet_material.vs", "resources/shaders/planet_material.fs");
+
+    planet_material_normal_display = Material::create("planet material normals");
+    planet_material_normal_display->load_from_source("resources/shaders/planet_material.vs", "resources/shaders/planet_material_normal_display.fs",
+                                                     "resources/shaders/planet_material_normal_display.gs");
 
     grass_albedo = Texture2D::create("terrain grass albedo", {.srgb = true});
     grass_albedo->from_file("resources/textures/terrain/wispy-grass-meadow_albedo.png");
@@ -107,6 +111,7 @@ void Planet::draw_ui() {
     ImGui::DragFloat("Orbit distance : ", &orbit_distance, 100);
 
     ImGui::Separator();
+    ImGui::Checkbox("Show normals", &display_normals);
     ImGui::Checkbox("Double sided", &double_sided);
     ImGui::Checkbox("Freeze Camera", &freeze_camera);
     ImGui::Checkbox("Freeze Updates", &freeze_updates);
@@ -448,6 +453,7 @@ void PlanetRegion::render(Camera& camera) {
         Planet::get_landscape_material()->bind_texture(water_normal, "water_normal");
         Planet::get_landscape_material()->bind_texture(water_displacement, "water_displacement");
 
+
         glEnable(GL_CULL_FACE);
         glPolygonMode(GL_FRONT_AND_BACK, GameSettings::get().wireframe ? GL_LINE : GL_FILL);
         if (current_lod == 0)
@@ -463,6 +469,38 @@ void PlanetRegion::render(Camera& camera) {
                 planet.child_mesh->draw();
             glFrontFace(GL_CCW);
         }
+
+        
+        if (planet.display_normals && planet_material_normal_display->bind()) {
+            glUniform1f(planet_material_normal_display->binding("radius"), planet.radius);
+            glUniform1f(planet_material_normal_display->binding("grid_cell_count"), static_cast<float>(planet.cell_count));
+            glUniform4fv(planet_material_normal_display->binding("debug_vector"), 1, planet.debug_vector.data());
+            glUniformMatrix4fv(planet_material_normal_display->binding("lod_local_transform"), 1, false, lod_local_transform.cast<float>().matrix().data());
+            glUniformMatrix4fv(planet_material_normal_display->binding("planet_world_orientation"), 1, false, planet.local_orientation.cast<float>().matrix().data());
+
+            auto inv_test  = planet.local_orientation.cast<float>();
+            auto inv_test2 = planet.planet_global_transform.cast<float>();
+
+            glUniformMatrix4fv(planet_material_normal_display->binding("inv_planet_world_orientation"), 1, false, inv_test.inverse().matrix().data());
+            glUniformMatrix4fv(planet_material_normal_display->binding("inv_model"), 1, false, inv_test2.inverse().matrix().data());
+
+            glUniformMatrix3fv(planet_material_normal_display->binding("scene_rotation"), 1, false, planet.get_world_rotation().cast<float>().matrix().data());
+            glUniformMatrix3fv(planet_material_normal_display->binding("inv_scene_rotation"), 1, false, planet.get_world_rotation().inverse().cast<float>().matrix().data());
+
+            planet_material_normal_display->set_model_transform(planet.planet_global_transform);
+
+            // Bind maps
+            planet_material_normal_display->bind_texture(chunk_height_map, "height_map");
+            planet_material_normal_display->bind_texture(chunk_normal_map, "normal_map");
+
+            glEnable(GL_CULL_FACE);
+            glPolygonMode(GL_FRONT_AND_BACK, GameSettings::get().wireframe ? GL_LINE : GL_FILL);
+            if (current_lod == 0)
+                planet.root_mesh->draw();
+            else
+                planet.child_mesh->draw();
+        }
+
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 }

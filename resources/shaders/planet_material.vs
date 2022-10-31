@@ -36,11 +36,11 @@ vec3 unpack_normal(vec2 packed_normal) {
 }
 
 vec3 unpack_tangent(float packed_tangent_z) {
-    return vec3(1 - abs(packed_tangent_z), 0, packed_tangent_z);
+    return vec3(sqrt(1 - packed_tangent_z * packed_tangent_z), 0, packed_tangent_z);
 }
 
 vec3 unpack_bi_tangent(float packed_bi_tangent_z) {
-    return vec3(0, 1 - abs(packed_bi_tangent_z), packed_bi_tangent_z);
+    return vec3(0, sqrt(1 - packed_bi_tangent_z * packed_bi_tangent_z), packed_bi_tangent_z);
 }
 
 void waves(vec2 uvs, out vec3 offset, out vec3 normal, out vec3 color) {
@@ -121,6 +121,7 @@ void main()
     
     // Compute normals, tangent and bi-tangent
     vec3 sphere_normal = mat3(model) * normalize(planet_pos);
+    vec3 sphere_normal2 = mat3(planet_world_orientation) * normalize(planet_pos);
     
     /**
     /*  LOAD CHUNK DATA
@@ -129,11 +130,13 @@ void main()
     // Transform vertex coordinates to pixel position (used to fetch precomputed chunk data)
     ivec2 coords = ivec2(pos.xz + grid_cell_count * 2 + 2);
 
-    // Load chunk normals and heightmap
+    // Load chunk normals
     vec4 tang_bitang = texelFetch(normal_map, coords, 0);
-    vec3 tex_tangent = unpack_tangent(-tang_bitang.y);
-    vec3 tex_bi_tangent = unpack_bi_tangent(tang_bitang.x);
-    vec3 tex_normal = normalize(cross(tex_tangent, tex_bi_tangent));
+    vec3 tex_tangent = unpack_tangent(-tang_bitang.y); // OK ON TOUCHE PAS
+    vec3 tex_bi_tangent = unpack_bi_tangent(tang_bitang.x); // OK AUSSI
+    vec3 tex_normal = normalize(cross(tex_tangent, tex_bi_tangent)); // ET CA AUSSI
+
+    // Load chunk heightmap
     vec2 altitudes = texelFetch(height_map, coords, 0).rg;
     float vertex_height = altitudes.r;
     float real_height = altitudes.g;
@@ -150,20 +153,24 @@ void main()
 
     vec3 sphere_bitangent = vec3(0);
     vec3 sphere_tangent = vec3(0);
-    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), sphere_tangent, sphere_bitangent) * 10;
-    sphere_tangent = mat3(scene_rotation) * sphere_tangent;
-    sphere_bitangent = mat3(scene_rotation) * sphere_bitangent;
-    g_DebugScalar = vec4(sphere_tangent, 1);
 
+    vec3 test_tang = normalize(cross(vec3(0, 1, 0), sphere_normal2));
+    vec3 test_bitang = normalize(cross(test_tang, sphere_normal2));
+    test_tang = normalize(cross(test_bitang, sphere_normal2));
+
+
+    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), sphere_tangent, sphere_bitangent) * 10;
+    sphere_tangent = mat3(scene_rotation) * test_tang;//sphere_tangent;
+    sphere_bitangent = mat3(scene_rotation) * test_bitang;// sphere_bitangent;
+    g_DebugScalar = vec4(sphere_tangent, 1);
 
     // Compute world space TBN
     mat3 sphere_TBN = mat3(sphere_tangent, sphere_bitangent, sphere_normal);
 
-    vec3 wave_offset = vec3(0);
     vec3 wave_color = vec3(1);
 
     // Compute vertex position (with altitude)
-    vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, vertex_height), 0) + vec4(sphere_TBN * wave_offset, 0);
+    vec4 world_position = model * vec4(planet_view_pos, 1) + vec4(sphere_TBN * vec3(0, 0, vertex_height), 0);
     vec3 world_normals = sphere_TBN * tex_normal;
     vec3 world_tangent = sphere_TBN * tex_tangent;
     vec3 world_bi_tangent = sphere_TBN * tex_bi_tangent;
@@ -178,9 +185,10 @@ void main()
     g_Altitude = real_height;
     g_PlanetRadius = radius;
     g_TextureCoordinates = text_coords;
-    g_Normal = world_normals;
-    g_Tangent = world_tangent;
-    g_BiTangent = world_bi_tangent;
+    
+    g_Normal = mat3(scene_rotation) * tex_normal;
+    g_Tangent = mat3(scene_rotation) * tex_tangent;
+    g_BiTangent = mat3(scene_rotation) * tex_bi_tangent;
     
     // Vertex position
 	gl_Position = pv_matrix * world_position; 

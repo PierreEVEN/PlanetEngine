@@ -27,7 +27,7 @@ public:
      * \brief Set shader source file
      * \param compute_path
      */
-    void load_from_source(const std::string& vertex_path, const std::string& fragment_path);
+    void load_from_source(const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path = {});
 
     /**
      * \brief Check if source file have been changed.
@@ -45,6 +45,12 @@ public:
      * \return
      */
     [[nodiscard]] const ShaderSource& get_fragment_source() const { return fragment_source; }
+
+    /**
+     * \brief Shader program source code for geometry stage
+     * \return
+     */
+    [[nodiscard]] const std::optional<ShaderSource>& get_geometry_source() const { return geometry_source; }
 
     /**
      * \brief OpenGL Handle
@@ -81,8 +87,9 @@ private:
     uint32_t shader_program_id;
 
     // Source file paths
-    ShaderSource vertex_source;
-    ShaderSource fragment_source;
+    ShaderSource                vertex_source;
+    ShaderSource                fragment_source;
+    std::optional<ShaderSource> geometry_source;
 
     void reload_internal();
     void mark_dirty() { is_dirty = true; }

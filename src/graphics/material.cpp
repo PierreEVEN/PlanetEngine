@@ -47,10 +47,11 @@ void Material::reload_internal() {
     compilation_error.reset();
     bindings.clear();
     // Compile shader
-    shader_program_id = glCreateProgram();
-    std::unique_ptr<EZCOGL::Shader> program_vertex = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
-    std::string vertex_error;
-    size_t      vertex_error_line;
+    shader_program_id                                    = glCreateProgram();
+
+    const std::unique_ptr<EZCOGL::Shader> program_vertex = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
+    std::string                           vertex_error;
+    size_t                                vertex_error_line;
     if (!program_vertex->compile(vertex_source.get_source_code(), name, vertex_error, vertex_error_line)) {
         size_t local_line;
         compilation_error = {
@@ -66,8 +67,31 @@ void Material::reload_internal() {
         return;
     }
     GL_CHECK_ERROR();
-    std::string fragment_error;
-    size_t      fragment_error_line;
+
+    std::unique_ptr<EZCOGL::Shader> program_geometry = nullptr;
+    if (geometry_source) {
+        program_geometry = std::make_unique<EZCOGL::Shader>(GL_GEOMETRY_SHADER);
+        std::string geometry_error;
+        size_t      geometry_error_line;
+        if (!program_geometry->compile(geometry_source->get_source_code(), name, geometry_error, geometry_error_line)) {
+            size_t local_line;
+            compilation_error = {
+                .error       = geometry_error,
+                .line        = 0,
+                .file        = geometry_source->get_file_at_line(geometry_error_line, local_line),
+                .is_fragment = false,
+            };
+            compilation_error->line = local_line;
+            glDeleteProgram(shader_program_id);
+            shader_program_id = 0;
+            is_dirty          = false;
+            return;
+        }
+    }
+
+
+    std::string                     fragment_error;
+    size_t                          fragment_error_line;
     std::unique_ptr<EZCOGL::Shader> program_fragment = std::make_unique<EZCOGL::Shader>(GL_FRAGMENT_SHADER);
     if (!program_fragment->compile(fragment_source.get_source_code(), name, fragment_error, fragment_error_line)) {
         size_t local_line;
@@ -87,7 +111,13 @@ void Material::reload_internal() {
     // Link shader
     glAttachShader(shader_program_id, program_vertex->shaderId());
     glAttachShader(shader_program_id, program_fragment->shaderId());
+    if (program_geometry)
+        glAttachShader(shader_program_id, program_geometry->shaderId());
+
     glLinkProgram(shader_program_id);
+
+    if (program_geometry)
+        glDetachShader(shader_program_id, program_geometry->shaderId());
     glDetachShader(shader_program_id, program_vertex->shaderId());
     glDetachShader(shader_program_id, program_fragment->shaderId());
 
@@ -166,9 +196,19 @@ void Material::set_model_transform(const Eigen::Affine3d& transformation) {
         glUniformMatrix4fv(model_location, 1, false, transformation.cast<float>().matrix().data());
 }
 
-void Material::load_from_source(const std::string& in_vertex_path, const std::string& in_fragment_path) {
+void Material::load_from_source(const std::string& in_vertex_path, const std::string& in_fragment_path, const std::optional<std::string>& geometry_path) {
     vertex_source.set_source_path(in_vertex_path);
     fragment_source.set_source_path(in_fragment_path);
+
+    if (geometry_path) {
+        if (!geometry_source)
+            geometry_source = ShaderSource();
+        geometry_source->set_source_path(*geometry_path);
+        geometry_source->on_data_changed.add_object(this, &Material::mark_dirty);
+    } else if (geometry_source) {
+        geometry_source->on_data_changed.clear_object(this);
+        geometry_source.reset();
+    }
     mark_dirty();
 }
 
@@ -178,6 +218,8 @@ void Material::check_updates() {
 
     vertex_source.check_update();
     fragment_source.check_update();
+    if (geometry_source)
+        geometry_source->check_update();
 
     if (is_dirty)
         reload_internal();

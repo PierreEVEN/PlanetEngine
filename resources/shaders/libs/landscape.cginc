@@ -85,7 +85,7 @@ float get_height_at_location(vec3 pos) {
         // Compute transition between ocean and ground
         float transition = clamp_01(0.5 - cos(clamp_01((continents) * 300 + layer(pos, 3000) * 0.3) * PI) * 0.5 - 0.1);
 
-        float land = 50 + highlands * 10000 + hill * 500 + mini_noise * 5;
+        float land = 50 + highlands * 10000 + hill * 500;// + mini_noise * 5;
 
         return mix(continents, land, clamp_01(transition));
     }

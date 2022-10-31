@@ -33,7 +33,7 @@ public:
 class ShaderSource final {
 public:
     ShaderSource();
-    ~ShaderSource();
+    ~ShaderSource() = default;
 
     /**
      * \brief Get parser result. The resulting string can be compiled.
@@ -77,11 +77,17 @@ public:
     [[nodiscard]] const std::string& get_path() const { return source_path; }
     [[nodiscard]] std::string        get_file_name() const;
 
+    struct FileTimeType {
+        virtual void* get() = 0;
+        template <typename T> T& get() { return *static_cast<T*>(get()); }
+    };
+
 private:
     std::vector<std::shared_ptr<ISourceChunk>> content;
 
     std::string source_path;
-    void*       last_file_update = nullptr;
+
+    std::shared_ptr<FileTimeType> last_file_update = nullptr;
 
     void reload_internal();
 };

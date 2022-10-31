@@ -4,8 +4,14 @@
 #include <fstream>
 #include <iostream>
 
-ShaderSource::ShaderSource() { last_file_update = new std::filesystem::file_time_type(); }
-ShaderSource::~ShaderSource() { delete static_cast<std::filesystem::file_time_type*>(last_file_update); }
+struct StdFileTimeType : public ShaderSource::FileTimeType {
+    void*                           get() override { return &time_var; }
+    std::filesystem::file_time_type time_var;
+};
+
+ShaderSource::ShaderSource() {
+    last_file_update = std::make_shared<StdFileTimeType>();
+}
 
 std::string ShaderSource::get_source_code() const {
     std::string source_code;
@@ -29,7 +35,7 @@ void ShaderSource::check_update() {
         return;
 
     // Check if file have been updated since it have been loaded
-    if (*static_cast<std::filesystem::file_time_type*>(last_file_update) ==
+    if (last_file_update->get<std::filesystem::file_time_type>() ==
         std::filesystem::last_write_time(source_path)) {
         // This file have not been changed, but we should always check dependencies
         for (size_t i = 0; i < content.size(); ++i)
@@ -95,7 +101,7 @@ void ShaderSource::reload_internal() {
     }
 
     // Update recorded timestamp
-    *static_cast<std::filesystem::file_time_type*>(last_file_update) = std::filesystem::last_write_time(source_path);
+    last_file_update->get<std::filesystem::file_time_type>() = std::filesystem::last_write_time(source_path);
 
     // Unlink dependencies
     for (const auto& dep : content)
@@ -153,6 +159,6 @@ void ShaderSource::reload_internal() {
         content.emplace_back(std::make_shared<SourceChunkText>(shader_text_code, line_count));
     shader_text_code.clear();
     line_count = 0;
-    
+
     on_data_changed.execute();
 }
