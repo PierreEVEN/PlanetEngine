@@ -315,6 +315,17 @@ void Planet::render(Camera& camera) {
 
     if (display_normals && debug_normal_display_material->bind()) {
 
+        debug_normal_display_material->set_model_transform(planet_global_transform);
+        glUniform1f(debug_normal_display_material->binding("radius"), radius);
+        glUniform1f(debug_normal_display_material->binding("grid_cell_count"), static_cast<float>(cell_count));
+        glUniform4fv(debug_normal_display_material->binding("debug_vector"), 1, debug_vector.data());
+        glUniformMatrix4fv(debug_normal_display_material->binding("planet_world_orientation"), 1, false, local_orientation.cast<float>().matrix().data());
+
+        glUniformMatrix4fv(debug_normal_display_material->binding("inv_planet_world_orientation"), 1, false, local_orientation.cast<float>().inverse().matrix().data());
+        glUniformMatrix4fv(debug_normal_display_material->binding("inv_model"), 1, false, planet_global_transform.cast<float>().inverse().matrix().data());
+
+        glUniformMatrix3fv(debug_normal_display_material->binding("scene_rotation"), 1, false, get_world_rotation().cast<float>().matrix().data());
+        glUniformMatrix3fv(debug_normal_display_material->binding("inv_scene_rotation"), 1, false, get_world_rotation().inverse().cast<float>().matrix().data());
         root->render(camera);
     }
 }
