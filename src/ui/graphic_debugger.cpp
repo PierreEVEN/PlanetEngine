@@ -36,64 +36,67 @@ GraphicDebugger::GraphicDebugger(const std::shared_ptr<FrameGraph>& in_framegrap
 }
 
 void GraphicDebugger::draw() {
-    if (ImGui::Checkbox("Enable VSync", &GameSettings::get().v_sync))
-        glfwSwapInterval(GameSettings::get().v_sync ? 1 : 0);
+    if (ImGui::BeginTabBar("GraphicSettingsTab")) {
+        if (ImGui::BeginTabItem("Framegraph visualizer")) {
 
-    ImGui::Checkbox("Wireframe", &GameSettings::get().wireframe);
-    ImGui::Checkbox("Screen Space Reflections", &GameSettings::get().screen_space_reflections);
+            if (ImGui::BeginCombo("frame graph", framegraph ? framegraph->name.c_str() : "None")) {
+                for (const auto& item : FrameGraph::registry())
+                    if (ImGui::MenuItem(item->name.c_str()))
+                        framegraph = item;
+                ImGui::EndCombo();
+            }
 
-    ImGui::SliderFloat("Bloom intensity", &GameSettings::get().bloom_intensity, 0, 3);
-    ImGui::SliderFloat("Exposure", &GameSettings::get().exposure, 0.1f, 4);
-    ImGui::SliderFloat("Gamma", &GameSettings::get().gamma, 0.5f, 4);
+            if (ImGui::BeginChild("frame graph")) {
+                const auto win_min = ImGui::GetWindowPos();
+                const auto win_max = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
 
-    ImGui::DragInt("Framerate limit", &GameSettings::get().max_fps);
-    if (GameSettings::get().max_fps < 0)
-        GameSettings::get().max_fps = 0;
+                const auto io = ImGui::GetIO();
+                if (io.MouseWheel && ImGui::IsMouseHoveringRect(win_min, win_max)) {
+                    const float zoom     = io.MouseWheel * zoom_value * 0.1f;
+                    ImVec2      percents = ImVec2((ImGui::GetMousePos().x - ImGui::GetWindowPos().x) / ImGui::GetWindowSize().x,
+                                                  (ImGui::GetMousePos().y - ImGui::GetWindowPos().y) / ImGui::GetWindowSize().y - 0.5f);
 
+                    // Remap percent range
+                    percents = ImVec2(std::lerp(-zoom_center.x / ImGui::GetWindowSize().x / zoom_value,
+                                                (-zoom_center.x + ImGui::GetWindowSize().x) / ImGui::GetWindowSize().x / zoom_value, percents.x),
+                                      std::lerp(-zoom_center.y / ImGui::GetWindowSize().y / zoom_value,
+                                                (-zoom_center.y + ImGui::GetWindowSize().y) / ImGui::GetWindowSize().y / zoom_value, percents.y));
 
-    if (ImGui::BeginCombo("frame graph", framegraph ? framegraph->name.c_str() : "None")) {
-        for (const auto& item : FrameGraph::registry())
-            if (ImGui::MenuItem(item->name.c_str()))
-                framegraph = item;
-        ImGui::EndCombo();
-    }
+                    zoom_value  = std::max(0.5f, zoom_value + zoom);
+                    zoom_center = ImVec2(zoom_center.x - ImGui::GetWindowSize().x * zoom * percents.x, zoom_center.y - ImGui::GetWindowSize().y * zoom * percents.y);
+                }
 
-    if (ImGui::BeginChild("frame graph")) {
-        const auto win_min = ImGui::GetWindowPos();
-        const auto win_max = ImVec2(
-            ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
-
-        const auto io = ImGui::GetIO();
-        if (io.MouseWheel && ImGui::IsMouseHoveringRect(win_min, win_max)) {
-            const float zoom     = io.MouseWheel * zoom_value * 0.1f;
-            ImVec2      percents = ImVec2((ImGui::GetMousePos().x - ImGui::GetWindowPos().x) / ImGui::GetWindowSize().x,
-                                          (ImGui::GetMousePos().y - ImGui::GetWindowPos().y) / ImGui::GetWindowSize().y - 0.5f);
-
-            // Remap percent range
-            percents = ImVec2(std::lerp(
-                                  -zoom_center.x / ImGui::GetWindowSize().x / zoom_value,
-                                  (-zoom_center.x + ImGui::GetWindowSize().x) / ImGui::GetWindowSize().x / zoom_value,
-                                  percents.x),
-                              std::lerp(
-                                  -zoom_center.y / ImGui::GetWindowSize().y / zoom_value,
-                                  (-zoom_center.y + ImGui::GetWindowSize().y) / ImGui::GetWindowSize().y / zoom_value,
-                                  percents.y)
-                );
-
-            zoom_value  = std::max(0.5f, zoom_value + zoom);
-            zoom_center = ImVec2(zoom_center.x - ImGui::GetWindowSize().x * zoom * percents.x, zoom_center.y - ImGui::GetWindowSize().y * zoom * percents.y);
+                ImGui::PushClipRect(win_min, win_max, true);
+                ImGui::GetForegroundDrawList()->PushClipRect(win_min, win_max, true);
+                const float res_ratio = framegraph->get_root()->get_width() / static_cast<float>(framegraph->get_root()->get_height());
+                for (auto& node : node_map) {
+                    node.second.draw_node(res_ratio, node_map, zoom_center, zoom_value);
+                }
+                ImGui::GetForegroundDrawList()->PopClipRect();
+                ImGui::PopClipRect();
+            }
+            ImGui::EndChild();
+            ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("Settings")) {
+            if (ImGui::Checkbox("Enable VSync", &GameSettings::get().v_sync))
+                glfwSwapInterval(GameSettings::get().v_sync ? 1 : 0);
 
-        ImGui::PushClipRect(win_min, win_max, true);
-        ImGui::GetForegroundDrawList()->PushClipRect(win_min, win_max, true);
-        const float res_ratio = framegraph->get_root()->get_width() / static_cast<float>(framegraph->get_root()->get_height());
-        for (auto& node : node_map) {
-            node.second.draw_node(res_ratio, node_map, zoom_center, zoom_value);
+            ImGui::Checkbox("Wireframe", &GameSettings::get().wireframe);
+            ImGui::Checkbox("Screen Space Reflections", &GameSettings::get().screen_space_reflections);
+
+            ImGui::SliderFloat("Bloom intensity", &GameSettings::get().bloom_intensity, 0, 3);
+            ImGui::SliderFloat("Exposure", &GameSettings::get().exposure, 0.1f, 4);
+            ImGui::SliderFloat("Gamma", &GameSettings::get().gamma, 0.5f, 4);
+
+            ImGui::DragInt("Framerate limit", &GameSettings::get().max_fps);
+            if (GameSettings::get().max_fps < 0)
+                GameSettings::get().max_fps = 0;
+
+            ImGui::EndTabItem();
         }
-        ImGui::GetForegroundDrawList()->PopClipRect();
-        ImGui::PopClipRect();
+        ImGui::EndTabBar();
     }
-    ImGui::EndChild();
 
 }
 

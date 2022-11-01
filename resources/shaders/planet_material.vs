@@ -160,7 +160,8 @@ void main()
     test_tang = normalize(cross(test_bitang, sphere_normal2));
 
 
-    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), sphere_tangent, sphere_bitangent) * 10;
+    text_coords = uv_from_sphere_pos(rotation_from_mat4(planet_world_orientation) * normalize(planet_pos), rotation_from_mat4(model) * normalize(planet_pos), sphere_tangent, sphere_bitangent) * 1000;
+    text_coords = grid_2d_pos / 5000;
     sphere_tangent = mat3(scene_rotation) * test_tang;//sphere_tangent;
     sphere_bitangent = mat3(scene_rotation) * test_bitang;// sphere_bitangent;
     g_DebugScalar = vec4(sphere_tangent, 1);
