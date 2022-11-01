@@ -56,8 +56,7 @@ int main() {
     camera_controller->teleport_to({0, 0, earth->get_radius() + 2});
     earth->add_child(camera_controller);
 
-    const auto default_material = Material::create("standard_material");
-    default_material->load_from_source("resources/shaders/standard_material.vs", "resources/shaders/standard_material.fs");
+    const auto default_material = Material::create("standard_material", "resources/shaders/standard_material.vs", "resources/shaders/standard_material.fs");
     const auto cube = std::make_shared<MeshComponent>("cube");
     cube->set_material(default_material);
     cube->set_mesh(primitives::cube());

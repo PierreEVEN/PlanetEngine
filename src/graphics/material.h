@@ -14,21 +14,13 @@ class Material final {
 public:
     ~Material();
 
-    static std::shared_ptr<Material> create(const std::string& name) {
-        return std::shared_ptr<Material>(new Material(name));
-    }
+    static std::shared_ptr<Material> create(const std::string& name, const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path = {});
 
     /**
      * \brief Set model matrix (uniform mat4 model)
      */
     void set_model_transform(const Eigen::Affine3d& transformation);
-
-    /**
-     * \brief Set shader source file
-     * \param compute_path
-     */
-    void load_from_source(const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path = {});
-
+    
     /**
      * \brief Check if source file have been changed.
      */
@@ -81,7 +73,7 @@ public:
     int bind_texture(const std::shared_ptr<TextureBase>& texture, const std::string& binding_name) const;
 
 private:
-    Material(const std::string& name);
+    Material(const std::string& name, const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path = {});
 
     // GL Handle
     uint32_t shader_program_id;

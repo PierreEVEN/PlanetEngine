@@ -137,17 +137,14 @@ Texture2D::~Texture2D() {
         delete static_cast<EZCOGL::GLImage*>(loading_image_ptr);
 }
 
-void Texture2D::from_file(const std::string& filename, int force_nb_channel) {
-    if (async_load_thread.joinable())
-        async_load_thread.join();
+static std::unordered_map<std::string, std::shared_ptr<Texture2D>> texture_registry;
 
-    async_load_thread = std::thread([&, filename, force_nb_channel] {
-        std::lock_guard lock_guard(load_mutex);
-        STAT_ACTION("Load texture data [" + filename + "]");
-        finished_loading  = false;
-        loading_image_ptr = new EZCOGL::GLImage(filename, EZCOGL::Texture::flip_y_on_load, force_nb_channel);
-        finished_loading  = true;
-    });
+std::shared_ptr<Texture2D> Texture2D::create(const std::string& name, const std::string& file, const TextureCreateInfos& params) {
+    const auto& texture = texture_registry.find(file);
+    if (texture != texture_registry.end())
+        return texture->second;
+    
+    return texture_registry[file] = std::shared_ptr<Texture2D>(new Texture2D(name, file, params));
 }
 
 void Texture2D::set_data(uint32_t w, uint32_t h, ImageFormat in_image_format, const void* data_ptr) {
@@ -209,4 +206,19 @@ Texture2D::Texture2D(std::string name, const TextureCreateInfos& params)
     : TextureBase(name, params) {
     Engine::get().get_asset_manager().textures.emplace_back(this);
 
+}
+
+Texture2D::Texture2D(std::string name, const std::string& file, const TextureCreateInfos& params)
+    : Texture2D(name, params) {
+
+    if (async_load_thread.joinable())
+        async_load_thread.join();
+
+    async_load_thread = std::thread([&, file] {
+        std::lock_guard lock_guard(load_mutex);
+        STAT_ACTION("Load texture data [" + file + "]");
+        finished_loading  = false;
+        loading_image_ptr = new EZCOGL::GLImage(file, EZCOGL::Texture::flip_y_on_load);
+        finished_loading  = true;
+    });
 }

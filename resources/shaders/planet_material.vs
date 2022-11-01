@@ -1,4 +1,5 @@
-#version 430  core
+#version 430 core
+#extension GL_ARB_enhanced_layouts : enable
 #extension GL_ARB_explicit_uniform_location : enable
 
 #include "libs/world_data.cginc"

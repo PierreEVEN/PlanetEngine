@@ -30,11 +30,24 @@ int Material::bind_texture(const std::shared_ptr<TextureBase>& texture, const st
     return binding_location;
 }
 
-Material::Material(const std::string& in_name)
+Material::Material(const std::string& in_name, const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path)
     : name(in_name), shader_program_id(0) {
     Engine::get().get_asset_manager().materials.emplace_back(this);
+
+    vertex_source.set_source_path(vertex_path);
     vertex_source.on_data_changed.add_object(this, &Material::mark_dirty);
+
+    if (geometry_path) {
+        geometry_source = ShaderSource();
+        geometry_source->set_source_path(*geometry_path);
+        geometry_source->on_data_changed.add_object(this, &Material::mark_dirty);
+    }
+
+    fragment_source.set_source_path(fragment_path);
     fragment_source.on_data_changed.add_object(this, &Material::mark_dirty);
+
+    mark_dirty();
+
 }
 
 void Material::reload_internal() {
@@ -47,7 +60,7 @@ void Material::reload_internal() {
     compilation_error.reset();
     bindings.clear();
     // Compile shader
-    shader_program_id                                    = glCreateProgram();
+    shader_program_id = glCreateProgram();
 
     const std::unique_ptr<EZCOGL::Shader> program_vertex = std::make_unique<EZCOGL::Shader>(GL_VERTEX_SHADER);
     std::string                           vertex_error;
@@ -76,9 +89,9 @@ void Material::reload_internal() {
         if (!program_geometry->compile(geometry_source->get_source_code(), name, geometry_error, geometry_error_line)) {
             size_t local_line;
             compilation_error = {
-                .error       = geometry_error,
-                .line        = 0,
-                .file        = geometry_source->get_file_at_line(geometry_error_line, local_line),
+                .error = geometry_error,
+                .line = 0,
+                .file = geometry_source->get_file_at_line(geometry_error_line, local_line),
                 .is_fragment = false,
             };
             compilation_error->line = local_line;
@@ -88,7 +101,6 @@ void Material::reload_internal() {
             return;
         }
     }
-
 
     std::string                     fragment_error;
     size_t                          fragment_error_line;
@@ -177,6 +189,18 @@ Material::~Material() {
     glDeleteProgram(shader_program_id);
 }
 
+static std::unordered_map<std::string, std::shared_ptr<Material>> material_registry;
+
+std::shared_ptr<Material> Material::create(const std::string&                name, const std::string& vertex_path, const std::string& fragment_path,
+                                           const std::optional<std::string>& geometry_path) {
+    const std::string hash     = vertex_path + fragment_path + (geometry_path ? *geometry_path : "");
+    const auto&       material = material_registry.find(hash);
+    if (material != material_registry.end())
+        return material->second;
+
+    return material_registry[hash] = std::shared_ptr<Material>(new Material(name, vertex_path, fragment_path, geometry_path));
+}
+
 bool Material::bind() {
     GL_CHECK_ERROR();
     if (is_dirty)
@@ -194,22 +218,6 @@ void Material::set_model_transform(const Eigen::Affine3d& transformation) {
     const int model_location = binding("model");
     if (model_location)
         glUniformMatrix4fv(model_location, 1, false, transformation.cast<float>().matrix().data());
-}
-
-void Material::load_from_source(const std::string& in_vertex_path, const std::string& in_fragment_path, const std::optional<std::string>& geometry_path) {
-    vertex_source.set_source_path(in_vertex_path);
-    fragment_source.set_source_path(in_fragment_path);
-
-    if (geometry_path) {
-        if (!geometry_source)
-            geometry_source = ShaderSource();
-        geometry_source->set_source_path(*geometry_path);
-        geometry_source->on_data_changed.add_object(this, &Material::mark_dirty);
-    } else if (geometry_source) {
-        geometry_source->on_data_changed.clear_object(this);
-        geometry_source.reset();
-    }
-    mark_dirty();
 }
 
 void Material::check_updates() {

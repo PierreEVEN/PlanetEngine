@@ -60,8 +60,7 @@ PostProcessPass::PostProcessPass(std::string in_name, uint32_t width, uint32_t h
     if (post_process_materials.contains(fragment_shader))
         pass_material = post_process_materials.find(fragment_shader)->second;
     else {
-        pass_material = Material::create(name + "::Material");
-        pass_material->load_from_source("resources/shaders/post_process_vertex.vs", fragment_shader);
+        pass_material = Material::create(name + "::Material", "resources/shaders/post_process_vertex.vs", fragment_shader);
         post_process_materials.insert({fragment_shader, pass_material});
     }
 }

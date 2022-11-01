@@ -14,9 +14,13 @@ ComputeShader::~ComputeShader() {
     glDeleteProgram(compute_shader_id);
 }
 
-void ComputeShader::load_from_source(const std::string& in_compute_path) {
-    compute_source.set_source_path(in_compute_path);
-    mark_dirty();
+static std::unordered_map<std::string, std::shared_ptr<ComputeShader>> compute_registry;
+
+std::shared_ptr<ComputeShader> ComputeShader::create(const std::string& name, const std::string& compute_path) {
+    const auto& compute = compute_registry.find(compute_path);
+    if (compute != compute_registry.end())
+        return compute->second;
+    return compute_registry[compute_path] = std::shared_ptr<ComputeShader>(new ComputeShader(name, compute_path));
 }
 
 void ComputeShader::check_updates() {
@@ -66,10 +70,13 @@ void ComputeShader::bind_texture(const std::shared_ptr<TextureBase>& texture, Bi
     glBindImageTexture(binding, texture->id(), 0, GL_FALSE, 0, in_out, static_cast<GLenum>(texture->internal_format()));
 }
 
-ComputeShader::ComputeShader(const std::string& in_name)
+ComputeShader::ComputeShader(const std::string& in_name, const std::string& compute_path)
     : name(in_name), compute_shader_id(0) {
     Engine::get().get_asset_manager().compute_shaders.emplace_back(this);
+
+    compute_source.set_source_path(compute_path);
     compute_source.on_data_changed.add_object(this, &ComputeShader::mark_dirty);
+    mark_dirty();
 }
 
 void ComputeShader::reload_internal() {

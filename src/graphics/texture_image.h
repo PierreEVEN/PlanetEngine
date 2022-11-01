@@ -90,8 +90,10 @@ public:
         return std::shared_ptr<Texture2D>(new Texture2D(name, params));
     }
 
+    static std::shared_ptr<Texture2D> create(const std::string& name, const std::string& file, const TextureCreateInfos& params = {});
+
+
     [[nodiscard]] uint32_t depth() const override { return 1; }
-    void                   from_file(const std::string& filename, int force_nb_channel = 0);
     void                   set_data(uint32_t w, uint32_t h, ImageFormat image_format, const void* data_ptr = nullptr);
 
     [[nodiscard]] uint32_t id() override;
@@ -103,4 +105,5 @@ protected:
     void*       loading_image_ptr = nullptr;
 
     Texture2D(std::string name, const TextureCreateInfos& params = {});
+    Texture2D(std::string name, const std::string& file, const TextureCreateInfos& params = {});
 };

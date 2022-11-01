@@ -1,26 +1,20 @@
-#version 420 core
+#version 430 core
 #extension GL_ARB_enhanced_layouts : enable
 #extension GL_ARB_explicit_uniform_location : enable
+
 layout (triangles) in;
 layout (line_strip, max_vertices = 6) out;
 
-#include "libs/world_data.cginc"
-
-layout(location = 2) uniform mat4 lod_local_transform; // Chunk grid local transform (90° rotations + 2D offset)
-
 in VS_OUT {
     layout(location = 0) vec3 g_Normal;
-    layout(location = 1) vec3 g_WorldPosition;
-    layout(location = 2) float g_Altitude;
-    layout(location = 3) vec2 g_TextureCoordinates;
-    layout(location = 4) float g_PlanetRadius;
-    layout(location = 5) vec4 g_DebugScalar;
-    layout(location = 6) vec3 g_LocalNormal;
     layout(location = 7) vec3 g_Tangent;
     layout(location = 8) vec3 g_BiTangent;
 } gs_in[];
 
 out vec3 color; 
+
+#include "libs/world_data.cginc"
+layout(location = 2) uniform mat4 lod_local_transform;
 
 void GenerateLine(int index)
 {

@@ -23,16 +23,8 @@ class ComputeShader {
 public:
     ~ComputeShader();
 
-    static std::shared_ptr<ComputeShader> create(const std::string& name) {
-        return std::shared_ptr<ComputeShader>(new ComputeShader(name));
-    }
-
-    /**
-     * \brief Set shader source file
-     * \param compute_path 
-     */
-    void load_from_source(const std::string& compute_path);
-
+    static std::shared_ptr<ComputeShader> create(const std::string& name, const std::string& compute_path);
+    
     /**
      * \brief Check if source file have been changed.
      */
@@ -74,7 +66,7 @@ public:
      */
     EventReloadShader on_reload;
 private:
-    ComputeShader(const std::string& in_name);
+    ComputeShader(const std::string& in_name, const std::string& compute_path);
     ShaderSource compute_source;
 
     void     reload_internal();
