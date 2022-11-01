@@ -10,9 +10,7 @@ class RenderPass;
  */
 class FrameGraph {
 public:
-    static std::shared_ptr<FrameGraph> create(std::string in_name, std::shared_ptr<RenderPass> in_root) {
-        return std::shared_ptr<FrameGraph>(new FrameGraph(std::move(in_name), std::move(in_root)));
-    }
+    static std::shared_ptr<FrameGraph> create(std::string in_name, std::shared_ptr<RenderPass> in_root);
 
     /**
      * \brief Draw framegraph
@@ -31,6 +29,10 @@ public:
     [[nodiscard]] const std::shared_ptr<RenderPass>& get_root() const { return root; }
 
     const std::string name;
+
+    static const std::vector<std::shared_ptr<FrameGraph>>& registry();
+
+    virtual ~FrameGraph();
 
   private:
     std::shared_ptr<RenderPass> root;

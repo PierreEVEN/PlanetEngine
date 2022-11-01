@@ -1,9 +1,9 @@
 #pragma once
 #include "ui.h"
 
-class InfoUi : public ImGuiWindow
-{
+class InfoUi : public ImGuiWindow {
 public:
-	InfoUi() { window_name = "system information"; }
-	void draw() override;
+    InfoUi();
+    void draw() override;
+    char filter_buffer[256];
 };

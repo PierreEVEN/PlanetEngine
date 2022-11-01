@@ -6,10 +6,7 @@
 
 static size_t node_index = 0;
 
-static std::shared_ptr<SceneComponent> selected_node = nullptr;
-
-static bool draw_node(const std::shared_ptr<SceneComponent>& node)
-{
+bool WorldOutliner::draw_node(const std::shared_ptr<SceneComponent>& node) {
 	bool ok = true;
 	int flags = ImGuiTreeNodeFlags_OpenOnDoubleClick;
 

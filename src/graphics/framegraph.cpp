@@ -3,6 +3,12 @@
 #include "render_pass.h"
 #include "utils/profiler.h"
 
+static std::vector<std::shared_ptr<FrameGraph>> framegraph_list;
+
+std::shared_ptr<FrameGraph> FrameGraph::create(std::string in_name, std::shared_ptr<RenderPass> in_root) {
+    return framegraph_list.emplace_back(std::shared_ptr<FrameGraph>(new FrameGraph(std::move(in_name), std::move(in_root))));
+}
+
 void FrameGraph::render(bool to_back_buffer, uint32_t in_width, uint32_t in_height) {
     resize(in_width, in_height);
 
@@ -30,4 +36,12 @@ void FrameGraph::resize(uint32_t in_width, uint32_t in_height) {
     width   = in_width;
     height  = in_height;
     resized = true;
+}
+
+const std::vector<std::shared_ptr<FrameGraph>>& FrameGraph::registry() { return framegraph_list; }
+
+FrameGraph::~FrameGraph() {
+    for (int64_t i = framegraph_list.size() - 1; i >= 0; --i)
+        if (framegraph_list[i].get() == this)
+            framegraph_list.erase(framegraph_list.begin() + i);
 }

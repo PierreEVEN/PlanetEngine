@@ -50,6 +50,14 @@ void GraphicDebugger::draw() {
     if (GameSettings::get().max_fps < 0)
         GameSettings::get().max_fps = 0;
 
+
+    if (ImGui::BeginCombo("frame graph", framegraph ? framegraph->name.c_str() : "None")) {
+        for (const auto& item : FrameGraph::registry())
+            if (ImGui::MenuItem(item->name.c_str()))
+                framegraph = item;
+        ImGui::EndCombo();
+    }
+
     if (ImGui::BeginChild("frame graph")) {
         const auto win_min = ImGui::GetWindowPos();
         const auto win_max = ImVec2(
@@ -172,8 +180,8 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
     for (size_t index = 0; index < render_targets.size(); ++index) {
         draw_target(
             render_targets[index],
-            ImVec2(p_min.x + padding.x, p_min.y + index * item_size.y + margin.y),
-            ImVec2(p_max.x - padding.x, p_min.y + (index + 1) * item_size.y - margin.y)
+            ImVec2(p_min.x + margin.x, p_min.y + index * item_size.y + margin.y),
+            ImVec2(p_max.x - margin.x, p_min.y + (index + 1) * item_size.y - margin.y)
             );
     }
     const std::string text      = render_pass->name;
@@ -216,15 +224,16 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
 
             const auto text_size = ImGui::CalcTextSize(text.c_str());
 
-            ImVec2 text_pos = ImVec2(std::max(ImGui::GetWindowPos().x, (end_min.x + end_max.x) / 2 - text_size.x / 2), end_min.y + margin.y);
+            if (ImGui::GetWindowPos().y < ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - text_size.y) {
+                    ImVec2 text_pos = ImVec2(std::max(ImGui::GetWindowPos().x, (end_min.x + end_max.x) / 2 - text_size.x / 2),
+                                             std::clamp(end_min.y + margin.y, ImGui::GetWindowPos().y, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - text_size.y));
 
-            fg_draw_list->AddRectFilled(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
-                                        ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.8f)));
-            fg_draw_list->AddRect(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
-                                  ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 1, 0.8f)));
-            fg_draw_list->AddText(text_pos,
-                                  ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)),
-                                  text.c_str());
+                    fg_draw_list->AddRectFilled(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
+                                                ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.8f)));
+                    fg_draw_list->AddRect(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
+                                          ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 1, 0.8f)));
+                    fg_draw_list->AddText(text_pos, ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)), text.c_str());
+                }
         }
     }
 
