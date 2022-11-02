@@ -39,6 +39,9 @@ void main() {
     vec3 v1 = vec3(Chunk_CellWidth, h1, 0);
     vec3 v2 = vec3(0, h2, Chunk_CellWidth);
     
-    vec2 tangent_bitangent = vec2(normalize(v1 - v0).y, normalize(v2 - v0).y);
+    vec3 tangent = normalize(v1 - v0);
+    vec3 bitangent = normalize(v2 - v0);
+
+    vec2 tangent_bitangent = vec2(tangent.y, bitangent.y);
     imageStore(img_output, ivec2(gl_GlobalInvocationID.xy), vec4(tangent_bitangent, 0, 1));
 }

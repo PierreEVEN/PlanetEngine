@@ -7,13 +7,13 @@ layout (line_strip, max_vertices = 6) out;
 
 #include "libs/world_data.cginc"
 in VS_OUT {
-layout(location = 0) in vec3 g_Normal;
+layout(location = 0) in vec3 g_LocalNormal;
 layout(location = 1) in vec3 g_WorldPosition;
 layout(location = 2) in float g_Altitude;
 layout(location = 3) in vec2 g_TextureCoordinates;
 layout(location = 4) in float g_PlanetRadius;
 layout(location = 5) in vec4 g_DebugScalar;
-layout(location = 6) in vec3 g_LocalNormal;
+layout(location = 6) in vec3 g_Normal;
 layout(location = 7) in vec3 g_Tangent;
 layout(location = 8) in vec3 g_BiTangent;
 } gs_in[];

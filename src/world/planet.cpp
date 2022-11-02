@@ -201,11 +201,6 @@ void Planet::tick(double delta_time) {
     STAT_FRAME("Planet_Tick");
     SceneComponent::tick(delta_time);
 
-    current_orbit += orbit_speed * delta_time;
-    current_rotation += rotation_speed * delta_time;
-    set_local_position(Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit), 0) * orbit_distance);
-    set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
-
     if (dirty) {
         regenerate();
     }
@@ -244,6 +239,11 @@ void Planet::tick(double delta_time) {
     const float  initial_cell_width  = cell_width * static_cast<float>(std::pow(2, min_lod));
 
     root->tick(delta_time, max_lod - min_lod, initial_cell_width);
+
+    current_orbit += orbit_speed * delta_time;
+    current_rotation += rotation_speed * delta_time;
+    set_local_position(Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit), 0) * orbit_distance);
+    set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
 }
 
 

@@ -7,6 +7,13 @@
 
 class Camera;
 
+enum class TickGroup {
+    PrePhysic,
+    Physic,
+    PostPhysic,
+};
+
+
 /**
  * \brief Represent the class of an object. Helper used to know the type of Scene component
  */
@@ -179,6 +186,11 @@ public:
      */
     virtual Class get_class() { return {this}; }
 
+    /**
+     * \brief The tick group define the priority of tick (first groups are called first)
+     */
+    void set_tick_group(TickGroup new_group) { tick_group = new_group; }
+
 protected:
     /**
      * \brief Called once per frame. Used for gameplay purposes.
@@ -204,7 +216,7 @@ protected:
     }
 
 private:
-    void tick_internal(double delta_time);
+    void tick_internal(double delta_time, TickGroup new_group);
     void render_internal(Camera& camera);
 
     std::vector<std::shared_ptr<SceneComponent>> children;
@@ -216,4 +228,5 @@ private:
 
     bool            is_dirty = true;
     Eigen::Affine3d world_transform;
+    TickGroup       tick_group = TickGroup::Physic;
 };

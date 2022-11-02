@@ -17,6 +17,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
     g_buffer_pass->add_attachment("color", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
+    g_buffer_pass->add_attachment("debug", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->on_draw.add_lambda([] { Engine::get().get_world().render_world(); });
 
@@ -25,14 +26,14 @@ std::shared_ptr<FrameGraph> setup_renderer() {
                        "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
 
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
-    lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "Input_Depth"});
+    lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     lighting->on_bind_material.add_lambda([cubemap](std::shared_ptr<Material> material) {
         glUniform1f(material->binding("z_near"), static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
         material->bind_texture(cubemap, "WORLD_Cubemap");
     });
 
     const auto ssr_pass = PostProcessPass::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
-    ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "Input_Depth"});
+    ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     ssr_pass->on_bind_material.add_lambda([](std::shared_ptr<Material> material) {
         glUniform1i(material->binding("enabled"), GameSettings::get().screen_space_reflections ? 1 : 0);
     });
@@ -40,7 +41,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
     const auto ssr_combine_pass = PostProcessPass::create("SSR_Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");
     ssr_combine_pass->link_dependency(lighting);
     ssr_combine_pass->link_dependency(ssr_pass);
-    ssr_combine_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "GBUFFER_mrao", "Input_Depth"});
+    ssr_combine_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
 
     std::vector<std::shared_ptr<PostProcessPass>> down_sample_passes;
     for (int i = 0; i < 9; ++i) {

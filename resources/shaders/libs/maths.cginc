@@ -13,72 +13,6 @@ mat3 rotation_from_mat4(mat4 transformation) {
     return rot;
 }
 
-
-dvec2 seamless_uv_from_sphere_normal(dvec3 sphere_norm) {
-    dvec3 abs_norm = abs(sphere_norm);
-
-    if (abs_norm.x > abs_norm.y && abs_norm.x > abs_norm.z)
-        return (
-                sphere_norm.yz * (sphere_norm.x < 0 ? dvec2(1) : dvec2(-1, 1)) /
-                sqrt_2_2 + 1
-            ) / 2;
-        
-    if (abs_norm.y > abs_norm.x && abs_norm.y > abs_norm.z)
-        return (
-                sphere_norm.xz * (sphere_norm.y < 0 ? dvec2(1) : dvec2(-1, 1)) /
-                sqrt_2_2 + 1
-            ) / 2;
-
-    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y)
-    {
-        if (sphere_norm.z > 0)
-            if (abs_norm.x > abs_norm.y)
-                if (sphere_norm.x > 0)
-                    return (dvec2(-sphere_norm.y, sphere_norm.x) / sqrt_2_2 + dvec2(1, 1)) / 2;
-                else
-                    return (dvec2(sphere_norm.y, -sphere_norm.x) / sqrt_2_2 + dvec2(1, 1)) / 2;
-            else
-                if (sphere_norm.y > 0)
-                    return (dvec2(-sphere_norm.x, sphere_norm.y) / sqrt_2_2 + dvec2(1, 1)) / 2;
-                else 
-                    return (dvec2(sphere_norm.x, -sphere_norm.y) / sqrt_2_2 + dvec2(1, 1)) / 2;
-        else
-            if (abs_norm.x > abs_norm.y)
-                if (sphere_norm.x > 0)
-                    return (dvec2(-sphere_norm.y, -sphere_norm.x) / sqrt_2_2 + dvec2(1, 1)) / 2;
-                else
-                    return (dvec2(sphere_norm.y, sphere_norm.x) / sqrt_2_2 + dvec2(1, 1)) / 2;
-            else
-                if (sphere_norm.y > 0)
-                    return (dvec2(-sphere_norm.x, -sphere_norm.y) / sqrt_2_2 + dvec2(1, 1)) / 2;
-                else 
-                    return (dvec2(sphere_norm.x, sphere_norm.y) / sqrt_2_2 + dvec2(1, 1)) / 2;
-    }
-    return dvec2(0, 0);
-}
-
-dvec2 uv_from_sphere_normal(dvec3 sphere_norm) {
-    dvec3 abs_norm = abs(sphere_norm);
-    
-    if (abs_norm.x > abs_norm.y && abs_norm.x > abs_norm.z)
-        return (
-                sphere_norm.yz * (sphere_norm.x < 0 ? dvec2(1) : dvec2(-1, 1)) /
-                sqrt_2_2 + 1
-            ) / 2;
-        
-    if (abs_norm.y > abs_norm.x && abs_norm.y > abs_norm.z)
-        return (
-                sphere_norm.xz * (sphere_norm.y < 0 ? dvec2(1) : dvec2(-1, 1)) /
-                sqrt_2_2 + 1
-            ) / 2;
-
-    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y)
-    {
-        return (dvec2(sphere_norm.y, sphere_norm.x) / sqrt_2_2 + dvec2(1, 1)) / 2;
-    }
-    return dvec2(0, 0);
-}
-
 // return cos(x) * rho
 float scaled_cos(float x, float rho) {
     if (abs(x) > HALF_PI / 5)
@@ -217,4 +151,17 @@ mat3 Rz(float theta) {
     _rz[2] = vec3(0, 0, 1);
     return _rz;
 }
+
+vec3 unpack_normal(vec2 packed_normal) {
+    return vec3(packed_normal, sqrt(1 - packed_normal.x * packed_normal.x - packed_normal.y * packed_normal.y));
+}
+
+vec3 unpack_tangent_z(float packed_tangent_z) {
+    return vec3(sqrt(1 - packed_tangent_z * packed_tangent_z), 0, packed_tangent_z);
+}
+
+vec3 unpack_bi_tangent_z(float packed_bi_tangent_z) {
+    return vec3(0, sqrt(1 - packed_bi_tangent_z * packed_bi_tangent_z), packed_bi_tangent_z);
+}
+
 #endif // MATH_H_

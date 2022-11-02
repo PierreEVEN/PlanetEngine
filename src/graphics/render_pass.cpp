@@ -179,3 +179,15 @@ void RenderPass::add_attachment(const std::string& attachment_name, ImageFormat 
 
     is_dirty = true;
 }
+
+void RenderPass::link_dependency(const std::shared_ptr<RenderPass>& dependency, std::vector<std::string> in_bind_points) {
+    if (!in_bind_points.empty()) {
+        while (in_bind_points.size() < dependency->get_all_render_targets().size()) {
+            in_bind_points.emplace_back(dependency->get_all_render_targets()[in_bind_points.size()]->name);
+        }
+        if (in_bind_points.size() == dependency->get_all_render_targets().size())
+            bind_points[dependency] = in_bind_points;
+    }
+
+    dependencies.emplace_back(dependency);
+}

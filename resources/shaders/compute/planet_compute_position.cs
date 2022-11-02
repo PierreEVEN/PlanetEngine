@@ -19,6 +19,6 @@ void main() {
 	vec3 vertex_3d_pos = grid_to_sphere(vertex_2d_pos, Chunk_PlanetRadius);
   vec3 world_normal = normalize(mat3(Chunk_PlanetModel) * (vertex_3d_pos + vec3(Chunk_PlanetRadius, 0, 0)));
 
-  float h0 = get_height_at_location(world_normal);
+  float h0 = get_height_at_location(world_normal) * 10;
   imageStore(img_output, ivec2(gl_GlobalInvocationID), vec4(h0, h0, 0, 1));
 }

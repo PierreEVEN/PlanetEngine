@@ -6,14 +6,15 @@ precision highp float;
 
 
 #include "libs/world_data.cginc"
+#include "libs/maths.cginc"
 
-layout(location = 0) in vec3 normal;
+layout(location = 0) in vec3 g_LocalNormal;
 layout(location = 1) in vec3 position;
 layout(location = 2) in float altitude;
 layout(location = 3) in vec2 coordinates;
 layout(location = 4) in float planet_radius;
-layout(location = 5) in vec4 g_DebugScalar;
-layout(location = 6) in vec3 g_LocalNormal;
+layout(location = 5) in vec3 g_DebugScalar;
+layout(location = 6) in vec3 g_Normal;
 layout(location = 7) in vec3 g_Tangent;
 layout(location = 8) in vec3 g_BiTangent;
 
@@ -75,14 +76,15 @@ vec3 make_mrao(float metalness, float roughness, float ao) {
 
 vec3 water_color() {
 	vec3 pixel_to_cam = normalize(position);
-	float fresnel = clamp(pow(1 - abs(dot(normal, pixel_to_cam)), 16), 0, 1);
+	float fresnel = clamp(pow(1 - abs(dot(g_Normal, pixel_to_cam)), 16), 0, 1);
 	return mix(vec3(30, 30, 150),vec3(10, 20, 50),  fresnel);
 }
 
 
+layout(location = 7) uniform vec4 debug_vector;
 void main()
 {
-	mat3 TBN = mat3(g_Tangent, g_BiTangent, normal);
+	mat3 TBN = mat3(g_Tangent, g_BiTangent, g_Normal);
 	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) - 0.0001, 64);
 	float camera_distance = length(position);
 
@@ -106,15 +108,12 @@ void main()
 	ocean.normal = load_normal(water_normal, coordinates * 10 + vec2(world_time * -0.01));
 	ocean.normal *= load_normal(water_normal, coordinates * 10 + vec2(-world_time * 0.02, world_time * 0.024));
 
-
-
 	LandData ground_ocean = mix_ld(ground, ocean, -altitude * 10); // Mix all
 	LandData result = ground_ocean;
 
-	gNormal = TBN * result.normal;
+	gNormal = Rz(PI / 2 * debug_vector.x) * result.normal;
+	gNormal = TBN * vec3(0,0,1);//result.normal;
 	gColor = result.color;
 	gMrao = vec4(result.mrao, 1);
-
-	//gNormal = TBN * vec3(0,0,1);
-	//gColor = g_DebugScalar.xyz;
+	gDebugTarget = g_DebugScalar;
 }

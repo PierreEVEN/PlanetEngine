@@ -7,13 +7,13 @@ layout(location = 0) in vec2 uv;
 layout(location = 1) uniform sampler2D Input_lighting_Color;
 layout(location = 2) uniform ivec2 Input_lighting_Color_Res;
 layout(location = 3) uniform sampler2D Input_SSR_Color;
-layout(location = 4) uniform sampler2D GBUFFER_mrao;
+layout(location = 4) uniform sampler2D Input_mrao;
 layout(location = 5) uniform sampler2D Input_Depth;
 
 void main() {
     vec4 uvs = texture(Input_SSR_Color, uv);
     
-    vec3 mrao = texture(GBUFFER_mrao, uv).rgb;
+    vec3 mrao = texture(Input_mrao, uv).rgb;
     float depth = texture(Input_Depth, uv).r;
     if (uvs.b == 10 || mrao.g >= 0.2 || depth <= 0) {
         oFragmentColor = texture(Input_lighting_Color, uv);

@@ -69,11 +69,7 @@ public:
         dependencies.emplace_back(dependency);
     }
 
-    void link_dependency(const std::shared_ptr<RenderPass>& dependency, const std::vector<std::string>& in_bind_points) {
-        if (in_bind_points.size() == dependency->get_all_render_targets().size())
-            bind_points[dependency] = in_bind_points;
-        dependencies.emplace_back(dependency);
-    }
+    void link_dependency(const std::shared_ptr<RenderPass>& dependency, std::vector<std::string> in_bind_points);
 
     void on_compute_resolution(const std::function<void(uint32_t&, uint32_t&)>& callback) { compute_resolution = callback; }
 

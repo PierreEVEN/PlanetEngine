@@ -7,8 +7,8 @@ precision highp float;
 layout(location = 1) uniform sampler2D Input_color;
 layout(location = 2) uniform sampler2D Input_normal;
 layout(location = 3) uniform sampler2D Input_mrao;
-layout(location = 4) uniform sampler2D Input_Depth;
-layout(location = 5) uniform samplerCube WORLD_Cubemap;
+layout(location = 5) uniform sampler2D Input_Depth;
+layout(location = 6) uniform samplerCube WORLD_Cubemap;
 
 out vec4 oFragmentColor;
 
