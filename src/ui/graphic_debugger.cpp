@@ -143,7 +143,7 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
     const float windows_size = ImGui::GetWindowSize().x * zoom;
 
     const ImVec2 item_size  = ImVec2(windows_size / layer_count, windows_size / layer_count / res_ratio);
-    const ImVec2 margin     = ImVec2(3 * zoom, 3 * zoom);
+    const ImVec2 margin     = ImVec2(item_size.x / 20, item_size.x / 20 / res_ratio);
     const ImVec2 padding    = ImVec2(margin.x + 2, margin.y + 2);
     const ImVec2 draw_start = ImVec2(min.x, min.y + ImGui::GetWindowSize().y / 2);
 
