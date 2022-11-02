@@ -158,6 +158,10 @@ void main()
     // Compute world space TBN
     //fix_tbn(sphere_tangent, sphere_bitangent, sphere_normal_world_space);
     mat3 sphere_TBN = mat3(sphere_tangent, sphere_bitangent, sphere_normal_world_space);
+
+    
+
+
     // sphere_TBN = mat3(1);
 
     // Compute vertex position (with altitude)

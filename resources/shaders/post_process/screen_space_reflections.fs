@@ -9,7 +9,8 @@ layout(location = 1) uniform ivec2 Input_normal_Res;
 layout(location = 2) uniform sampler2D Input_normal;
 layout(location = 3) uniform sampler2D Input_mrao;
 layout(location = 4) uniform sampler2D Input_Depth;
-layout(location = 6) uniform int enabled;
+layout(location = 5) uniform int enabled;
+layout(location = 6) uniform float resolution;
 
 vec3 getSceneWorldPosition(vec2 uvs) {
 	float linear_depth = texture(Input_Depth, uvs).r;
@@ -40,8 +41,7 @@ void main() {
 
     /* PARAMS */
     float maxDistance = 100000;
-    int max_iterations = 50;
-    float resolution  = 0.3;
+    int max_iterations = int(500 * (resolution + 0.1));
 
     /* World infos */
     vec3 world_position = getSceneWorldPosition(uv);

@@ -29,6 +29,9 @@ std::shared_ptr<FrameGraph> setup_renderer() {
     lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     lighting->on_bind_material.add_lambda([cubemap](std::shared_ptr<Material> material) {
         glUniform1f(material->binding("z_near"), static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
+        glUniform1i(material->binding("enable_atmosphere"), GameSettings::get().enable_atmosphere ? 1 : 0);
+        glUniform1i(material->binding("atmosphere_quality"), GameSettings::get().atmosphere_quality);
+        glUniform1i(material->binding("shading"), static_cast<int>(GameSettings::get().shading));
         material->bind_texture(cubemap, "WORLD_Cubemap");
     });
 
@@ -36,6 +39,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
     ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     ssr_pass->on_bind_material.add_lambda([](std::shared_ptr<Material> material) {
         glUniform1i(material->binding("enabled"), GameSettings::get().screen_space_reflections ? 1 : 0);
+        glUniform1f(material->binding("resolution"), GameSettings::get().ssr_quality);
     });
 
     const auto ssr_combine_pass = PostProcessPass::create("SSR_Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");

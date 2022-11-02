@@ -35,6 +35,20 @@ GraphicDebugger::GraphicDebugger(const std::shared_ptr<FrameGraph>& in_framegrap
     }
 }
 
+static const char* shading_to_string(Shading shading) {
+    switch (shading) {
+    case Shading::Diffuse:
+        return "Diffuse";
+    case Shading::Phong:
+        return "Phong";
+    case Shading::Blinn_Phong:
+        return "Blinn_Phong";
+    case Shading::PBR:
+        return "PBR";
+    }
+    return nullptr;
+}
+
 void GraphicDebugger::draw() {
     if (ImGui::BeginTabBar("GraphicSettingsTab")) {
         if (ImGui::BeginTabItem("Framegraph visualizer")) {
@@ -79,19 +93,52 @@ void GraphicDebugger::draw() {
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Settings")) {
+
+            // Misc
+            ImGui::Text("Misc");
             if (ImGui::Checkbox("Enable VSync", &GameSettings::get().v_sync))
                 glfwSwapInterval(GameSettings::get().v_sync ? 1 : 0);
-
-            ImGui::Checkbox("Wireframe", &GameSettings::get().wireframe);
-            ImGui::Checkbox("Screen Space Reflections", &GameSettings::get().screen_space_reflections);
-
-            ImGui::SliderFloat("Bloom intensity", &GameSettings::get().bloom_intensity, 0, 3);
-            ImGui::SliderFloat("Exposure", &GameSettings::get().exposure, 0.1f, 4);
-            ImGui::SliderFloat("Gamma", &GameSettings::get().gamma, 0.5f, 4);
-
+            ImGui::Checkbox("Wireframe (F1)", &GameSettings::get().wireframe);
             ImGui::DragInt("Framerate limit", &GameSettings::get().max_fps);
             if (GameSettings::get().max_fps < 0)
                 GameSettings::get().max_fps = 0;
+            ImGui::Checkbox("fullscreen (F11)", &GameSettings::get().fullscreen);
+            ImGui::Separator();
+
+            // Bloom
+            ImGui::Text("Bloom");
+            ImGui::SliderFloat("Bloom intensity", &GameSettings::get().bloom_intensity, 0, 3);
+            ImGui::Separator();
+
+            // Post Process
+            ImGui::Text("Post process");
+            ImGui::SliderFloat("Exposure", &GameSettings::get().exposure, 0.1f, 4);
+            ImGui::SliderFloat("Gamma", &GameSettings::get().gamma, 0.5f, 4);
+            ImGui::Separator();
+
+            // Atmosphere
+            ImGui::Text("Lighting");
+
+            if (ImGui::BeginCombo("shading", shading_to_string(GameSettings::get().shading))) {
+                if (ImGui::MenuItem(shading_to_string(Shading::Diffuse)))
+                    GameSettings::get().shading = Shading::Diffuse;
+                if (ImGui::MenuItem(shading_to_string(Shading::Phong)))
+                    GameSettings::get().shading = Shading::Phong;
+                if (ImGui::MenuItem(shading_to_string(Shading::Blinn_Phong)))
+                    GameSettings::get().shading = Shading::Blinn_Phong;
+                if (ImGui::MenuItem(shading_to_string(Shading::PBR)))
+                    GameSettings::get().shading = Shading::PBR;
+                ImGui::EndCombo();
+            }
+
+            ImGui::Checkbox("Enable atmosphere", &GameSettings::get().enable_atmosphere);
+            ImGui::SliderInt("atmosphere_quality", &GameSettings::get().atmosphere_quality, 1, 40);
+
+            // Screen Space Reflection
+            ImGui::Separator();
+            ImGui::Text("Screen Space Reflections");
+            ImGui::Checkbox("Enable SSR", &GameSettings::get().screen_space_reflections);
+            ImGui::SliderFloat("SSR quality", &GameSettings::get().ssr_quality, 0, 1);
 
             ImGui::EndTabItem();
         }
@@ -228,15 +275,15 @@ void GraphicDebugger::Node::draw_node(float res_ratio, std::unordered_map<std::s
             const auto text_size = ImGui::CalcTextSize(text.c_str());
 
             if (ImGui::GetWindowPos().y < ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - text_size.y) {
-                    ImVec2 text_pos = ImVec2(std::max(ImGui::GetWindowPos().x, (end_min.x + end_max.x) / 2 - text_size.x / 2),
-                                             std::clamp(end_min.y + margin.y, ImGui::GetWindowPos().y, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - text_size.y));
+                ImVec2 text_pos = ImVec2(std::max(ImGui::GetWindowPos().x, (end_min.x + end_max.x) / 2 - text_size.x / 2),
+                                         std::clamp(end_min.y + margin.y, ImGui::GetWindowPos().y, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y - text_size.y));
 
-                    fg_draw_list->AddRectFilled(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
-                                                ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.8f)));
-                    fg_draw_list->AddRect(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
-                                          ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 1, 0.8f)));
-                    fg_draw_list->AddText(text_pos, ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)), text.c_str());
-                }
+                fg_draw_list->AddRectFilled(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
+                                            ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.8f)));
+                fg_draw_list->AddRect(ImVec2(text_pos.x - 3, text_pos.y - 3), ImVec2(text_pos.x + text_size.x + 3, text_pos.y + text_size.y + 3),
+                                      ImGui::ColorConvertFloat4ToU32(ImVec4(0, 1, 1, 0.8f)));
+                fg_draw_list->AddText(text_pos, ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1)), text.c_str());
+            }
         }
     }
 

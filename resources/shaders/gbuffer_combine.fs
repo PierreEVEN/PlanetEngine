@@ -13,10 +13,10 @@ layout(location = 6) uniform samplerCube WORLD_Cubemap;
 out vec4 oFragmentColor;
 
 layout(location = 0) in vec2 uv;
-uniform float z_near;
-
-layout(location = 12) uniform float gamma;
-layout(location = 13) uniform float exposure;
+layout(location = 7) uniform float z_near;
+layout(location = 8) uniform int enable_atmosphere;
+layout(location = 9) uniform int atmosphere_quality;
+layout(location = 10) uniform int shading;
 
 int NumScatterPoints = 5;
 int NumOpticalDepthPoints = 5;
@@ -66,33 +66,40 @@ vec3 getSceneWorldDirection() {
 
 void main()
 {
+    NumScatterPoints = atmosphere_quality;
+    NumOpticalDepthPoints = atmosphere_quality;
 	float depth = texture(Input_Depth, uv).r;
 	float linear_depth = z_near / depth;
+	oFragmentColor = vec4(0);
 
-
-	if (depth <= 0) {
-		oFragmentColor = vec4(0);
-	}
-	else {
+	if (depth > 0) {
 		vec3 col = texture(Input_color, uv).rgb;
 		vec3 norm = normalize(texture(Input_normal, uv).rgb);
 		vec3 mrao = texture(Input_mrao, uv).rgb;
-        oFragmentColor = vec4(col, 1);
-        //return;
-        /*
-        // Blinn-phong
-        PhongParams phong_params;
-        phong_params.ambiant_strength = 0.001;
-        phong_params.specular_strength = (mrao.r) * 32;
-        phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
-        oFragmentColor = vec4(blinn_phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
-        */
-        vec3 ambient = vec3(mix(0.0, 0.01, clamp(dot(norm, light_dir) + 0.3, 0, 1)));
-        oFragmentColor = vec4(pbr_lighting(col, norm, light_dir, -getSceneWorldDirection(), mrao, ambient), 1);
-        //return;
-        //oFragmentColor.xyz = col;
-        //return;
 
+        switch (shading) {
+        case 0:
+            oFragmentColor = vec4(col, 1);
+            break;
+        case 1:
+            PhongParams phong_params;
+            phong_params.ambiant_strength = 0.001;
+            phong_params.specular_strength = (mrao.r) * 32;
+            phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
+            oFragmentColor = vec4(phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
+            break;
+        case 2:
+            PhongParams blinn_phong_params;
+            blinn_phong_params.ambiant_strength = 0.001;
+            blinn_phong_params.specular_strength = (mrao.r) * 32;
+            blinn_phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
+            oFragmentColor = vec4(blinn_phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), blinn_phong_params), 1);
+            break;
+        case 3:
+            vec3 ambient = vec3(mix(0.0, 0.01, clamp(dot(norm, light_dir) + 0.3, 0, 1)));
+            oFragmentColor = vec4(pbr_lighting(col, norm, light_dir, -getSceneWorldDirection(), mrao, ambient), 1);
+            break;
+        }
 	}
 
     vec3 cameraDirection = normalize(getSceneWorldDirection());
@@ -116,7 +123,7 @@ void main()
         oFragmentColor += texture(WORLD_Cubemap, cameraDirection) * 0.05;
     }
 
-    if (distanceThroughAtmosphere > 0.0) {
+    if (distanceThroughAtmosphere > 0.0 && enable_atmosphere != 0) {
         vec3 pointInAtmosphere = camera_pos + cameraDirection * (distance_to_atmosphere - epsilon);
         vec3 light = computeLight(pointInAtmosphere, cameraDirection, distanceThroughAtmosphere - epsilon, oFragmentColor.xyz);
         oFragmentColor = vec4(light, 1);
