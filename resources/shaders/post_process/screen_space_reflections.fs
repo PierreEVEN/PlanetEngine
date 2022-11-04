@@ -57,7 +57,7 @@ void main() {
 
     // Compute reflection end point from world space to screen space
     vec3 world_start = world_position;
-    vec3 world_end = world_position + reflected_ray * maxDistance;
+    vec3 world_end = world_start + reflected_ray * maxDistance;
     
     if (dot(camera_to_pixel, world_end) < 0) { 
         oFragmentColor = vec4(uv, 0, 1); return; 

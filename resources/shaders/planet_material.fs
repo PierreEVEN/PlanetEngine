@@ -40,7 +40,7 @@ struct LandData {
 };
 
 vec3 load_normal(sampler2D tex, vec2 text_coords) {
-	return texture(tex, text_coords).rgb * 2 - 1;
+	return normalize(texture(tex, text_coords).rgb * 2 - 1);
 }
 
 LandData mix_ld(LandData a, LandData b, float value) {
@@ -105,7 +105,7 @@ void main()
 	ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
 	LandData ocean = mix_ld(water, water_deep, pow(-altitude / 200000, 0.5)); // Ocean
 
-	ocean.normal = load_normal(water_normal, coordinates * 5 + vec2(world_time * -0.005)) ;
+	ocean.normal = load_normal(water_normal, coordinates * 5 + vec2(world_time * -0.005)).rgb;
 	ocean.normal += load_normal(water_normal, coordinates * 5 + vec2(-world_time * 0.004, world_time * 0.006));
 
 	ocean.normal += load_normal(water_normal, coordinates * 40 + vec2(world_time * -0.03));
@@ -118,5 +118,5 @@ void main()
 	gNormal = TBN * result.normal;
 	gColor = result.color;
 	gMrao = vec4(result.mrao, 1);
-	gDebugTarget = g_DebugScalar;
+	gDebugTarget = vec3(0, 1 - ocean.normal.z , 0);//g_DebugScalar;
 }
