@@ -45,6 +45,7 @@ vec2 uv_from_sphere_pos(vec3 sphere_norm, vec3 world_norm, out vec3 tang, out ve
     // TOP
     if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z > 0)
     {
+
          x = fma(atan(sphere_norm.x, sphere_norm.z), multiplier, 0.5);
          y = fma(atan(sphere_norm.y, sphere_norm.z), multiplier, 0.5);         
     }
@@ -75,14 +76,14 @@ vec2 uv_from_sphere_pos(vec3 sphere_norm, vec3 world_norm, out vec3 tang, out ve
     // LEFT
     else if (abs_norm.y > abs_norm.x && abs_norm.y > abs_norm.z && sphere_norm.y > 0)
     {
-        x = fma(atan(sphere_norm.x, sphere_norm.y), multiplier, -0.5);
-        y = fma(atan(-sphere_norm.y, sphere_norm.z), multiplier, 0.5);
+        x = fma(atan(sphere_norm.x, sphere_norm.y), multiplier, 0.5);
+        y = fma(atan(-sphere_norm.y, sphere_norm.z), multiplier, 1.5);
     }
     // RIGHT
     else if (abs_norm.y > abs_norm.x && abs_norm.y > abs_norm.z && sphere_norm.y < 0)
     {
         x = fma(atan(-sphere_norm.x, sphere_norm.y), multiplier, -0.5);
-        y = fma(atan(-sphere_norm.y, sphere_norm.z), multiplier, 0.5);
+        y = fma(atan(-sphere_norm.y, sphere_norm.z), multiplier, -0.5);
     }
 
     float zy = sqrt(1 - ya * ya) * sign(-world_norm.y);
@@ -93,6 +94,9 @@ vec2 uv_from_sphere_pos(vec3 sphere_norm, vec3 world_norm, out vec3 tang, out ve
 
     tang = scene_rotation * tang;
     bitang = scene_rotation * bitang;
+
+    x = mod(x * 1000, 1);
+    y = mod(y * 1000, 1);
 
     return vec2(x, y);
 }
@@ -152,7 +156,7 @@ void main()
 
     vec3 sphere_bitangent = vec3(0);
     vec3 sphere_tangent = vec3(0);
-    vec2 text_coords = uv_from_sphere_pos(sphere_normal_planet_space, sphere_normal_world_space, sphere_tangent, sphere_bitangent) * 1000;
+    vec2 text_coords = uv_from_sphere_pos(sphere_normal_planet_space, sphere_normal_world_space, sphere_tangent, sphere_bitangent);// * 1000;
     g_DebugScalar = vec3(text_coords, 0);
 
     // Compute world space TBN

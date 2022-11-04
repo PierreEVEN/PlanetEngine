@@ -4,6 +4,8 @@
 
 #include "ui/widgets.h"
 
+#include <imgui.h>
+
 Eigen::Quaterniond SceneComponent::get_world_rotation() {
     if (parent)
         return Eigen::Quaterniond((parent->get_world_transform() * local_rotation).rotation());
@@ -43,6 +45,12 @@ void SceneComponent::draw_ui() {
     Eigen::Vector3d scale = get_local_scale();
     if (ui::position_edit(scale, "scale"))
         set_local_scale(scale);
+    ImGui::Text("draw groups :");
+    ImGui::Indent();
+    for (const auto& group : draw_group.group_names())
+        ImGui::Text(group);
+    ImGui::Unindent();
+
 }
 
 void SceneComponent::tick_internal(double delta_time, TickGroup new_group) {
@@ -53,9 +61,10 @@ void SceneComponent::tick_internal(double delta_time, TickGroup new_group) {
         child->tick_internal(delta_time, new_group);
 }
 
-void SceneComponent::render_internal(Camera& camera) {
-    render(camera);
+void SceneComponent::render_internal(Camera& camera, const DrawGroup& in_draw_group) {
+    if (draw_group.contains(in_draw_group))
+        render(camera);
 
     for (const auto& child : children)
-        child->render_internal(camera);
+        child->render_internal(camera, in_draw_group);
 }

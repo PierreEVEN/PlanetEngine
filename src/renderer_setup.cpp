@@ -19,7 +19,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
     g_buffer_pass->add_attachment("mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("debug", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->on_draw.add_lambda([] { Engine::get().get_world().render_world(); });
+    g_buffer_pass->on_draw.add_lambda([] { Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>()); });
 
     const auto cubemap = TextureCube::create("cube map");
     cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png", "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",

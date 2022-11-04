@@ -13,7 +13,7 @@ public:
 
 	void tick_world();
 
-	void render_world() const;
+	void render_world(const DrawGroup& draw_group) const;
 
 	[[nodiscard]] std::shared_ptr<Camera> get_camera() const;
 

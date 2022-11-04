@@ -1,4 +1,6 @@
 #pragma once
+#include "graphics/draw_group.h"
+
 #include <memory>
 #include <vector>
 
@@ -215,9 +217,11 @@ protected:
             child->mark_dirty();
     }
 
+    DrawGroup draw_group = DrawGroup::from<DrawGroup_View>();
+
 private:
     void tick_internal(double delta_time, TickGroup new_group);
-    void render_internal(Camera& camera);
+    void render_internal(Camera& camera, const DrawGroup& draw_group);
 
     std::vector<std::shared_ptr<SceneComponent>> children;
     SceneComponent*                              parent = nullptr;

@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 #include "graphics/camera.h"
+#include "graphics/draw_group.h"
 #include "utils/game_settings.h"
 #include "utils/profiler.h"
 
@@ -83,9 +84,9 @@ void World::tick_world() {
 
 }
 
-void World::render_world() const {
+void World::render_world(const DrawGroup& draw_group) const {
     STAT_FRAME("World render");
-    root_component->render_internal(*camera);
+    root_component->render_internal(*camera, draw_group);
 }
 
 std::shared_ptr<Camera> World::get_camera() const {

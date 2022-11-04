@@ -4,6 +4,7 @@
 #include "engine/engine.h"
 #include "engine/renderer.h"
 #include "graphics/camera.h"
+#include "graphics/draw_group.h"
 #include "graphics/framegraph.h"
 #include "graphics/material.h"
 #include "graphics/primitives.h"
@@ -19,9 +20,9 @@
 #include "world/planet.h"
 #include "world/world.h"
 
+#include <iostream>
 
 int main() {
-
     std::unique_ptr<ActionRecord> main_initialization = std::make_unique<ActionRecord>("main initialization");
     Engine::get().get_renderer().set_icon("resources/textures/icon.png");
 
@@ -57,7 +58,7 @@ int main() {
     earth->add_child(camera_controller);
 
     const auto default_material = Material::create("standard_material", "resources/shaders/standard_material.vs", "resources/shaders/standard_material.fs");
-    const auto cube = std::make_shared<MeshComponent>("cube");
+    const auto cube             = std::make_shared<MeshComponent>("cube");
     cube->set_material(default_material);
     cube->set_mesh(primitives::cube());
     cube->set_local_position({0, 0, earth->get_radius()});
