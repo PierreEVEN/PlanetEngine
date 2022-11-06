@@ -167,16 +167,26 @@ vec3 unpack_bi_tangent_z(float packed_bi_tangent_z) {
 float cubic_hermine_curve(float f) {
     return f * f * (3 - 2 * f);
 }
-
 vec2 cubic_hermine_curve(vec2 f) {
     return f * f * (3 - 2 * f);
 }
-
 vec3 cubic_hermine_curve(vec3 f) {
     return f * f * (3 - 2 * f);
 }
-
 vec4 cubic_hermine_curve(vec4 f) {
     return f * f * (3 - 2 * f);
+}
+
+float quintic_hermine_curve(float f) {
+    return f * f * f * (f * (f * 6 - 15) + 10);
+}
+vec2 quintic_hermine_curve(vec2 f) {
+    return f * f * f * (f * (f * 6 - 15) + 10);
+}
+vec3 quintic_hermine_curve(vec3 f) {
+    return f * f * f * (f * (f * 6 - 15) + 10);
+}
+vec4 quintic_hermine_curve(vec4 f) {
+    return f * f * f * (f * (f * 6 - 15) + 10);
 }
 #endif // MATH_H_

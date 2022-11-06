@@ -64,7 +64,7 @@ void PlanetChunk::tick(double delta_time, int in_num_lods, double in_width) {
     const Eigen::Vector3d temp = Eigen::Vector3d(0, Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), 0).normalized().y(),
                                                  Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), camera_local_position.z()).normalized().z());
 
-    // Convert linear position to position on sphere // @TODO Minor fix required here
+    // Convert linear position to position on sphere
     Eigen::Vector3d local_location = Eigen::Vector3d(0, asin(std::clamp(temp.y(), -1.0, 1.0)), asin(std::clamp(temp.z(), -1.0, 1.0))) * planet.radius;
 
     const double snapping = cell_size * 2;

@@ -1,6 +1,5 @@
 #version 430
 
-#include "../libs/landscape.cginc"
 #include "../libs/compute_base.cginc"
 
 layout (local_size_x = 1, local_size_y = 1) in;
