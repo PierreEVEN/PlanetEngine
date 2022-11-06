@@ -8,6 +8,7 @@
 #include "graphics/camera.h"
 #include "utils/maths.h"
 #include "utils/profiler.h"
+#include "world/planet.h"
 
 DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera)
     : SceneComponent("camera controller"), camera(in_camera),
@@ -57,6 +58,9 @@ void DefaultCameraController::process_key(GLFWwindow* window, int key, int scan_
             break;
         case GLFW_KEY_E:
             input_add_roll = 1;
+            break;
+        case GLFW_KEY_F:
+            teleport_to_ground();
             break;
         default:
             break;
@@ -134,6 +138,15 @@ void DefaultCameraController::tick(double delta_time) {
 void DefaultCameraController::teleport_to(const Eigen::Vector3d& new_location) {
     camera->set_local_position(new_location);
     camera_desired_position = new_location;
+}
+
+void DefaultCameraController::teleport_to_ground() {
+    if (get_parent()->get_class() == Class::of<Planet>()) {
+        Planet* planet = static_cast<Planet*>(get_parent());
+
+        camera_desired_position = (camera->get_local_position()).normalized() * (planet->get_radius() + 2);
+        movement_speed = 100;
+    }
 }
 
 std::shared_ptr<Camera> DefaultCameraController::get_camera() const {

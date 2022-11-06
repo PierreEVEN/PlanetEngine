@@ -7,6 +7,8 @@ layout(location = 2) uniform sampler2D Input_Color;
 layout(location = 3) uniform float gamma;
 layout(location = 4) uniform float exposure;
 
+#include "../libs/random.cginc"
+
 void main()
 {
     vec3 color = max(vec3(0), texture(Input_Color, uv).rgb);
@@ -17,6 +19,13 @@ void main()
 
     // Gamma correction
     color = pow(color, vec3(1.0 / gamma));
+
+    float s = 45;
+
+    vec2 y = vec2(noise(uv * s).x, 0);
+
+
+    color = vec3(y, 0);
 
     oFragmentColor.rgb = color;
 }

@@ -2,6 +2,7 @@
 #define NOISE_H_
 
 #include "maths.cginc"
+#include "random.cginc"
 
 //	Classic Perlin 3D Noise 
 //	by Stefan Gustavson  (with some GLSL optimizations)

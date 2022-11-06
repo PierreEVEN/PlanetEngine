@@ -23,6 +23,8 @@ public:
 	virtual Class get_class() override { return Class(this); }
 private:
 
+	void teleport_to_ground();
+
 	std::shared_ptr<Camera> get_camera() const;
 
 	bool set_last_mouse = false;
