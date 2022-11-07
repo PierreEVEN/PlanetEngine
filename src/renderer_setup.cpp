@@ -11,7 +11,7 @@
 #include "utils/game_settings.h"
 #include "world/world.h"
 
-std::shared_ptr<FrameGraph> setup_renderer() {
+std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_camera) {
 
     const auto g_buffer_pass = RenderPass::create("G-Buffers", 1, 1);
     g_buffer_pass->add_attachment("color", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
@@ -19,7 +19,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
     g_buffer_pass->add_attachment("mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("debug", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->on_draw.add_lambda([] { Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>()); });
+    g_buffer_pass->on_draw.add_lambda([main_camera] { Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera); });
 
     const auto cubemap = TextureCube::create("cube map");
     cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png", "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
@@ -27,8 +27,8 @@ std::shared_ptr<FrameGraph> setup_renderer() {
 
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
     lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
-    lighting->on_bind_material.add_lambda([cubemap](std::shared_ptr<Material> material) {
-        glUniform1f(material->binding("z_near"), static_cast<float>(Engine::get().get_world().get_camera()->z_near()));
+    lighting->on_bind_material.add_lambda([cubemap, main_camera](std::shared_ptr<Material> material) {
+        glUniform1f(material->binding("z_near"), static_cast<float>(main_camera->z_near()));
         glUniform1i(material->binding("enable_atmosphere"), GameSettings::get().enable_atmosphere ? 1 : 0);
         glUniform1i(material->binding("atmosphere_quality"), GameSettings::get().atmosphere_quality);
         glUniform1i(material->binding("shading"), static_cast<int>(GameSettings::get().shading));

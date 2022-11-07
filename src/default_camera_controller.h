@@ -9,7 +9,7 @@ struct GLFWwindow;
 class DefaultCameraController : public SceneComponent
 {
 public:
-	DefaultCameraController(const std::shared_ptr<Camera>& camera);
+	DefaultCameraController();
 	~DefaultCameraController();
 
 	void process_key(GLFWwindow* window, int key, int scan_code, int action, int mode);
@@ -30,7 +30,6 @@ private:
 	bool set_last_mouse = false;
 	double last_mouse_x = 0;
 	double last_mouse_y = 0;
-	std::shared_ptr<Camera> camera;
 	double input_add_x = 0;
 	double input_add_y = 0;
 	double input_add_z = 0;

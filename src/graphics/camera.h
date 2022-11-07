@@ -16,6 +16,8 @@ public:
      */
     Eigen::Matrix4d view_matrix();
 
+    Eigen::Quaterniond get_world_rotation() override;
+    Eigen::Vector3d get_world_position() const override;
     /**
      * \brief Camera field of view in degrees
      */
@@ -67,6 +69,8 @@ public:
     }
 
     virtual Class get_class() override { return {this}; }
+
+    void use();
 
   private:
     void update_rotation();

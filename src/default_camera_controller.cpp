@@ -10,8 +10,8 @@
 #include "utils/profiler.h"
 #include "world/planet.h"
 
-DefaultCameraController::DefaultCameraController(const std::shared_ptr<Camera>& in_camera)
-    : SceneComponent("camera controller"), camera(in_camera),
+DefaultCameraController::DefaultCameraController()
+    : SceneComponent("camera controller"),
       camera_desired_position(0, 0, 0) {
     Engine::get().on_key_down.add_object(this, &DefaultCameraController::process_key);
     Engine::get().on_mouse_moved.add_object(this, &DefaultCameraController::process_mouse_input);
@@ -107,8 +107,8 @@ void DefaultCameraController::process_mouse_input(GLFWwindow* window, double x_p
     }
     constexpr double speed = 0.01;
 
-    camera->set_yaw(camera->get_yaw() + (x_pos - last_mouse_x) * speed);
-    camera->set_pitch(std::clamp(camera->get_pitch() + (y_pos - last_mouse_y) * speed, -M_PI / 2, M_PI / 2));
+    get_camera()->set_yaw(get_camera()->get_yaw() + (x_pos - last_mouse_x) * speed);
+    get_camera()->set_pitch(std::clamp(get_camera()->get_pitch() + (y_pos - last_mouse_y) * speed, -M_PI / 2, M_PI / 2));
 
     last_mouse_x = x_pos;
     last_mouse_y = y_pos;
@@ -129,14 +129,14 @@ void DefaultCameraController::tick(double delta_time) {
         delta_time = 1 / 20.0;
 
     target_roll = target_roll += (input_add_roll - input_sub_roll) * delta_time;
-    camera->set_roll(target_roll);
-    camera_desired_position += (camera->world_forward() * (input_add_x - input_sub_x) + camera->world_right() * (
-                                    input_add_y - input_sub_y) + camera->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
-    camera->set_local_position(Maths::lerp(camera->get_local_position(), camera_desired_position, 15 * delta_time));
+    get_camera()->set_roll(target_roll);
+    camera_desired_position += (get_camera()->world_forward() * (input_add_x - input_sub_x) + get_camera()->world_right() * (
+                                    input_add_y - input_sub_y) + get_camera()->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
+    get_camera()->set_local_position(Maths::lerp(get_camera()->get_local_position(), camera_desired_position, 15 * delta_time));
 }
 
 void DefaultCameraController::teleport_to(const Eigen::Vector3d& new_location) {
-    camera->set_local_position(new_location);
+    get_camera()->set_local_position(new_location);
     camera_desired_position = new_location;
 }
 
@@ -144,7 +144,7 @@ void DefaultCameraController::teleport_to_ground() {
     if (get_parent()->get_class() == Class::of<Planet>()) {
         Planet* planet = static_cast<Planet*>(get_parent());
 
-        camera_desired_position = (camera->get_local_position()).normalized() * (planet->get_radius() + 2);
+        camera_desired_position = (get_camera()->get_local_position()).normalized() * (planet->get_radius() + 2);
         movement_speed = 100;
     }
 }

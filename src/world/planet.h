@@ -11,7 +11,7 @@ class PlanetChunk;
 class Planet : public SceneComponent {
     friend class PlanetChunk;
 public:
-    Planet(const std::string& name);
+    Planet(const std::string& name, const std::shared_ptr<SceneComponent>& player);
     void draw_ui() override;
 
     [[nodiscard]] float get_radius() const { return radius; }
@@ -49,6 +49,7 @@ protected:
     void render(Camera& camera) override;
 
 private:
+    std::shared_ptr<SceneComponent> player;
     std::shared_ptr<Mesh>        root_mesh;
     std::shared_ptr<Mesh>        child_mesh;
     std::shared_ptr<PlanetChunk> root;

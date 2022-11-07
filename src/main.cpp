@@ -25,8 +25,10 @@
 int main() {
     std::unique_ptr<ActionRecord> main_initialization = std::make_unique<ActionRecord>("main initialization");
     Engine::get().get_renderer().set_icon("resources/textures/icon.png");
+    
+    const auto main_camera = std::make_shared<Camera>();
 
-    const auto framegraph = setup_renderer();
+    const auto framegraph = setup_renderer(main_camera);
 
     const auto viewport = ImGuiWindow::create_window<Viewport>(framegraph->get_root()->get_color_attachments()[0]->get_render_target());
     ImGuiWindow::create_window<GraphicDebugger>(framegraph);
@@ -36,13 +38,13 @@ int main() {
     ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
 
     // Create planet
-    const auto earth = std::make_shared<Planet>("earth");
+    const auto earth = std::make_shared<Planet>("earth", main_camera);
     earth->set_radius(6000000);
     earth->set_max_lods(19);
     earth->set_cell_count(30);
     Engine::get().get_world().get_scene_root().add_child(earth);
 
-    const auto moon = std::make_shared<Planet>("moon");
+    const auto moon = std::make_shared<Planet>("moon", main_camera);
     Engine::get().get_world().get_scene_root().add_child(moon);
     moon->set_radius(1700000);
     moon->set_max_lods(18);
@@ -52,8 +54,8 @@ int main() {
     moon->set_rotation_speed(0.05f);
 
     // Create camera controller
-    const auto camera_controller = std::make_shared<DefaultCameraController>(Engine::get().get_world().get_camera());
-    camera_controller->add_child(Engine::get().get_world().get_camera());
+    const auto camera_controller = std::make_shared<DefaultCameraController>();
+    camera_controller->add_child(main_camera);
     camera_controller->teleport_to({0, 0, earth->get_radius() + 2});
     earth->add_child(camera_controller);
 
@@ -76,11 +78,12 @@ int main() {
             Engine::get().get_world().tick_world();
 
             // Rendering
+            main_camera->use();
             if (GameSettings::get().fullscreen) {
-                Engine::get().get_world().get_camera()->viewport_res() = {Engine::get().get_renderer().window_width(), Engine::get().get_renderer().window_height()};
+                main_camera->viewport_res() = {Engine::get().get_renderer().window_width(), Engine::get().get_renderer().window_height()};
                 framegraph->render(true, Engine::get().get_renderer().window_width(), Engine::get().get_renderer().window_height());
             } else {
-                Engine::get().get_world().get_camera()->viewport_res() = {viewport->width(), viewport->height()};
+                main_camera->viewport_res() = {viewport->width(), viewport->height()};
                 framegraph->render(false, viewport->width(), viewport->height());
             }
 

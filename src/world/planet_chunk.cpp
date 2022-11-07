@@ -59,7 +59,7 @@ void PlanetChunk::tick(double delta_time, int in_num_lods, double in_width) {
 
     STAT_FRAME("Planet Tick LOD :" + std::to_string(current_lod));
     // Compute camera position in local space
-    const Eigen::Vector3d camera_local_position = planet.inv_mesh_rotation_ws * (world.get_camera()->get_world_position() - planet.get_world_position());
+    const Eigen::Vector3d camera_local_position = planet.inv_mesh_rotation_ws * (planet.player->get_world_position() - planet.get_world_position());
 
     const Eigen::Vector3d temp = Eigen::Vector3d(0,
                                                  Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), 0).normalized().y(),

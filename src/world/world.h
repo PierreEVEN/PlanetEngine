@@ -3,20 +3,15 @@
 
 #include "world/scene_component.h"
 
-class Camera;
-
 class World final
 {
 public:
 	World();
-	~World();
 
 	void tick_world();
 
-	void render_world(const DrawGroup& draw_group) const;
-
-	[[nodiscard]] std::shared_ptr<Camera> get_camera() const;
-
+	void render_world(const DrawGroup& draw_group, const std::shared_ptr<Camera>& camera) const;
+	
 	[[nodiscard]] SceneComponent& get_scene_root() const
 	{
 		return *root_component;
@@ -28,9 +23,7 @@ public:
 	}
 	
 private:
-	uint32_t world_uniform;
-	std::shared_ptr<Camera> camera;
 	std::unique_ptr<SceneComponent> root_component;
-	double last_time;
-	double delta_seconds;
+	double last_time = -1;
+	double delta_seconds = -1;
 };

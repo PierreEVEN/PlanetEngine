@@ -16,10 +16,11 @@
 #include "graphics/texture_image.h"
 #include "ui/widgets.h"
 #include "utils/gl_tools.h"
+#include "utils/maths.h"
 #include "utils/profiler.h"
 
-Planet::Planet(const std::string& name)
-    : SceneComponent(name), world(Engine::get().get_world()) {
+Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& in_player)
+    : SceneComponent(name), world(Engine::get().get_world()), player(in_player) {
     root  = std::make_shared<PlanetChunk>(*this, world, 16, 0);
     dirty = true;
 
@@ -189,23 +190,6 @@ void Planet::rebuild_mesh() {
     dirty = false;
 }
 
-static Eigen::Quaterniond closest_rotation_to(const Eigen::Quaterniond& from, const Eigen::Vector3d& forward, double min_delta) {
-    const Eigen::Vector3d    current_front = from * Eigen::Vector3d(1, 0, 0);
-    const Eigen::Quaterniond delta         = Eigen::Quaterniond::FromTwoVectors(current_front, forward);
-
-    const auto forward_step = delta * Eigen::Vector3d(0, 0, 1);
-    const auto left_step    = delta * Eigen::Vector3d(0, 1, 0);
-
-    const double forward_angle = acos(forward_step.dot(Eigen::Vector3d(0, 0, 1)));
-    const double right_angle   = acos(left_step.dot(Eigen::Vector3d(0, 1, 0)));
-
-    if (forward_angle > min_delta || right_angle > min_delta)
-        return delta * from;
-
-    return from;
-}
-
-
 void Planet::tick(double delta_time) {
     STAT_FRAME("Planet_Tick");
     SceneComponent::tick(delta_time);
@@ -219,11 +203,11 @@ void Planet::tick(double delta_time) {
 
         if (!freeze_camera) {
             // Get camera direction from planet center
-            const auto camera_direction_ps = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->get_world_position() - get_world_position()).normalized();
+            const auto camera_direction_ps = get_world_rotation().inverse() * (player->get_world_position() - get_world_position()).normalized();
 
             // Compute global rotation snapping step
             const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2.0);
-            mesh_rotation_ps                  = closest_rotation_to(mesh_rotation_ps, camera_direction_ps, max_cell_radian_step);
+            mesh_rotation_ps                  = Maths::closest_rotation_to(mesh_rotation_ps, camera_direction_ps, max_cell_radian_step);
 
             // Mesh rotation in world space
             mesh_rotation_ws = get_world_rotation() * mesh_rotation_ps;
@@ -235,7 +219,7 @@ void Planet::tick(double delta_time) {
         // Mesh transform in world space
         mesh_transform_ws = Eigen::Affine3d::Identity();
         // 1. Add camera offset
-        mesh_transform_ws.translate(get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
+        mesh_transform_ws.translate(get_world_position() - player->get_world_position());
         // 2. Add rotation
         mesh_transform_ws.rotate(mesh_rotation_ws);
         // 3. Shift up to center sphere to (0, 0, 0)
@@ -243,7 +227,7 @@ void Planet::tick(double delta_time) {
     }
 
     // Compute LODs
-    const double camera_distance_to_ground = (Engine::get().get_world().get_camera()->get_world_position() - get_world_position()).norm() - static_cast<double>(radius);
+    const double camera_distance_to_ground = (player->get_world_position() - get_world_position()).norm() - static_cast<double>(radius);
     const double normalized_distance       = std::max(1.0, camera_distance_to_ground / (cell_width * (cell_count * 4 + 2)));
     const int    display_lod0_level        = std::min(num_lods - 1, static_cast<int>(std::log2(normalized_distance)));
     const int    display_max_lod           = num_lods; // @TODO : limit max LOD when camera is close to ground

@@ -1,10 +1,30 @@
 #include "camera.h"
 
+#include "uniform_buffer.h"
+
 #include <imgui.h>
+#include <iostream>
+#include <GLFW/glfw3.h>
+
+static std::shared_ptr<UniformBuffer> camera_ubo;
+
+struct WorldDataStructure {
+    alignas(16) Eigen::Matrix4f proj_matrix;
+    alignas(16) Eigen::Matrix4f view_matrix;
+    alignas(16) Eigen::Matrix4f vp_matrix;
+    alignas(16) Eigen::Matrix4f proj_matrix_inv;
+    alignas(16) Eigen::Matrix4f view_matrix_inv;
+    alignas(16) Eigen::Matrix4f vp_matrix_inv;
+    alignas(16) float           world_time;
+    alignas(16) Eigen::Vector3f camera_pos;
+    alignas(16) Eigen::Vector3f camera_forward;
+};
 
 Camera::Camera()
     : SceneComponent("camera"), res({800, 600}), camera_fov(45), camera_near(0.1), pitch(0), yaw(0), roll(0) {
     update_rotation();
+    if (!camera_ubo)
+        camera_ubo = UniformBuffer::create("camera UBO");
 }
 
 Eigen::Matrix4d Camera::reversed_z_projection_matrix() const {
@@ -31,6 +51,20 @@ Eigen::Matrix4d Camera::view_matrix() {
     mat_trans.rotate(Eigen::Quaterniond(corr_z * corr_y));
     mat_trans.rotate(get_world_rotation().inverse());
     return mat_trans.matrix();
+}
+
+Eigen::Quaterniond Camera::get_world_rotation() {
+
+    if (get_parent())
+        return Eigen::Quaterniond(get_local_rotation() * get_parent()->get_world_rotation());
+
+    return SceneComponent::get_local_rotation();
+}
+
+Eigen::Vector3d Camera::get_world_position() const {
+    if (get_parent())
+        return get_parent()->get_world_position() + get_local_position();
+    return SceneComponent::get_world_position();
 }
 
 void Camera::set_pitch(double in_pitch) {
@@ -62,6 +96,24 @@ void Camera::draw_ui() {
         camera_near = near;
     if (camera_near < 0.001)
         camera_near = 0.001;
+}
+
+void Camera::use() {
+    const auto               proj_matrix = reversed_z_projection_matrix();
+    const auto               view_mat = view_matrix();
+    const auto               pv_matrix   = proj_matrix * view_mat;
+    const WorldDataStructure world_data  = {
+        .proj_matrix = proj_matrix.cast<float>(),
+        .view_matrix = view_mat.cast<float>(),
+        .vp_matrix = pv_matrix.cast<float>(),
+        .proj_matrix_inv = proj_matrix.cast<float>().inverse(),
+        .view_matrix_inv = view_mat.cast<float>().inverse(),
+        .vp_matrix_inv = pv_matrix.cast<float>().inverse(),
+        .world_time = static_cast<float>(glfwGetTime()),
+        .camera_pos = get_world_position().cast<float>(),
+        .camera_forward = world_forward().cast<float>(),
+    };
+    camera_ubo->set_data(world_data);
 }
 
 void Camera::update_rotation() {
