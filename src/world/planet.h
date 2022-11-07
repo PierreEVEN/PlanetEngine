@@ -2,6 +2,7 @@
 
 #include "world/scene_component.h"
 
+class Texture2D;
 class ComputeShader;
 class Mesh;
 class Material;
@@ -67,21 +68,36 @@ private:
     double current_orbit    = 0;
 
     // debug
-    bool                           freeze_camera   = false;
-    bool                           freeze_updates  = false;
-    bool                           double_sided    = false;
-    bool                           display_normals = false;
-    bool                           dirty           = true;
-    void                           regenerate();
-    Eigen::Affine3d                planet_global_transform = Eigen::Affine3d::Identity();
-    Eigen::Affine3d                world_orientation       = Eigen::Affine3d::Identity();
-    Eigen::Affine3d                local_orientation       = Eigen::Affine3d::Identity();
-    Eigen::Quaterniond             rotation_to_camera      = Eigen::Quaterniond::Identity();
-    Eigen::Affine3d                planet_inverse_rotation = Eigen::Affine3d::Identity();
-    Eigen::Vector4f                debug_vector            = Eigen::Vector4f::Zero();
-    std::shared_ptr<Material>      landscape_material;
-    std::shared_ptr<Material>      debug_normal_display_material;
-    std::shared_ptr<ComputeShader> compute_positions = nullptr;
-    std::shared_ptr<ComputeShader> compute_normals   = nullptr;
-    std::shared_ptr<ComputeShader> compute_fix_seams         = nullptr;
+    bool            freeze_camera   = false;
+    bool            freeze_updates  = false;
+    bool            double_sided    = false;
+    bool            display_normals = false;
+    bool            dirty           = true;
+    Eigen::Vector4f debug_vector    = Eigen::Vector4f::Zero();
+
+    void rebuild_mesh();
+
+    // Transformations
+    Eigen::Affine3d    mesh_transform_ws    = Eigen::Affine3d::Identity();
+    Eigen::Quaterniond mesh_rotation_ws     = Eigen::Quaterniond::Identity();
+    Eigen::Quaterniond mesh_rotation_ps     = Eigen::Quaterniond::Identity();
+    Eigen::Quaterniond inv_mesh_rotation_ws = Eigen::Quaterniond::Identity();
+
+    // GPU Objects
+    std::shared_ptr<Material>      landscape_material            = nullptr;
+    std::shared_ptr<Material>      debug_normal_display_material = nullptr;
+    std::shared_ptr<ComputeShader> compute_positions             = nullptr;
+    std::shared_ptr<ComputeShader> compute_normals               = nullptr;
+    std::shared_ptr<ComputeShader> compute_fix_seams             = nullptr;
+    std::shared_ptr<Texture2D>     grass_albedo                  = nullptr;
+    std::shared_ptr<Texture2D>     grass_normal                  = nullptr;
+    std::shared_ptr<Texture2D>     grass_mrao                    = nullptr;
+    std::shared_ptr<Texture2D>     rock_albedo                   = nullptr;
+    std::shared_ptr<Texture2D>     rock_normal                   = nullptr;
+    std::shared_ptr<Texture2D>     rock_mrao                     = nullptr;
+    std::shared_ptr<Texture2D>     sand_albedo                   = nullptr;
+    std::shared_ptr<Texture2D>     sand_normal                   = nullptr;
+    std::shared_ptr<Texture2D>     sand_mrao                     = nullptr;
+    std::shared_ptr<Texture2D>     water_normal                  = nullptr;
+    std::shared_ptr<Texture2D>     water_displacement            = nullptr;
 };

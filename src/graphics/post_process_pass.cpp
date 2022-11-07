@@ -39,7 +39,7 @@ void PostProcessPass::render(bool to_back_buffer) {
             if (const int res_binding = material()->binding(bp[i] + "_Res"); res_binding >= 0)
                 glUniform2i(res_binding, dep->get_width(), dep->get_height());
             GL_CHECK_ERROR();
-            material()->bind_texture(rt[i], bp[i]);
+            material()->set_texture(bp[i], rt[i]);
         }
 
     }

@@ -18,12 +18,13 @@ layout(location = 8) in vec3 g_BiTangent[];
 
 out vec3 color; 
 
-layout(location = 2) uniform mat4 lod_local_transform;
+layout(location = 2) uniform mat4 mesh_transform_cs;
 
 in VS_OUT {vec4 gl_Position;} gs_in[];
+
 void GenerateLine(int index)
 {
-    float MAGNITUDE = length((mat3(lod_local_transform) * vec3(1, 0, 0)).xyz) * 0.5;
+    float MAGNITUDE = length((mat3(mesh_transform_cs) * vec3(1, 0, 0)).xyz) * 0.5;
     color = vec3(0,0,1);
     gl_Position = gs_in[index].gl_Position;
     EmitVertex();

@@ -81,7 +81,6 @@ vec3 water_color() {
 }
 
 
-layout(location = 7) uniform vec4 debug_vector;
 void main()
 {
 	mat3 TBN = mat3(g_Tangent, g_BiTangent, g_Normal);

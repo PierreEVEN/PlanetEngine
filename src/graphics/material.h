@@ -14,13 +14,9 @@ class Material final {
 public:
     ~Material();
 
-    static std::shared_ptr<Material> create(const std::string& name, const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path = {});
+    static std::shared_ptr<Material> create(const std::string&                name, const std::string& vertex_path, const std::string& fragment_path,
+                                            const std::optional<std::string>& geometry_path = {});
 
-    /**
-     * \brief Set model matrix (uniform mat4 model)
-     */
-    void set_model_transform(const Eigen::Affine3d& transformation);
-    
     /**
      * \brief Check if source file have been changed.
      */
@@ -70,7 +66,20 @@ public:
      */
     [[nodiscard]] int binding(const std::string& binding_name) const;
 
-    int bind_texture(const std::shared_ptr<TextureBase>& texture, const std::string& binding_name) const;
+    bool set_float(const std::string& bind_name, float value) const;
+    bool set_int(const std::string& bind_name, int value) const;
+    bool set_rotation(const std::string& bind_name, const Eigen::Quaterniond& value) const;
+    bool set_transform(const std::string& bind_name, const Eigen::Affine3d& value) const;
+    bool set_vec4(const std::string& binding, const Eigen::Vector4d& value) const { return set_vec4(binding, static_cast<Eigen::Vector4f>(value.cast<float>())); }
+    bool set_vec4(const std::string& bind_name, const Eigen::Vector4f& value) const;
+    bool set_vec3(const std::string& binding, const Eigen::Vector3d& value) const { return set_vec3(binding, static_cast<Eigen::Vector3f>(value.cast<float>())); }
+    bool set_vec3(const std::string& bind_name, const Eigen::Vector3f& value) const;
+    bool set_texture(const std::string& bind_name, const std::shared_ptr<TextureBase>& texture) const;
+
+    /**
+     * \brief Set model matrix (uniform mat4 model)
+     */
+    bool set_model_transform(const Eigen::Affine3d& transformation) { return set_transform("model", transformation); }
 
 private:
     Material(const std::string& name, const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path = {});

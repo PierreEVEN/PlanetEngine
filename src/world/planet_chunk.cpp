@@ -59,9 +59,10 @@ void PlanetChunk::tick(double delta_time, int in_num_lods, double in_width) {
 
     STAT_FRAME("Planet Tick LOD :" + std::to_string(current_lod));
     // Compute camera position in local space
-    const Eigen::Vector3d camera_local_position = planet.planet_inverse_rotation * (world.get_camera()->get_world_position() - planet.get_world_position());
+    const Eigen::Vector3d camera_local_position = planet.inv_mesh_rotation_ws * (world.get_camera()->get_world_position() - planet.get_world_position());
 
-    const Eigen::Vector3d temp = Eigen::Vector3d(0, Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), 0).normalized().y(),
+    const Eigen::Vector3d temp = Eigen::Vector3d(0,
+                                                 Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), 0).normalized().y(),
                                                  Eigen::Vector3d(camera_local_position.x(), camera_local_position.y(), camera_local_position.z()).normalized().z());
 
     // Convert linear position to position on sphere
@@ -70,20 +71,16 @@ void PlanetChunk::tick(double delta_time, int in_num_lods, double in_width) {
     const double snapping = cell_size * 2;
     chunk_position        = Eigen::Vector3d(std::round(local_location.y() / snapping + 0.5) - 0.5, 0, std::round(local_location.z() / snapping + 0.5) - 0.5) * snapping;
 
-    lod_local_transform = Eigen::Affine3d::Identity();
-    lod_local_transform.translate(chunk_position);
-    lod_local_transform.scale(cell_size);
-
-    Eigen::AngleAxisd rotation = Eigen::AngleAxisd::Identity();
-
+    mesh_transform_cs = Eigen::Affine3d::Identity();
+    mesh_transform_cs.translate(chunk_position);
+    mesh_transform_cs.scale(cell_size);
     if (current_lod != 0) {
         if (local_location.y() >= chunk_position.x() && local_location.z() < chunk_position.z())
-            rotation = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitY());
+            mesh_transform_cs.rotate(Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitY()));
         else if (local_location.y() < chunk_position.x() && local_location.z() >= chunk_position.z())
-            rotation = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY());
+            mesh_transform_cs.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()));
         else if (local_location.y() >= chunk_position.x() && local_location.z() >= chunk_position.z())
-            rotation = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY());
-        lod_local_transform.rotate(rotation);
+            mesh_transform_cs.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
     }
 
     rebuild_maps();
@@ -96,10 +93,11 @@ void PlanetChunk::render(Camera& camera) {
     STAT_FRAME("Render planet lod " + std::to_string(current_lod));
 
     // Set uniforms
-    glUniformMatrix4fv(planet.landscape_material->binding("lod_local_transform"), 1, false, lod_local_transform.cast<float>().matrix().data());
-    planet.landscape_material->bind_texture(chunk_height_map, "height_map");
-    planet.landscape_material->bind_texture(chunk_normal_map, "normal_map");
+    planet.landscape_material->set_transform("mesh_transform_cs", mesh_transform_cs);
+    planet.landscape_material->set_texture("height_map", chunk_height_map);
+    planet.landscape_material->set_texture("normal_map", chunk_normal_map);
 
+    // Draw
     glEnable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT_AND_BACK, GameSettings::get().wireframe ? GL_LINE : GL_FILL);
     if (current_lod == 0)
@@ -125,9 +123,12 @@ void PlanetChunk::rebuild_maps() {
     GL_CHECK_ERROR();
     STAT_FRAME("rebuild landscape map");
 
-    const LandscapeChunkData chunk_data{.Chunk_LocalTransform = lod_local_transform.cast<float>().matrix(),
-                                        .Chunk_PlanetModel = (planet.get_world_transform().inverse() * planet.planet_global_transform).cast<float>().matrix(),
-                                        .Chunk_LocalOrientation = planet.local_orientation.cast<float>().matrix(),
+    auto test = Eigen::Affine3d::Identity();
+    test.rotate(planet.mesh_rotation_ps);
+
+    const LandscapeChunkData chunk_data{.Chunk_LocalTransform = mesh_transform_cs.cast<float>().matrix(),
+                                        .Chunk_PlanetModel = (planet.get_world_transform().inverse() * planet.mesh_transform_ws).cast<float>().matrix(),
+                                        .Chunk_LocalOrientation = test.cast<float>().matrix(),
                                         .Chunk_PlanetRadius = planet.radius,
                                         .Chunk_CellWidth = static_cast<float>(cell_size),
                                         .Chunk_CellCount = cell_number,

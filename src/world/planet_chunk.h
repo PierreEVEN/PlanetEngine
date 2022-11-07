@@ -45,7 +45,7 @@ private:
     std::shared_ptr<PlanetChunk> child;
     bool                         force_rebuild = true;
 
-    Eigen::Affine3d            lod_local_transform;
+    Eigen::Affine3d            mesh_transform_cs;
     std::shared_ptr<Texture2D> chunk_height_map;
     std::shared_ptr<Texture2D> chunk_normal_map;
 };

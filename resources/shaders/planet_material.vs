@@ -9,17 +9,16 @@
 layout(location = 0) in vec3 pos;
 
 // Uniforms
-layout(location = 1) uniform mat4 model; // Planet mesh rotation
-layout(location = 2) uniform mat4 lod_local_transform; // Chunk grid local transform (90° rotations + 2D offset)
-layout(location = 3) uniform float radius; // planet radius
-layout(location = 4) uniform float grid_cell_count;
-layout(location = 5) uniform sampler2D height_map;
-layout(location = 6) uniform sampler2D normal_map;
-layout(location = 7) uniform vec4 debug_vector;
-layout(location = 8) uniform mat4 planet_world_orientation;
+layout(location = 1) uniform mat4 mesh_transform_ws;
+layout(location = 2) uniform mat4 mesh_transform_cs;
+layout(location = 3) uniform mat3 mesh_rotation_ps;
+layout(location = 4) uniform mat3 scene_rotation;
+layout(location = 5) uniform float radius;
+layout(location = 6) uniform int cell_count;
+layout(location = 7) uniform sampler2D height_map;
+layout(location = 8) uniform sampler2D normal_map;
 
-layout(location = 21) uniform mat3 scene_rotation;
-layout(location = 22) uniform mat3 inv_scene_rotation;
+layout(location = 20) uniform vec4 debug_vector;
 
 // Outputs
 layout(location = 0) out vec3 g_LocalNormal;
@@ -111,11 +110,11 @@ struct LocalData {
 };
 
 LocalData compute_local_space_data() {
-    ivec2 coords = ivec2(pos.xz + grid_cell_count * 2 + 2);
+    ivec2 coords = ivec2(pos.xz + cell_count * 2 + 2);
 
     LocalData result;
 
-    result.pos2D = clamp((lod_local_transform * vec4(pos, 1)).xz, -radius * PI / 2, radius * PI / 2);
+    result.pos2D = clamp((mesh_transform_cs * vec4(pos, 1)).xz, -radius * PI / 2, radius * PI / 2);
 
     vec4 tang_bitang = texelFetch(normal_map, coords, 0);
     result.tangent = unpack_tangent_z(-tang_bitang.y);
@@ -147,8 +146,8 @@ void main()
 	vec3 sphere_pos_local_offset = grid_to_sphere(local_space_data.pos2D, radius);          //OK
     vec3 sphere_pos_local = sphere_pos_local_offset + vec3(radius, 0, 0);                   //OK
     vec3 local_sphere_normal = normalize(sphere_pos_local);                                 //OK
-    vec3 sphere_normal_world_space = mat3(model) * local_sphere_normal;                     //OK
-    vec3 sphere_normal_planet_space = mat3(planet_world_orientation) * local_sphere_normal; //OK
+    vec3 sphere_normal_world_space = mat3(mesh_transform_ws) * local_sphere_normal;                     //OK
+    vec3 sphere_normal_planet_space = mesh_rotation_ps * local_sphere_normal;               //OK
 
     /**
     /* Compute world space data
@@ -169,7 +168,7 @@ void main()
     // sphere_TBN = mat3(1);
 
     // Compute vertex position (with altitude)
-    vec4 world_position = model * vec4(sphere_pos_local_offset, 1) + vec4(sphere_TBN * vec3(0, 0, local_space_data.vertex_altitude), 0);
+    vec4 world_position = mesh_transform_ws * vec4(sphere_pos_local_offset, 1) + vec4(sphere_TBN * vec3(0, 0, local_space_data.vertex_altitude), 0);
     vec3 world_normals = sphere_TBN * local_space_data.normal;
     vec3 world_tangent = sphere_TBN * local_space_data.tangent;
     vec3 world_bi_tangent = sphere_TBN * local_space_data.bitangent;

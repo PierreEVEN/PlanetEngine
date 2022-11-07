@@ -34,6 +34,21 @@ Planet::Planet(const std::string& name)
     landscape_material            = Material::create("planet material", "resources/shaders/planet_material.vs", "resources/shaders/planet_material.fs");
     debug_normal_display_material = Material::create("planet material normals", "resources/shaders/planet_material.vs", "resources/shaders/planet_material_normal_display.fs",
                                                      "resources/shaders/planet_material_normal_display.gs");
+
+    grass_albedo = Texture2D::create("terrain grass albedo", "resources/textures/terrain/wispy-grass-meadow_albedo.png", {.srgb = true});
+    grass_normal = Texture2D::create("terrain grass normal", "resources/textures/terrain/wispy-grass-meadow_normal-dx.png");
+    grass_mrao   = Texture2D::create("terrain grass mrao", "resources/textures/terrain/wispy-grass-meadow_mrao.jpg");
+
+    rock_albedo = Texture2D::create("terrain rock albedo", "resources/textures/terrain/pine_forest_ground1_albedo.png", {.srgb = true});
+    rock_normal = Texture2D::create("terrain rock normal", "resources/textures/terrain/pine_forest_ground1_Normal-dx.png");
+    rock_mrao   = Texture2D::create("terrain rock mrao", "resources/textures/terrain/pine_forest_ground1_mrao.jpg");
+
+    sand_albedo = Texture2D::create("terrain sand albedo", "resources/textures/terrain/wavy-sand_albedo.png", {.srgb = true});
+    sand_normal = Texture2D::create("terrain sand normal", "resources/textures/terrain/wavy-sand_normal-dx.png");
+    sand_mrao   = Texture2D::create("terrain sand mrao", "resources/textures/terrain/wavy-sand_mrao.jpg");
+
+    water_normal       = Texture2D::create("water normal", "resources/textures/water/water_normal.png");
+    water_displacement = Texture2D::create("water displacement", "resources/textures/water/water_distortion.png");
 }
 
 void Planet::draw_ui() {
@@ -55,31 +70,27 @@ void Planet::draw_ui() {
     ImGui::Checkbox("Freeze Updates", &freeze_updates);
     ImGui::DragFloat4("debug vector", debug_vector.data());
 
-    Eigen::Quaterniond rot = Eigen::Quaterniond(world_orientation.rotation());
-
-    if (ui::rotation_edit(rot, "camera rotation")) {
-        world_orientation = Eigen::Affine3d::Identity();
-        world_orientation.rotate(rot);
-    }
+    ui::rotation_edit(mesh_rotation_ws, "camera rotation");
 }
 
 static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<Eigen::Vector3f>& positions,
-                                    int32_t                x_min, int32_t                         x_max, int32_t z_min, int32_t z_max,
+                                    int32_t                x_min, int32_t                         x_max,
+                                    int32_t                z_min, int32_t                         z_max,
                                     int32_t                cell_min, int32_t                      cell_max) {
     // Requirement for Y val
-    const float distance_max = static_cast<float>(cell_max);
-    float       min_global   = static_cast<float>(cell_min);
+    const auto distance_max = static_cast<float>(cell_max);
+    auto       min_global   = static_cast<float>(cell_min);
 
     // Handle LOD 0 case
-    if (min_global == distance_max)
+    if (abs(min_global - distance_max) < 0.0001)
         min_global = 0;
 
     const auto current_index_offset = static_cast<uint32_t>(positions.size());
     for (int32_t z = z_min; z <= z_max; ++z)
         for (int32_t x = x_min; x <= x_max; ++x) {
             // The Y val is used to store the progression from previous LOD to the next one
-            const float Linf_distance = static_cast<float>(std::max(std::abs(x), std::abs(z))); // Tchebychev distance
-            const float y_val_weight  = (Linf_distance - min_global) / (distance_max - min_global);
+            const float linf_distance = static_cast<float>(std::max(std::abs(x), std::abs(z))); // Tchebychev distance
+            const float y_val_weight  = (linf_distance - min_global) / (distance_max - min_global);
             const bool  x_aligned     = std::abs(x) > std::abs(z);
             const int   mask          = std::abs(x) % 2 == 0 && !x_aligned || std::abs(z) % 2 == 0 && x_aligned;
             positions.emplace_back(Eigen::Vector3f(static_cast<float>(x), mask * y_val_weight, static_cast<float>(z)));
@@ -108,15 +119,15 @@ static void generate_rectangle_area(std::vector<uint32_t>& indices, std::vector<
         }
 }
 
-void Planet::regenerate() {
+void Planet::rebuild_mesh() {
     GL_CHECK_ERROR();
     STAT_ACTION("Generate planet mesh : [" + name + "]");
-    STAT_FRAME("regenerate planet mesh");
-    std::vector<Eigen::Vector3f> positions_root;
-    std::vector<uint32_t>        indices_root;
+    STAT_FRAME("rebuild_mesh planet mesh");
 
     {
-        STAT_ACTION("regenerate root mesh");
+        STAT_ACTION("rebuild_mesh root mesh");
+        std::vector<uint32_t>        indices_root;
+        std::vector<Eigen::Vector3f> positions_root;
         generate_rectangle_area(indices_root, positions_root,
                                 -cell_count * 2 - 1,
                                 cell_count * 2 + 1,
@@ -131,11 +142,10 @@ void Planet::regenerate() {
 
     GL_CHECK_ERROR();
 
-    std::vector<Eigen::Vector3f> positions_child;
-    std::vector<uint32_t>        indices_child;
-
     {
         STAT_ACTION("Generate planet mesh vertices : [" + name + "]");
+        std::vector<uint32_t>        indices_child;
+        std::vector<Eigen::Vector3f> positions_child;
         // TOP side (larger)
         generate_rectangle_area(indices_child, positions_child,
                                 cell_count,
@@ -165,16 +175,15 @@ void Planet::regenerate() {
                                 -cell_count - 1,
                                 cell_count * 2 + 1,
                                 -cell_count * 2 - 1,
-                                -cell_count - 1,
-                                cell_count + 1, cell_count * 2 + 1);
+                                -cell_count - 1, cell_count + 1, cell_count * 2 + 1);
+        child_mesh = Mesh::create("planet child mesh");
+        child_mesh->set_positions(positions_child, 0, true);
+        child_mesh->set_indices(indices_child);
     }
-    child_mesh = Mesh::create("planet child mesh");
-    child_mesh->set_positions(positions_child, 0, true);
-    child_mesh->set_indices(indices_child);
 
     GL_CHECK_ERROR();
 
-    STAT_ACTION("regenerate planet children chunk : [" + name + "] ");
+    STAT_ACTION("rebuild_mesh planet children chunk : [" + name + "] ");
     root->regenerate(cell_count);
     GL_CHECK_ERROR();
     dirty = false;
@@ -202,7 +211,7 @@ void Planet::tick(double delta_time) {
     SceneComponent::tick(delta_time);
 
     if (dirty) {
-        regenerate();
+        rebuild_mesh();
     }
 
     {
@@ -210,72 +219,43 @@ void Planet::tick(double delta_time) {
 
         if (!freeze_camera) {
             // Get camera direction from planet center
-            const auto camera_direction = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->get_world_position() - get_world_position()).normalized();
+            const auto camera_direction_ps = get_world_rotation().inverse() * (Engine::get().get_world().get_camera()->get_world_position() - get_world_position()).normalized();
 
             // Compute global rotation snapping step
-            const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2);
-            rotation_to_camera                = closest_rotation_to(rotation_to_camera, camera_direction, max_cell_radian_step);
-            local_orientation                 = Eigen::Affine3d::Identity();
-            local_orientation.rotate(rotation_to_camera);
+            const double max_cell_radian_step = cell_width * std::pow(2, num_lods) / (radius * 2.0);
+            mesh_rotation_ps                  = closest_rotation_to(mesh_rotation_ps, camera_direction_ps, max_cell_radian_step);
 
-            world_orientation = get_world_rotation() * local_orientation;
+            // Mesh rotation in world space
+            mesh_rotation_ws = get_world_rotation() * mesh_rotation_ps;
         }
 
-        planet_inverse_rotation = world_orientation.inverse();
-        // Compute global planet transformation (ensure ground is always close to origin)
-        planet_global_transform = Eigen::Affine3d::Identity();
-        planet_global_transform.translate(get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
-        planet_global_transform = planet_global_transform * world_orientation;
-        planet_global_transform.translate(Eigen::Vector3d(radius, 0, 0));
+        // Transform world space to mesh space
+        inv_mesh_rotation_ws = mesh_rotation_ws.inverse();
+
+        // Mesh transform in world space
+        mesh_transform_ws = Eigen::Affine3d::Identity();
+        // 1. Add camera offset
+        mesh_transform_ws.translate(get_world_position() - Engine::get().get_world().get_camera()->get_world_position());
+        // 2. Add rotation
+        mesh_transform_ws.rotate(mesh_rotation_ws);
+        // 3. Shift up to center sphere to (0, 0, 0)
+        mesh_transform_ws.translate(Eigen::Vector3d(radius, 0, 0));
     }
 
-    const double camera_distance_to_ground = (Engine::get().get_world().get_camera()->
-                                                            get_world_position() -
-                                              get_world_position()).norm() - static_cast<double>(radius);
+    // Compute LODs
+    const double camera_distance_to_ground = (Engine::get().get_world().get_camera()->get_world_position() - get_world_position()).norm() - static_cast<double>(radius);
+    const double normalized_distance       = std::max(1.0, camera_distance_to_ground / (cell_width * (cell_count * 4 + 2)));
+    const int    display_lod0_level        = std::min(num_lods - 1, static_cast<int>(std::log2(normalized_distance)));
+    const int    display_max_lod           = num_lods; // @TODO : limit max LOD when camera is close to ground
+    const double display_lod0_cell_width   = cell_width * std::pow(2.0, display_lod0_level);
 
-    const double normalized_distance = std::max(1.0, camera_distance_to_ground / (cell_width * (cell_count * 4 + 2)));
-    const int    min_lod             = std::min(num_lods - 1, static_cast<int>(std::log2(normalized_distance)));
-    const int    max_lod             = num_lods;
-    const float  initial_cell_width  = cell_width * static_cast<float>(std::pow(2, min_lod));
+    root->tick(delta_time, display_max_lod - display_lod0_level, display_lod0_cell_width);
 
-    root->tick(delta_time, max_lod - min_lod, initial_cell_width);
-
-    current_orbit += orbit_speed * delta_time;
-    current_rotation += rotation_speed * delta_time;
+    // Update planet transform
+    current_orbit += static_cast<double>(orbit_speed) * delta_time;
+    current_rotation += static_cast<double>(rotation_speed) * delta_time;
     set_local_position(Eigen::Vector3d(std::cos(current_orbit), std::sin(current_orbit), 0) * orbit_distance);
     set_local_rotation(Eigen::Quaterniond(Eigen::AngleAxisd(current_rotation, Eigen::Vector3d::UnitZ())));
-}
-
-
-static std::shared_ptr<Texture2D> grass_albedo       = nullptr;
-static std::shared_ptr<Texture2D> grass_normal       = nullptr;
-static std::shared_ptr<Texture2D> grass_mrao         = nullptr;
-static std::shared_ptr<Texture2D> rock_albedo        = nullptr;
-static std::shared_ptr<Texture2D> rock_normal        = nullptr;
-static std::shared_ptr<Texture2D> rock_mrao          = nullptr;
-static std::shared_ptr<Texture2D> sand_albedo        = nullptr;
-static std::shared_ptr<Texture2D> sand_normal        = nullptr;
-static std::shared_ptr<Texture2D> sand_mrao          = nullptr;
-static std::shared_ptr<Texture2D> water_normal       = nullptr;
-static std::shared_ptr<Texture2D> water_displacement = nullptr;
-
-static void load_textures() {
-    if (!grass_albedo) {
-        grass_albedo = Texture2D::create("terrain grass albedo", "resources/textures/terrain/wispy-grass-meadow_albedo.png", {.srgb = true});
-        grass_normal = Texture2D::create("terrain grass normal", "resources/textures/terrain/wispy-grass-meadow_normal-dx.png");
-        grass_mrao   = Texture2D::create("terrain grass mrao", "resources/textures/terrain/wispy-grass-meadow_mrao.jpg");
-
-        rock_albedo = Texture2D::create("terrain rock albedo", "resources/textures/terrain/pine_forest_ground1_albedo.png", {.srgb = true});
-        rock_normal = Texture2D::create("terrain rock normal", "resources/textures/terrain/pine_forest_ground1_Normal-dx.png");
-        rock_mrao   = Texture2D::create("terrain rock mrao", "resources/textures/terrain/pine_forest_ground1_mrao.jpg");
-
-        sand_albedo = Texture2D::create("terrain sand albedo", "resources/textures/terrain/wavy-sand_albedo.png", {.srgb = true});
-        sand_normal = Texture2D::create("terrain sand normal", "resources/textures/terrain/wavy-sand_normal-dx.png");
-        sand_mrao   = Texture2D::create("terrain sand mrao", "resources/textures/terrain/wavy-sand_mrao.jpg");
-
-        water_normal       = Texture2D::create("water normal", "resources/textures/water/water_normal.png");
-        water_displacement = Texture2D::create("water displacement", "resources/textures/water/water_distortion.png");
-    }
 }
 
 
@@ -284,48 +264,33 @@ void Planet::render(Camera& camera) {
     SceneComponent::render(camera);
 
     if (landscape_material->bind()) {
-        landscape_material->set_model_transform(planet_global_transform);
-        glUniform1f(landscape_material->binding("radius"), radius);
-        glUniform1f(landscape_material->binding("grid_cell_count"), static_cast<float>(cell_count));
-        glUniform4fv(landscape_material->binding("debug_vector"), 1, debug_vector.data());
-        glUniformMatrix4fv(landscape_material->binding("planet_world_orientation"), 1, false, local_orientation.cast<float>().matrix().data());
-
-        glUniformMatrix4fv(landscape_material->binding("inv_planet_world_orientation"), 1, false, local_orientation.cast<float>().inverse().matrix().data());
-        glUniformMatrix4fv(landscape_material->binding("inv_model"), 1, false, planet_global_transform.cast<float>().inverse().matrix().data());
-
-        glUniformMatrix3fv(landscape_material->binding("scene_rotation"), 1, false, get_world_rotation().cast<float>().matrix().data());
-        glUniformMatrix3fv(landscape_material->binding("inv_scene_rotation"), 1, false, get_world_rotation().inverse().cast<float>().matrix().data());
-
-        // Bind textures
-        load_textures();
-        landscape_material->bind_texture(grass_albedo, "grass_color");
-        landscape_material->bind_texture(rock_albedo, "rock_color");
-        landscape_material->bind_texture(sand_albedo, "sand_color");
-        landscape_material->bind_texture(grass_normal, "grass_normal");
-        landscape_material->bind_texture(rock_normal, "rock_normal");
-        landscape_material->bind_texture(sand_normal, "sand_normal");
-        landscape_material->bind_texture(grass_mrao, "grass_mrao");
-        landscape_material->bind_texture(rock_mrao, "rock_mrao");
-        landscape_material->bind_texture(sand_mrao, "sand_mrao");
-        landscape_material->bind_texture(water_normal, "water_normal");
-        landscape_material->bind_texture(water_displacement, "water_displacement");
-
+        landscape_material->set_transform("mesh_transform_ws", mesh_transform_ws);
+        landscape_material->set_float("radius", radius);
+        landscape_material->set_int("cell_count", cell_count);
+        landscape_material->set_vec4("debug_vector", debug_vector);
+        landscape_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
+        landscape_material->set_rotation("scene_rotation", get_world_rotation());
+        landscape_material->set_texture("grass_color", grass_albedo);
+        landscape_material->set_texture("rock_color", rock_albedo);
+        landscape_material->set_texture("sand_color", sand_albedo);
+        landscape_material->set_texture("grass_normal", grass_normal);
+        landscape_material->set_texture("rock_normal", rock_normal);
+        landscape_material->set_texture("sand_normal", sand_normal);
+        landscape_material->set_texture("grass_mrao", grass_mrao);
+        landscape_material->set_texture("rock_mrao", rock_mrao);
+        landscape_material->set_texture("sand_mrao", sand_mrao);
+        landscape_material->set_texture("water_normal", water_normal);
+        landscape_material->set_texture("water_displacement", water_displacement);
         root->render(camera);
     }
 
     if (display_normals && debug_normal_display_material->bind()) {
-
-        debug_normal_display_material->set_model_transform(planet_global_transform);
-        glUniform1f(debug_normal_display_material->binding("radius"), radius);
-        glUniform1f(debug_normal_display_material->binding("grid_cell_count"), static_cast<float>(cell_count));
-        glUniform4fv(debug_normal_display_material->binding("debug_vector"), 1, debug_vector.data());
-        glUniformMatrix4fv(debug_normal_display_material->binding("planet_world_orientation"), 1, false, local_orientation.cast<float>().matrix().data());
-
-        glUniformMatrix4fv(debug_normal_display_material->binding("inv_planet_world_orientation"), 1, false, local_orientation.cast<float>().inverse().matrix().data());
-        glUniformMatrix4fv(debug_normal_display_material->binding("inv_model"), 1, false, planet_global_transform.cast<float>().inverse().matrix().data());
-
-        glUniformMatrix3fv(debug_normal_display_material->binding("scene_rotation"), 1, false, get_world_rotation().cast<float>().matrix().data());
-        glUniformMatrix3fv(debug_normal_display_material->binding("inv_scene_rotation"), 1, false, get_world_rotation().inverse().cast<float>().matrix().data());
+        debug_normal_display_material->set_transform("mesh_transform_ws", mesh_transform_ws);
+        debug_normal_display_material->set_float("radius", radius);
+        debug_normal_display_material->set_int("cell_count", cell_count);
+        debug_normal_display_material->set_vec4("debug_vector", debug_vector);
+        debug_normal_display_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
+        debug_normal_display_material->set_rotation("scene_rotation", get_world_rotation());
         root->render(camera);
     }
 }

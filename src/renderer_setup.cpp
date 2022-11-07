@@ -32,7 +32,7 @@ std::shared_ptr<FrameGraph> setup_renderer() {
         glUniform1i(material->binding("enable_atmosphere"), GameSettings::get().enable_atmosphere ? 1 : 0);
         glUniform1i(material->binding("atmosphere_quality"), GameSettings::get().atmosphere_quality);
         glUniform1i(material->binding("shading"), static_cast<int>(GameSettings::get().shading));
-        material->bind_texture(cubemap, "WORLD_Cubemap");
+        material->set_texture("WORLD_Cubemap", cubemap);
     });
 
     const auto ssr_pass = PostProcessPass::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");

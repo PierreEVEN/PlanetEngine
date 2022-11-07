@@ -19,15 +19,75 @@ int Material::binding(const std::string& binding_name) const {
     return -1;
 }
 
-int Material::bind_texture(const std::shared_ptr<TextureBase>& texture, const std::string& binding_name) const {
-    GL_CHECK_ERROR();
-    const int binding_location = binding(binding_name);
-    if (binding_location > 0) {
-        glUniform1i(binding_location, binding_location);
-        texture->bind(binding_location);
+bool Material::set_texture(const std::string& bind_name, const std::shared_ptr<TextureBase>& texture) const {
+    const int bp = binding(bind_name);
+    if (bp > 0) {
+        glUniform1i(bp, bp);
+        GL_CHECK_ERROR();
+        texture->bind(bp);
+        return true;
     }
-    GL_CHECK_ERROR();
-    return binding_location;
+    return false;
+}
+
+bool Material::set_float(const std::string& bind_name, float value) const {
+    const int bp = binding(bind_name);
+    if (bp >= 0) {
+        glUniform1f(bp, value);
+        GL_CHECK_ERROR();
+        return true;
+    }
+    return false;
+}
+
+bool Material::set_int(const std::string& bind_name, int value) const {
+    const int bp = binding(bind_name);
+    if (bp >= 0) {
+        glUniform1i(bp, value);
+        GL_CHECK_ERROR();
+        return true;
+    }
+    return false;
+}
+
+bool Material::set_rotation(const std::string& bind_name, const Eigen::Quaterniond& value) const {
+    const int bp = binding(bind_name);
+    if (bp >= 0) {
+        glUniformMatrix3fv(bp, 1, false, value.cast<float>().matrix().data());
+        GL_CHECK_ERROR();
+        return true;
+    }
+    return false;
+}
+
+bool Material::set_transform(const std::string& bind_name, const Eigen::Affine3d& value) const {
+    const int bp = binding(bind_name);
+    if (bp >= 0) {
+        glUniformMatrix4fv(bp, 1, false, value.cast<float>().matrix().data());
+        GL_CHECK_ERROR();
+        return true;
+    }
+    return false;
+}
+
+bool Material::set_vec4(const std::string& bind_name, const Eigen::Vector4f& value) const {
+    const int bp = binding(bind_name);
+    if (bp >= 0) {
+        glUniform4fv(bp, 1, value.data());
+        GL_CHECK_ERROR();
+        return true;
+    }
+    return false;
+}
+
+bool Material::set_vec3(const std::string& bind_name, const Eigen::Vector3f& value) const {
+    const int bp = binding(bind_name);
+    if (bp >= 0) {
+        glUniform3fv(bp, 1, value.data());
+        GL_CHECK_ERROR();
+        return true;
+    }
+    return false;
 }
 
 Material::Material(const std::string& in_name, const std::string& vertex_path, const std::string& fragment_path, const std::optional<std::string>& geometry_path)
@@ -212,12 +272,6 @@ bool Material::bind() {
     glUseProgram(shader_program_id);
     GL_CHECK_ERROR();
     return true;
-}
-
-void Material::set_model_transform(const Eigen::Affine3d& transformation) {
-    const int model_location = binding("model");
-    if (model_location)
-        glUniformMatrix4fv(model_location, 1, false, transformation.cast<float>().matrix().data());
 }
 
 void Material::check_updates() {
