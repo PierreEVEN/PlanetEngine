@@ -53,6 +53,20 @@ void SceneComponent::draw_ui() {
 
 }
 
+std::vector<std::shared_ptr<SceneComponent>> SceneComponent::get_all_components_of_class(const Class& component_class) const {
+    std::vector<std::shared_ptr<SceneComponent>> components;
+
+    for (const auto& child : children) {
+        if (child->get_class() == component_class) {
+            components.emplace_back(child);
+        }
+        const auto rec = child->get_all_components_of_class(component_class);
+        components.insert(components.end(), rec.begin(), rec.end());
+    }
+
+    return components;
+}
+
 void SceneComponent::tick_internal(double delta_time, TickGroup new_group) {
     if (new_group == tick_group)
         tick(delta_time);

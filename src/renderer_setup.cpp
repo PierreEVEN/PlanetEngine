@@ -9,6 +9,7 @@
 #include "graphics/texture_image.h"
 #include "graphics/framegraph.h"
 #include "utils/game_settings.h"
+#include "world/planet.h"
 #include "world/world.h"
 
 std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_camera) {
@@ -36,6 +37,11 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_int("enable_atmosphere", GameSettings::get().enable_atmosphere ? 1 : 0);
         material->set_int("atmosphere_quality", GameSettings::get().atmosphere_quality);
         material->set_int("shading", static_cast<int>(GameSettings::get().shading));
+
+        for (const auto& planet : Engine::get().get_world().get_scene_root().get_all_components_of_class(Class::of<Planet>())) {
+            
+        }
+
         material->set_texture("WORLD_Cubemap", cubemap);
     });
 

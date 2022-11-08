@@ -37,13 +37,13 @@ int main() {
     ImGuiWindow::create_window<WorldOutliner>(&Engine::get().get_world());
 
     // Create planet
-    const auto earth = std::make_shared<Planet>("earth", main_camera);
+    const auto earth = Planet::create("earth", main_camera);
     earth->set_radius(6000000);
     earth->set_max_lods(19);
     earth->set_cell_count(30);
     Engine::get().get_world().get_scene_root().add_child(earth);
 
-    const auto moon = std::make_shared<Planet>("moon", main_camera);
+    const auto moon = Planet::create("moon", main_camera);
     Engine::get().get_world().get_scene_root().add_child(moon);
     moon->set_radius(1700000);
     moon->set_max_lods(18);

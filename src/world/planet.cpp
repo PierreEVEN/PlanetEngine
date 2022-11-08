@@ -52,25 +52,43 @@ Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& i
     water_displacement = Texture2D::create("water displacement", "resources/textures/water/water_distortion.png");
 }
 
+
+std::shared_ptr<Planet> Planet::create(const std::string& name, const std::shared_ptr<SceneComponent>& player) {
+    return std::shared_ptr<Planet>(new Planet(name, player));
+}
 void Planet::draw_ui() {
     SceneComponent::draw_ui();
+    ImGui::Text("Mesh");
     ImGui::SliderInt("num LODs : ", &num_lods, 1, 40);
     ImGui::DragFloat("radius : ", &radius, 10);
     if (ImGui::SliderInt("cell number", &cell_count, 1, 120) ||
         ImGui::SliderFloat("cell_width : ", &cell_width, 0.05f, 10))
         dirty = true;
 
+    ImGui::Separator();
+    ImGui::Text("Atmosphere");
+    ImGui::Checkbox("enable", &enable_atmosphere);
+    if (enable_atmosphere) {
+        ImGui::DragFloat("Depth", &atmosphere_settings.density_falloff, 100);
+        ImGui::SliderFloat("Density Falloff", &atmosphere_settings.density_falloff, 0.01f, 12);
+        ImGui::SliderFloat("Scatter strength", &atmosphere_settings.scatter_strength, 0.01f, 10);
+
+        ImGui::SliderFloat3("Scatter coefficients", atmosphere_settings.scatter_coefficients.data(), 0, 2000);
+        ImGui::SliderFloat("Scatter power", &atmosphere_settings.scatter_coefficients.w(), 0.01f, 10);
+    }
+    ImGui::Separator();
+    ImGui::Text("Transformations");
     ImGui::DragFloat("rotation speed : ", &rotation_speed, 0.01f);
     ImGui::DragFloat("Orbit speed : ", &orbit_speed, 0.01f);
     ImGui::DragFloat("Orbit distance : ", &orbit_distance, 100);
 
     ImGui::Separator();
+    ImGui::Text("Debug");
     ImGui::Checkbox("Show normals", &display_normals);
     ImGui::Checkbox("Double sided", &double_sided);
     ImGui::Checkbox("Freeze Camera", &freeze_camera);
     ImGui::Checkbox("Freeze Updates", &freeze_updates);
     ImGui::DragFloat4("debug vector", debug_vector.data());
-
     ui::rotation_edit(mesh_rotation_ws, "camera rotation");
 }
 

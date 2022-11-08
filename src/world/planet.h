@@ -11,7 +11,8 @@ class PlanetChunk;
 class Planet : public SceneComponent {
     friend class PlanetChunk;
 public:
-    Planet(const std::string& name, const std::shared_ptr<SceneComponent>& player);
+    static std::shared_ptr<Planet> create(const std::string& name, const std::shared_ptr<SceneComponent>& player);
+
     void draw_ui() override;
 
     [[nodiscard]] float get_radius() const { return radius; }
@@ -43,17 +44,31 @@ public:
         orbit_speed = speed;
     }
 
-    virtual Class get_class() override { return Class(this); }
+    virtual Class get_class() override { return {this}; }
+
+    struct AtmosphereSettings {
+        float           atmosphere_depth     = 200000;
+        float           density_falloff      = 6;
+        float           scatter_strength     = 2;
+        Eigen::Vector4f scatter_coefficients = Eigen::Vector4f(700.f, 550.f, 460.f, 4.f);
+        float           epsilon              = 1;
+    };
+
+    bool               enable_atmosphere   = true;
+    AtmosphereSettings atmosphere_settings = {};
+
 protected:
     void tick(double delta_time) override;
     void render(Camera& camera) override;
 
 private:
+    Planet(const std::string& name, const std::shared_ptr<SceneComponent>& player);
+
     std::shared_ptr<SceneComponent> player;
-    std::shared_ptr<Mesh>        root_mesh;
-    std::shared_ptr<Mesh>        child_mesh;
-    std::shared_ptr<PlanetChunk> root;
-    const World&                 world;
+    std::shared_ptr<Mesh>           root_mesh;
+    std::shared_ptr<Mesh>           child_mesh;
+    std::shared_ptr<PlanetChunk>    root;
+    const World&                    world;
 
     // Parameters
     float radius     = 80000;

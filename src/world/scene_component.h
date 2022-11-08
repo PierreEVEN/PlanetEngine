@@ -193,6 +193,8 @@ public:
      */
     void set_tick_group(TickGroup new_group) { tick_group = new_group; }
 
+    std::vector<std::shared_ptr<SceneComponent>> get_all_components_of_class(const Class& component_class) const;
+
 protected:
     /**
      * \brief Called once per frame. Used for gameplay purposes.
