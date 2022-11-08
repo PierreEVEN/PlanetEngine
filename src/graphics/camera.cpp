@@ -54,7 +54,7 @@ Eigen::Matrix4d Camera::view_matrix() {
 }
 
 Eigen::Quaterniond Camera::get_world_rotation() {
-
+    return SceneComponent::get_world_rotation();
     if (get_parent())
         return Eigen::Quaterniond(get_local_rotation() * get_parent()->get_world_rotation());
 
@@ -62,6 +62,7 @@ Eigen::Quaterniond Camera::get_world_rotation() {
 }
 
 Eigen::Vector3d Camera::get_world_position() const {
+    return SceneComponent::get_world_position();
     if (get_parent())
         return get_parent()->get_world_position() + get_local_position();
     return SceneComponent::get_world_position();
