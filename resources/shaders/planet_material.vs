@@ -30,6 +30,7 @@ layout(location = 5) out vec3 g_DebugScalar;
 layout(location = 6) out vec3 g_Normal;
 layout(location = 7) out vec3 g_Tangent;
 layout(location = 8) out vec3 g_BiTangent;
+layout(location = 9) out vec3 g_Normal_PS;
 
 vec2 uv_from_sphere_pos(vec3 sphere_norm, vec3 world_norm, out vec3 tang, out vec3 bitang) {
 
@@ -146,7 +147,7 @@ void main()
 	vec3 sphere_pos_local_offset = grid_to_sphere(local_space_data.pos2D, radius);          //OK
     vec3 sphere_pos_local = sphere_pos_local_offset + vec3(radius, 0, 0);                   //OK
     vec3 local_sphere_normal = normalize(sphere_pos_local);                                 //OK
-    vec3 sphere_normal_world_space = mat3(mesh_transform_ws) * local_sphere_normal;                     //OK
+    vec3 sphere_normal_world_space = mat3(mesh_transform_ws) * local_sphere_normal;         //OK
     vec3 sphere_normal_planet_space = mesh_rotation_ps * local_sphere_normal;               //OK
 
     /**
@@ -189,6 +190,7 @@ void main()
     g_Normal = world_normals;
     g_Tangent = world_tangent;
     g_BiTangent = world_bi_tangent;
+    g_Normal_PS = sphere_normal_planet_space;
     
     // Vertex position
 	gl_Position = pv_matrix * world_position; 

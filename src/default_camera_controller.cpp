@@ -3,7 +3,6 @@
 #include <iostream>
 #include <GLFW/glfw3.h>
 
-#include "camera.h"
 #include "engine/engine.h"
 #include "graphics/camera.h"
 #include "utils/maths.h"
@@ -16,6 +15,7 @@ DefaultCameraController::DefaultCameraController()
     Engine::get().on_key_down.add_object(this, &DefaultCameraController::process_key);
     Engine::get().on_mouse_moved.add_object(this, &DefaultCameraController::process_mouse_input);
     Engine::get().on_mouse_scroll.add_object(this, &DefaultCameraController::process_mouse_wheel);
+    set_tick_group(TickGroup::PrePhysic);
 }
 
 DefaultCameraController::~DefaultCameraController() {

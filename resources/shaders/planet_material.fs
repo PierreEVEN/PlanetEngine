@@ -11,12 +11,13 @@ precision highp float;
 layout(location = 0) in vec3 g_LocalNormal;
 layout(location = 1) in vec3 position;
 layout(location = 2) in float altitude;
-layout(location = 3) in vec2 coordinates;
+layout(location = 3) in vec2 g_Coordinates;
 layout(location = 4) in float planet_radius;
 layout(location = 5) in vec3 g_DebugScalar;
 layout(location = 6) in vec3 g_Normal;
 layout(location = 7) in vec3 g_Tangent;
 layout(location = 8) in vec3 g_BiTangent;
+layout(location = 9) in vec3 g_Normal_PS;
 
 layout(location = 9) uniform sampler2D grass_color;
 layout(location = 10) uniform sampler2D sand_color;
@@ -32,6 +33,55 @@ layout(location = 17) uniform sampler2D sand_mrao;
 
 layout(location = 18) uniform sampler2D water_normal;
 layout(location = 19) uniform sampler2D water_displacement;
+
+vec2 uv_from_sphere_pos(vec3 sphere_norm) {
+    vec3 abs_norm = abs(sphere_norm);
+    const float multiplier = 1 / PI * 2 * 1000;
+
+    float x = 0;
+    float y = 0;
+    // TOP
+    if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z > 0)
+    {
+
+         x = mod(atan(sphere_norm.x, sphere_norm.z) * multiplier, 1) + 0.5;
+         y = mod(atan(sphere_norm.y, sphere_norm.z) * multiplier, 1) + 0.5;         
+    }
+    // FRONT
+    else if (abs_norm.x > abs_norm.y && abs_norm.x > abs_norm.z && sphere_norm.x > 0)
+    {
+        x = mod(atan(sphere_norm.x, sphere_norm.z) * multiplier, 1) - 0.5;
+        y = mod(atan(sphere_norm.y, sphere_norm.x) * multiplier, 1) + 0.5;
+        
+    }
+    // BOTTOM
+    else if (abs_norm.z > abs_norm.x && abs_norm.z > abs_norm.y && sphere_norm.z < 0)
+    {
+        x = mod(atan(-sphere_norm.x, -sphere_norm.z) * multiplier, 1) + 0.5;
+        y = mod(atan(sphere_norm.y, -sphere_norm.z) * multiplier, 1) + 0.5;
+        
+    }
+    // BACK
+    else if (abs_norm.x > abs_norm.y && abs_norm.x > abs_norm.z && sphere_norm.x < 0)
+    {
+        x = mod(atan(-sphere_norm.x, -sphere_norm.z) * multiplier, 1) - 0.5;
+        y = mod(atan(sphere_norm.y, -sphere_norm.x) * multiplier, 1) + 0.5;
+    }
+    // LEFT
+    else if (abs_norm.y > abs_norm.x && abs_norm.y > abs_norm.z && sphere_norm.y > 0)
+    {
+        x = mod(atan(sphere_norm.x, sphere_norm.y) * multiplier, 1) + 0.5;
+        y = mod(atan(-sphere_norm.y, sphere_norm.z) * multiplier, 1) + 1.5;
+    }
+    // RIGHT
+    else if (abs_norm.y > abs_norm.x && abs_norm.y > abs_norm.z && sphere_norm.y < 0)
+    {
+        x = mod(atan(-sphere_norm.x, sphere_norm.y) * multiplier, 1) - 0.5;
+        y = mod(atan(-sphere_norm.y, sphere_norm.z) * multiplier, 1) - 0.5;
+    }
+
+    return vec2(x, y);
+}
 
 struct LandData {
 	vec3 color;
@@ -86,6 +136,14 @@ void main()
 	mat3 TBN = mat3(g_Tangent, g_BiTangent, g_Normal);
 	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) - 0.0001, 64);
 	float camera_distance = length(position);
+
+	// Compute UVs
+	
+    vec3 sphere_bitangent = vec3(0);
+    vec3 sphere_tangent = vec3(0);
+    vec2 coordinates = vec2(0);//uv_from_sphere_pos(g_Normal_PS);
+	coordinates = g_Coordinates;
+
 
 	// Create materials
 	float textures_scale = 400;

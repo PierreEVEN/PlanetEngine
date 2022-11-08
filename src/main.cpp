@@ -4,7 +4,6 @@
 #include "engine/engine.h"
 #include "engine/renderer.h"
 #include "graphics/camera.h"
-#include "graphics/draw_group.h"
 #include "graphics/framegraph.h"
 #include "graphics/material.h"
 #include "graphics/primitives.h"
