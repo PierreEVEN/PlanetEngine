@@ -25,7 +25,7 @@
 int main() {
     std::unique_ptr<ActionRecord> main_initialization = std::make_unique<ActionRecord>("main initialization");
     Engine::get().get_renderer().set_icon("resources/textures/icon.png");
-    
+
     const auto main_camera = std::make_shared<Camera>();
 
     const auto framegraph = setup_renderer(main_camera);
@@ -78,14 +78,10 @@ int main() {
             Engine::get().get_world().tick_world();
 
             // Rendering
-            main_camera->use();
-            if (GameSettings::get().fullscreen) {
-                main_camera->viewport_res() = {Engine::get().get_renderer().window_width(), Engine::get().get_renderer().window_height()};
+            if (GameSettings::get().fullscreen)
                 framegraph->render(true, Engine::get().get_renderer().window_width(), Engine::get().get_renderer().window_height());
-            } else {
-                main_camera->viewport_res() = {viewport->width(), viewport->height()};
+            else
                 framegraph->render(false, viewport->width(), viewport->height());
-            }
 
             // UI
             ui::draw();

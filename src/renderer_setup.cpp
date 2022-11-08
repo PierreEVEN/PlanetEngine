@@ -19,7 +19,11 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     g_buffer_pass->add_attachment("mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("debug", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->on_draw.add_lambda([main_camera] { Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera); });
+    g_buffer_pass->on_draw.add_lambda([main_camera, g_buffer_pass] {
+        main_camera->viewport_res() = {g_buffer_pass->get_width(), g_buffer_pass->get_height()};
+        main_camera->use();
+        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera);
+    });
 
     const auto cubemap = TextureCube::create("cube map");
     cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png", "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
@@ -28,18 +32,18 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
     lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     lighting->on_bind_material.add_lambda([cubemap, main_camera](std::shared_ptr<Material> material) {
-        glUniform1f(material->binding("z_near"), static_cast<float>(main_camera->z_near()));
-        glUniform1i(material->binding("enable_atmosphere"), GameSettings::get().enable_atmosphere ? 1 : 0);
-        glUniform1i(material->binding("atmosphere_quality"), GameSettings::get().atmosphere_quality);
-        glUniform1i(material->binding("shading"), static_cast<int>(GameSettings::get().shading));
+        material->set_float("z_near", static_cast<float>(main_camera->z_near()));
+        material->set_int("enable_atmosphere", GameSettings::get().enable_atmosphere ? 1 : 0);
+        material->set_int("atmosphere_quality", GameSettings::get().atmosphere_quality);
+        material->set_int("shading", static_cast<int>(GameSettings::get().shading));
         material->set_texture("WORLD_Cubemap", cubemap);
     });
 
     const auto ssr_pass = PostProcessPass::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
     ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     ssr_pass->on_bind_material.add_lambda([](std::shared_ptr<Material> material) {
-        glUniform1i(material->binding("enabled"), GameSettings::get().screen_space_reflections ? 1 : 0);
-        glUniform1f(material->binding("resolution"), GameSettings::get().ssr_quality);
+        material->set_int("enabled", GameSettings::get().screen_space_reflections ? 1 : 0);
+        material->set_float("resolution", GameSettings::get().ssr_quality);
     });
 
     const auto ssr_combine_pass = PostProcessPass::create("SSR_Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");
@@ -69,8 +73,8 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         });
         size_t                                                                      pass_count = up_sample_passes.size();
         pass->on_bind_material.add_lambda([i, pass_count](std::shared_ptr<Material> material) {
-            glUniform1f(material->binding("step"), 1 - i / static_cast<float>(pass_count));
-            glUniform1f(material->binding("bloom_strength"), GameSettings::get().bloom_intensity);
+            material->set_float("step", 1 - i / static_cast<float>(pass_count));
+            material->set_float("bloom_strength", GameSettings::get().bloom_intensity);
         });
         up_sample_passes[i] = pass;
     }
@@ -78,8 +82,8 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     const auto final_post_process_pass = PostProcessPass::create("PostProcess", 1, 1, "resources/shaders/post_process/post_process.fs");
     final_post_process_pass->link_dependency(up_sample_passes.front(), {"Input_Color"});
     final_post_process_pass->on_bind_material.add_lambda([](std::shared_ptr<Material> material) {
-        glUniform1f(material->binding("gamma"), GameSettings::get().gamma);
-        glUniform1f(material->binding("exposure"), GameSettings::get().exposure);
+        material->set_float("gamma", GameSettings::get().gamma);
+        material->set_float("exposure", GameSettings::get().exposure);
     });
 
     return FrameGraph::create("main framegraph", final_post_process_pass);
