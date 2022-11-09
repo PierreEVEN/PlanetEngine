@@ -1,14 +1,31 @@
 #version 430
 
 #include "../libs/world_data.cginc"
+#include "../libs/maths.cginc"
 
 out vec4 oFragmentColor;
 layout(location = 0) in vec2 uv;
 layout(location = 1) uniform sampler2D Input_lighting_Color;
 layout(location = 2) uniform ivec2 Input_lighting_Color_Res;
 layout(location = 3) uniform sampler2D Input_SSR_Color;
-layout(location = 4) uniform sampler2D Input_mrao;
-layout(location = 5) uniform sampler2D Input_Depth;
+layout(location = 4) uniform sampler2D Input_normal;
+layout(location = 5) uniform sampler2D Input_mrao;
+layout(location = 6) uniform sampler2D Input_Depth;
+layout(location = 7) uniform samplerCube ENV_cubemap;
+
+vec3 getSceneWorldDirection() {
+    // compute clip space direction
+    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, 1.0, 1.0);
+
+    // Transform local space to view space
+    vec4 viewSpacePosition = proj_matrix_inv * clipSpacePosition;
+
+    viewSpacePosition /= viewSpacePosition.w;
+
+    // Transform view space to world space
+    vec4 worldSpacePosition = view_matrix_inv * viewSpacePosition;
+    return normalize(worldSpacePosition.xyz);
+}
 
 void main() {
     vec4 uvs = texture(Input_SSR_Color, uv);
@@ -47,8 +64,11 @@ void main() {
         ssr_uv.xy /= count;
     }
 
-    if (ssr_uv.b <= 0)
-        oFragmentColor = texture(Input_lighting_Color, uv.xy);
+    if (ssr_uv.b <= 0) {
+        vec3 normal = texture(Input_normal, uv).xyz;
+        oFragmentColor = texture(ENV_cubemap, Rx(-PI / 2) * reflect(normalize(getSceneWorldDirection()), normal));
+        return;
+    }
     else
         oFragmentColor = texture(Input_lighting_Color, ssr_uv.xy);
 }

@@ -17,7 +17,7 @@ public:
     void force_rebuild_maps();
     void rebuild_maps();
     void tick(double delta_time, int num_lods, double width);
-    void render(Camera& camera);
+    void render(Camera& camera, const std::shared_ptr<Material>& draw_material);
 
 
 private:

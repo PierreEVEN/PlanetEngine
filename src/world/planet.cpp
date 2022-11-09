@@ -281,7 +281,7 @@ void Planet::render(Camera& camera) {
         landscape_material->set_texture("sand_mrao", sand_mrao);
         landscape_material->set_texture("water_normal", water_normal);
         landscape_material->set_texture("water_displacement", water_displacement);
-        root->render(camera);
+        root->render(camera, landscape_material);
     }
 
     if (display_normals && debug_normal_display_material->bind()) {
@@ -291,6 +291,6 @@ void Planet::render(Camera& camera) {
         debug_normal_display_material->set_vec4("debug_vector", debug_vector);
         debug_normal_display_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
         debug_normal_display_material->set_rotation("scene_rotation", get_world_rotation());
-        root->render(camera);
+        root->render(camera, debug_normal_display_material);
     }
 }

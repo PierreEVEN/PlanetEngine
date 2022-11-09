@@ -85,20 +85,16 @@ void PlanetChunk::tick(double delta_time, int in_num_lods, double in_width) {
     rebuild_maps();
 }
 
-void PlanetChunk::render(Camera& camera) {
+void PlanetChunk::render(Camera& camera, const std::shared_ptr<Material>& draw_material) {
     if (child)
-        child->render(camera);
+        child->render(camera, draw_material);
     GL_CHECK_ERROR();
     STAT_FRAME("Render planet lod " + std::to_string(current_lod));
 
     // Set uniforms
-    planet.landscape_material->set_transform("mesh_transform_cs", mesh_transform_cs);
-    if (planet.display_normals ) {
-        planet.debug_normal_display_material->set_transform("mesh_transform_cs", mesh_transform_cs);
-    }
-
-    planet.landscape_material->set_texture("height_map", chunk_height_map);
-    planet.landscape_material->set_texture("normal_map", chunk_normal_map);
+    draw_material->set_transform("mesh_transform_cs", mesh_transform_cs);
+    draw_material->set_texture("height_map", chunk_height_map);
+    draw_material->set_texture("normal_map", chunk_normal_map);
 
     // Draw
     glEnable(GL_CULL_FACE);

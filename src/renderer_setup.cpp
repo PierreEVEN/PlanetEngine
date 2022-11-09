@@ -12,6 +12,8 @@
 #include "world/planet.h"
 #include "world/world.h"
 
+#include <iostream>
+
 std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_camera) {
 
     const auto g_buffer_pass = RenderPass::create("G-Buffers", 1, 1);
@@ -27,7 +29,8 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     });
 
     const auto cubemap = TextureCube::create("cube map");
-    cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png", "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
+    cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
+                       "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
                        "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
 
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
@@ -37,11 +40,6 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_int("enable_atmosphere", GameSettings::get().enable_atmosphere ? 1 : 0);
         material->set_int("atmosphere_quality", GameSettings::get().atmosphere_quality);
         material->set_int("shading", static_cast<int>(GameSettings::get().shading));
-
-        for (const auto& planet : Engine::get().get_world().get_scene_root().get_all_components_of_class(Class::of<Planet>())) {
-            
-        }
-
         material->set_texture("WORLD_Cubemap", cubemap);
     });
 
@@ -52,10 +50,18 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_float("resolution", GameSettings::get().ssr_quality);
     });
 
+    const auto env_cubemap = TextureCube::create("environment cube map");
+    env_cubemap->from_file("resources/textures/temp_env_map/ny.jpg", "resources/textures/temp_env_map/py.jpg",
+                           "resources/textures/temp_env_map/px.jpg", "resources/textures/temp_env_map/nx.jpg",
+                           "resources/textures/temp_env_map/nz.jpg", "resources/textures/temp_env_map/pz.jpg");
+
     const auto ssr_combine_pass = PostProcessPass::create("SSR_Combine", 1, 1, "resources/shaders/post_process/ssr_combine.fs");
     ssr_combine_pass->link_dependency(lighting);
     ssr_combine_pass->link_dependency(ssr_pass);
     ssr_combine_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
+    ssr_combine_pass->on_bind_material.add_lambda([env_cubemap](std::shared_ptr<Material> material) {
+        material->set_texture("ENV_cubemap", env_cubemap);
+    });
 
     std::vector<std::shared_ptr<PostProcessPass>> down_sample_passes;
     for (int i = 0; i < 9; ++i) {
