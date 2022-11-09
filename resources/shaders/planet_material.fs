@@ -167,7 +167,7 @@ void main()
 
 	ocean.normal += load_normal(water_normal, coordinates * 40 + vec2(world_time * -0.03));
 	ocean.normal += load_normal(water_normal, coordinates * 40 + vec2(-world_time * 0.03, world_time * 0.024));
-	ocean.normal = normalize(ocean.normal);
+	ocean.normal = normalize(ocean.normal * vec3(1, 1, 3));
 
 	LandData ground_ocean = mix_ld(ground, ocean, -altitude * 10); // Mix all
 	LandData result = ground_ocean;

@@ -47,7 +47,7 @@ Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& i
     sand_normal = Texture2D::create("terrain sand normal", "resources/textures/terrain/wavy-sand_normal-dx.png");
     sand_mrao   = Texture2D::create("terrain sand mrao", "resources/textures/terrain/wavy-sand_mrao.jpg");
 
-    water_normal       = Texture2D::create("water normal", "resources/textures/water/water_normal.png");
+    water_normal       = Texture2D::create("water normal", "resources/textures/water/water_normal_3.jpg");
     water_displacement = Texture2D::create("water displacement", "resources/textures/water/water_distortion.png");
 }
 
