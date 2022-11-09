@@ -45,6 +45,7 @@ std::string image_format_to_string(ImageFormat format) {
 
 TextureBase::~TextureBase() {
     glDeleteTextures(1, &texture_id);
+    texture_id = 0;
 }
 
 std::shared_ptr<TextureBase> TextureBase::create(const std::string& name, const TextureCreateInfos& params) {

@@ -76,7 +76,7 @@ protected:
     uint32_t    image_width;
     uint32_t    image_height;
     uint32_t    image_depth;
-    uint32_t    texture_id;
+    uint32_t    texture_id = 0;
     ImageFormat image_format;
     uint32_t    external_format;
     uint32_t    data_format;
