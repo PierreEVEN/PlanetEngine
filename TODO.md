@@ -13,8 +13,7 @@
 
 ## Problèmes & bugs connus
 
-- Normale de l'eau penchée dans un sens quand on utilise une normale map : Sans doute une mauvaise texture à remplacer par une meilleur.
-- Decoupe des UV entre les differentes modulos (vertex->fragment) : Pas très visible, mais réfléchir à un correctif.
+- Decoupe des UV entre les differentes modulos (vertex->fragment) : Pas très visible, mais réfléchir à un correctif. (en fragment c'est cher)
 - Rotation du mesh à déduire des Tangentes / Bitangentes locales : Très problèmatique mais très complexe à résoudre. On verra plus tard.
 - Rotation / scale des components cassé dans le scene graph depuis le passage de la caméra à l'origine.
 - La déformation des UV sur a sphère fait que les textures sont déformées à certains endroits, gros problème avec les normales qui diviennent incohérentes et qu'il faut compenser.
