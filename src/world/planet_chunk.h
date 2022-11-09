@@ -8,11 +8,10 @@ class Material;
 class Texture2D;
 class Planet;
 class Camera;
-class World;
 
 class PlanetChunk {
 public:
-    PlanetChunk(Planet& parent, const World& world, uint32_t lod_level, uint32_t my_level);
+    PlanetChunk(Planet& parent, uint32_t lod_level, uint32_t my_level);
 
     void regenerate(int32_t cell_number);
     void force_rebuild_maps();
@@ -38,7 +37,6 @@ private:
 
     Planet&                      planet;
     Eigen::Vector3d              chunk_position;
-    const World&                 world;
     double                       cell_size;
     int32_t                      cell_number;
     uint32_t                     current_lod;

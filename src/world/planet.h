@@ -7,6 +7,7 @@ class ComputeShader;
 class Mesh;
 class Material;
 class PlanetChunk;
+class World;
 
 class Planet : public SceneComponent {
     friend class PlanetChunk;
@@ -68,7 +69,6 @@ private:
     std::shared_ptr<Mesh>           root_mesh;
     std::shared_ptr<Mesh>           child_mesh;
     std::shared_ptr<PlanetChunk>    root;
-    const World&                    world;
 
     // Parameters
     float radius     = 80000;

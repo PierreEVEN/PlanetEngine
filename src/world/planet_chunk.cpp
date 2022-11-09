@@ -1,7 +1,6 @@
 #include "planet_chunk.h"
 
 #include "planet.h"
-#include "world.h"
 #include "graphics/camera.h"
 #include "graphics/compute_shader.h"
 #include "graphics/material.h"
@@ -12,8 +11,8 @@
 #include "utils/gl_tools.h"
 #include "utils/profiler.h"
 
-PlanetChunk::PlanetChunk(Planet& in_parent, const World& in_world, uint32_t in_lod_level, uint32_t in_my_level)
-    : world(in_world), num_lods(in_lod_level), current_lod(in_my_level), planet(in_parent) {
+PlanetChunk::PlanetChunk(Planet& in_parent, uint32_t in_lod_level, uint32_t in_my_level)
+    : num_lods(in_lod_level), current_lod(in_my_level), planet(in_parent) {
 }
 
 void PlanetChunk::regenerate(int32_t in_cell_number) {
@@ -48,7 +47,7 @@ void PlanetChunk::tick(double delta_time, int in_num_lods, double in_width) {
     // Create or destroy children
     num_lods = in_num_lods;
     if (!child && current_lod + 1 < num_lods) {
-        child = std::make_shared<PlanetChunk>(planet, world, num_lods, current_lod + 1);
+        child = std::make_shared<PlanetChunk>(planet, num_lods, current_lod + 1);
         child->regenerate(cell_number);
     }
     if (child && current_lod >= num_lods - 1)

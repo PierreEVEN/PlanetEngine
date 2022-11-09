@@ -4,7 +4,6 @@
 #include "planet.h"
 
 #include "planet_chunk.h"
-#include "world.h"
 
 #include <imgui.h>
 
@@ -20,8 +19,8 @@
 #include "utils/profiler.h"
 
 Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& in_player)
-    : SceneComponent(name), world(Engine::get().get_world()), player(in_player) {
-    root  = std::make_shared<PlanetChunk>(*this, world, 16, 0);
+    : SceneComponent(name), player(in_player) {
+    root  = std::make_shared<PlanetChunk>(*this, 16, 0);
     dirty = true;
 
     compute_positions = ComputeShader::create("Planet compute position", "resources/shaders/compute/planet_compute_position.cs");
