@@ -28,7 +28,9 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera);
     });
 
-    const auto cubemap = TextureCube::create("cube map");
+    const auto text_params = TextureCreateInfos{.wrapping = TextureWrapping::Repeat, .filtering_mag = TextureMagFilter::Nearest, .filtering_min = TextureMinFilter::Nearest, .srgb = true};
+
+    const auto cubemap = TextureCube::create("cube map", text_params);
     cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
                        "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
                        "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
@@ -50,7 +52,7 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_float("resolution", GameSettings::get().ssr_quality);
     });
 
-    const auto env_cubemap = TextureCube::create("environment cube map");
+    const auto env_cubemap = TextureCube::create("environment cube map", text_params);
     env_cubemap->from_file("resources/textures/temp_env_map/ny.jpg", "resources/textures/temp_env_map/py.jpg",
                            "resources/textures/temp_env_map/px.jpg", "resources/textures/temp_env_map/nx.jpg",
                            "resources/textures/temp_env_map/nz.jpg", "resources/textures/temp_env_map/pz.jpg");

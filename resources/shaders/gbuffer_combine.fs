@@ -120,7 +120,7 @@ void main()
 	// Draw sun disc
     if (depth <= 0) {
         oFragmentColor += vec4(1.0, 1, 1, 1.0) * distanceThroughSun / 2000;
-        oFragmentColor += texture(WORLD_Cubemap, Rx(-PI / 2) * cameraDirection) * 0.2;
+        oFragmentColor += texture(WORLD_Cubemap, Rx(-PI / 2) * cameraDirection) * 10.2;
     }
 
     if (distanceThroughAtmosphere > 0.0 && enable_atmosphere != 0) {
