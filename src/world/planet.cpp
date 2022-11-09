@@ -7,7 +7,6 @@
 
 #include <imgui.h>
 
-#include "engine/engine.h"
 #include "engine/renderer.h"
 #include "graphics/compute_shader.h"
 #include "graphics/material.h"

@@ -93,6 +93,10 @@ void PlanetChunk::render(Camera& camera) {
 
     // Set uniforms
     planet.landscape_material->set_transform("mesh_transform_cs", mesh_transform_cs);
+    if (planet.display_normals ) {
+        planet.debug_normal_display_material->set_transform("mesh_transform_cs", mesh_transform_cs);
+    }
+
     planet.landscape_material->set_texture("height_map", chunk_height_map);
     planet.landscape_material->set_texture("normal_map", chunk_normal_map);
 

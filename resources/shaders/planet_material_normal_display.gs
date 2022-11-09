@@ -28,8 +28,10 @@ void GenerateLine(int index)
     color = vec3(0,0,1);
     gl_Position = gs_in[index].gl_Position;
     EmitVertex();
-    gl_Position = gs_in[index].gl_Position + pv_matrix * vec4(g_Normal[index] * MAGNITUDE, 1);
+    gl_Position = gs_in[index].gl_Position + vec4(0.01,0,0,0);//pv_matrix * vec4(g_Normal[index] * MAGNITUDE, 1);
     EmitVertex();
+    EndPrimitive();
+    return;
     color = vec3(1,0,0);
     gl_Position = gs_in[index].gl_Position;
     EmitVertex();
