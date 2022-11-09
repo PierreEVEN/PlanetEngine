@@ -24,8 +24,6 @@ public:
         return group;
     }
 
-    template <> static DrawGroup from<>() { return {}; }
-
     [[nodiscard]] bool                            contains(const DrawGroup& other) const { return draw_groups & other.draw_groups; }
     [[nodiscard]] const std::vector<const char*>& group_names() { return names; }
 
@@ -33,6 +31,8 @@ private:
     size_t                   draw_groups = 0;
     std::vector<const char*> names;
 };
+
+    template <> inline DrawGroup DrawGroup::from<>() { return {}; }
 
 class DrawGroup_View {
 };

@@ -56,15 +56,15 @@ public:
     void tick(double delta_time) override;
     void draw_ui() override;
 
-    [[nodiscard]] virtual Eigen::Vector3d world_forward() {
+    [[nodiscard]] Eigen::Vector3d world_forward() override {
         return get_local_rotation() * Eigen::Vector3d(1, 0, 0);
     }
 
-    [[nodiscard]] virtual Eigen::Vector3d world_right() {
+    [[nodiscard]] Eigen::Vector3d world_right() override {
         return get_local_rotation() * Eigen::Vector3d(0, 1, 0);
     }
 
-    [[nodiscard]] virtual Eigen::Vector3d world_up() {
+    [[nodiscard]] Eigen::Vector3d world_up() override {
         return get_local_rotation() * Eigen::Vector3d(0, 0, 1);
     }
 
