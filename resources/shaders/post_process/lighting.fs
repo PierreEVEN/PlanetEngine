@@ -1,8 +1,8 @@
 #version 430
 precision highp float;
 
-#include "libs/world_data.cginc"
-#include "libs/lighting.cginc"
+#include "../libs/world_data.cginc"
+#include "../libs/lighting.cginc"
 
 layout(location = 1) uniform sampler2D Input_color;
 layout(location = 2) uniform sampler2D Input_normal;
@@ -32,7 +32,7 @@ const float epsilon = 1;
 
 vec3 light_dir = normalize(vec3(1, 0, 0));
 
-#include "libs/atmosphere.cginc"
+#include "../libs/atmosphere.cginc"
 
 vec3 getSceneWorldPosition(float linear_depth) {
     // Get z depth

@@ -132,6 +132,15 @@ void DefaultCameraController::tick(double delta_time) {
     get_camera()->set_roll(target_roll);
     camera_desired_position += (get_camera()->world_forward() * (input_add_x - input_sub_x) + get_camera()->world_right() * (
                                     input_add_y - input_sub_y) + get_camera()->world_up() * (input_add_z - input_sub_z)) * movement_speed * delta_time;
+    
+    if (get_parent()->get_class() == Class::of<Planet>()) {
+        Planet* planet = static_cast<Planet*>(get_parent());
+        if (camera_desired_position.norm() < get_camera()->get_local_position().normalized().norm() * (planet->get_radius() + 2.0)) {
+            camera_desired_position = camera_desired_position.normalized() * (planet->get_radius() + 2.0);
+        }
+    }
+
+
     get_camera()->set_local_position(Maths::lerp(get_camera()->get_local_position(), camera_desired_position, 15 * delta_time));
 }
 
@@ -144,8 +153,8 @@ void DefaultCameraController::teleport_to_ground() {
     if (get_parent()->get_class() == Class::of<Planet>()) {
         Planet* planet = static_cast<Planet*>(get_parent());
 
-        camera_desired_position = (get_camera()->get_local_position()).normalized() * (planet->get_radius() + 2);
-        movement_speed = 100;
+        camera_desired_position = get_camera()->get_local_position().normalized() * (planet->get_radius() + 2);
+        movement_speed          = 100;
     }
 }
 

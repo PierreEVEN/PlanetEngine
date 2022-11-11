@@ -1,7 +1,5 @@
 ## Todo
 
-- Ajouter une reflection capture pour compléter le SSR : Ajouter une pass de rendu vers une cubemap.
-- Shadow maps : Idéallement des Cascaded Shadow Maps. (combiner avec des sphere mask à l'echelle des planètes)
 - Ajouter l'IBL des reflections au PBR : Finir les reflections avant.
 - Implementer un hierarchical Z-buffer pour le SSR : Faire le downsampling en compute shader.
 - Passer le downsampling des framebuffer pour le bloom sur compute shader.
@@ -10,6 +8,8 @@
 - Retravailler le noise du terrain pour avoir un relief plus réaliste.
 - Generer des heightmaps globale pour définir des continents plus réalistes ou pour customiser le terrain manuellement.
 - Au choix : système qui utilise un compute shader pour avoir l'altitude du terrain sur CPU, ou faire un système qui génère une fonction d'altitude en glsl et C++ symétriquement.
+- Ajouter une pass de reflection qui capture une version simplifiée de la scene pour completer le SSR (necessaire pour corriger la reflection des atmospheres dans d'autres planètes)
+- Shadow maps : Idéallement des Cascaded Shadow Maps. (combiner avec des sphere mask à l'echelle des planètes)
 
 ## Problèmes & bugs connus
 

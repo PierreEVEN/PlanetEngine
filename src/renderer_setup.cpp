@@ -2,7 +2,6 @@
 
 #include "engine/engine.h"
 #include "graphics/camera.h"
-#include "graphics/cubemap_capture_pass.h"
 #include "graphics/material.h"
 #include "graphics/post_process_pass.h"
 #include "graphics/render_pass.h"
@@ -40,16 +39,6 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_float("resolution", GameSettings::get().ssr_quality);
     });
 
-    const auto reflection_capture = CubemapCapturePass::create("reflection capture", 256);
-    g_buffer_pass->on_draw.add_lambda([] {
-        /*
-        Create camera
-        for i = 0..6 {
-            Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_Reflections>(), camera_size);
-        }
-        */
-    });
-
     /*
      * LIGHTING
      */
@@ -58,21 +47,15 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
                        "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
                        "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
     
-    const auto env_cubemap = TextureCube::create("environment cube map");
-    env_cubemap->from_file("resources/textures/temp_env_map/ny.jpg", "resources/textures/temp_env_map/py.jpg",
-                           "resources/textures/temp_env_map/px.jpg", "resources/textures/temp_env_map/nx.jpg",
-                           "resources/textures/temp_env_map/nz.jpg", "resources/textures/temp_env_map/pz.jpg");
-
-    const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/gbuffer_combine.fs");
+    const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/post_process/lighting.fs");
     lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     lighting->link_dependency(ssr_pass);
-    lighting->on_bind_material.add_lambda([cubemap, env_cubemap, main_camera](std::shared_ptr<Material> material) {
+    lighting->on_bind_material.add_lambda([cubemap, main_camera](std::shared_ptr<Material> material) {
         material->set_float("z_near", static_cast<float>(main_camera->z_near()));
         material->set_int("enable_atmosphere", GameSettings::get().enable_atmosphere ? 1 : 0);
         material->set_int("atmosphere_quality", GameSettings::get().atmosphere_quality);
         material->set_int("shading", static_cast<int>(GameSettings::get().shading));
         material->set_texture("WORLD_Cubemap", cubemap);
-        material->set_texture("ENV_cubemap", env_cubemap);
     });
 
     /*
