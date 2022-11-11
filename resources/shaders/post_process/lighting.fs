@@ -9,16 +9,15 @@ layout(location = 2) uniform sampler2D Input_normal;
 layout(location = 3) uniform sampler2D Input_mrao;
 layout(location = 5) uniform sampler2D Input_Depth;
 layout(location = 6) uniform samplerCube WORLD_Cubemap;
-layout(location = 11) uniform samplerCube ENV_cubemap;
-layout(location = 12) uniform sampler2D Input_SSR_Color;
-
-out vec4 oFragmentColor;
+layout(location = 7) uniform sampler2D Input_SSR_Color;
 
 layout(location = 0) in vec2 uv;
-layout(location = 7) uniform float z_near;
-layout(location = 8) uniform int enable_atmosphere;
-layout(location = 9) uniform int atmosphere_quality;
-layout(location = 10) uniform int shading;
+layout(location = 8) uniform float z_near;
+layout(location = 9) uniform int enable_atmosphere;
+layout(location = 10) uniform int atmosphere_quality;
+layout(location = 11) uniform int shading;
+
+out vec4 oFragmentColor;
 
 int NumScatterPoints = 5;
 int NumOpticalDepthPoints = 5;
@@ -29,7 +28,6 @@ float atmosphereDensityFalloff = 6;
 float scatter_strength = 2;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
-
 vec3 light_dir = normalize(vec3(1, 0, 0));
 
 #include "../libs/atmosphere.cginc"
@@ -72,7 +70,7 @@ struct AtmosphereSettings {
 };
 
 
-vec3 add_sun(vec3 base_color, vec3 sun_location, float sun_radius, vec3 pixel_direction, vec3 camera_location, float scene_depth) {
+vec3 add_space(vec3 base_color, vec3 sun_location, float sun_radius, vec3 pixel_direction, vec3 camera_location, float scene_depth) {
 	// Trace sun disc
     RaySphereTraceResult sunInfos = raySphereIntersection(sun_location, sun_radius, pixel_direction, camera_location);
     float distanceThroughSun = max(0.0, sunInfos.atmosphereDistanceOut - sunInfos.atmosphereDistanceIn);
@@ -80,7 +78,7 @@ vec3 add_sun(vec3 base_color, vec3 sun_location, float sun_radius, vec3 pixel_di
 	// Draw sun disc
     if (scene_depth > length(camera_location - sun_location) - sun_radius) {
         base_color += distanceThroughSun / 2000;
-        base_color += texture(WORLD_Cubemap, Rx(-PI / 2) * pixel_direction).xyz * 10.2;
+        base_color += texture(WORLD_Cubemap, pixel_direction).xyz * .2;
     }
     return base_color;
 }
@@ -101,7 +99,7 @@ vec3 add_atmosphere(vec3 base_color, AtmosphereSettings atmosphere, vec3 pixel_d
     return base_color;
 }
 
-vec3 surface_reflection(vec3 normal, vec3 camera_dir, vec3 camera_pos, vec3 world_position, vec3 light_direction) {
+vec3 surface_reflection(int shading_mode, vec3 normal, vec3 camera_dir, vec3 camera_pos, vec3 world_position, vec3 light_direction) {
 
     vec3 reflect_dir = reflect(camera_dir, normal);
 
@@ -114,11 +112,11 @@ vec3 surface_reflection(vec3 normal, vec3 camera_dir, vec3 camera_pos, vec3 worl
 		vec3 col = texture(Input_color, ssr_uv.xy).rgb;
 		vec3 norm = normalize(texture(Input_normal, ssr_uv.xy).rgb);
 		vec3 mrao = texture(Input_mrao, ssr_uv.xy).rgb;
-        reflect_color = surface_shading(1, col, norm, mrao, light_direction, camera_dir);
+        reflect_color = surface_shading(shading_mode, col, norm, mrao, light_direction, camera_dir);
         reflect_depth = z_near / texture(Input_Depth, ssr_uv.xy).x;
     }
     
-    reflect_color = add_sun(
+    reflect_color += add_space(
         reflect_color,
         light_dir * 10000000000.0,
         100000000.0,
@@ -143,11 +141,12 @@ vec3 surface_reflection(vec3 normal, vec3 camera_dir, vec3 camera_pos, vec3 worl
 
 void main()
 {
-    NumScatterPoints = atmosphere_quality;
-    NumOpticalDepthPoints = atmosphere_quality;
+
 	float depth = texture(Input_Depth, uv).r;
 	float linear_depth = z_near / depth;
 	oFragmentColor = vec4(0);
+    NumScatterPoints = atmosphere_quality;
+    NumOpticalDepthPoints = atmosphere_quality;
 
     vec3 cameraDirection = getSceneWorldDirection();
 
@@ -156,12 +155,12 @@ void main()
 		vec3 norm = normalize(texture(Input_normal, uv).rgb);
 		vec3 mrao = texture(Input_mrao, uv).rgb;
         if (mrao.g < 0.2)
-            oFragmentColor = vec4(surface_reflection(norm, cameraDirection, camera_pos, getSceneWorldPosition(depth), light_dir), 1);
+            oFragmentColor = vec4(surface_reflection(shading, norm, cameraDirection, camera_pos, getSceneWorldPosition(depth), light_dir), 1);
         else
             oFragmentColor = vec4(surface_shading(shading, col, norm, mrao, light_dir, cameraDirection), 1);
 	}
 
-    oFragmentColor.xyz += add_sun(
+    oFragmentColor.xyz += add_space(
         oFragmentColor.xyz,
         light_dir * 10000000000.0,
         100000000.0,

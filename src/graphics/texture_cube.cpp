@@ -47,7 +47,6 @@ void TextureCube::set_data(int32_t w, int32_t h, ImageFormat in_image_format, ui
     GL_CHECK_ERROR();
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
     GL_CHECK_ERROR();
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_SRGB, w, h, 0, external_format, data_format,
                  (w * h > 0) ? image_data : nullptr);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -81,8 +80,9 @@ uint32_t TextureCube::id() {
                 GL_CHECK_ERROR();
                 glBindTexture(GL_TEXTURE_CUBE_MAP, TextureBase::id());
                 GL_CHECK_ERROR();
-                // glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-                // Generating mipmaps on cubemaps doesn't works i don't know why ???
+                glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+                glGetError();
+                // Mipmaps with cubemaps generate errors, but is required to work.. Why ????
                 GL_CHECK_ERROR();
                 glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
                 GL_CHECK_ERROR();
