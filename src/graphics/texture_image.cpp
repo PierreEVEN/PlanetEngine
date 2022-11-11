@@ -48,28 +48,19 @@ TextureBase::~TextureBase() {
     texture_id = 0;
 }
 
-std::shared_ptr<TextureBase> TextureBase::create(const std::string& name, const TextureCreateInfos& params) {
-    return std::shared_ptr<TextureBase>(new TextureBase(name, params));
-}
-
 void TextureBase::bind(uint32_t unit) {
     if (id() != 0) {
         glActiveTexture(GL_TEXTURE0 + unit);
-        glBindTexture(texture_type(), id());
+        glBindTexture(texture_type, id());
         GL_CHECK_ERROR();
     }
 }
 
-uint32_t TextureBase::texture_type() const {
-    return GL_TEXTURE_2D;
-}
-
-TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params)
-    : name(std::move(in_name)), parameters(params) {
+TextureBase::TextureBase(std::string in_name, int32_t in_texture_type, const TextureCreateInfos& params)
+    : name(std::move(in_name)), parameters(params), texture_type(in_texture_type) {
     GL_CHECK_ERROR();
     glGenTextures(1, &texture_id);
-
-    bind();
+    glBindTexture(texture_type, texture_id);
 
     int min_filter = -1;
     switch (params.filtering_min) {
@@ -119,12 +110,12 @@ TextureBase::TextureBase(std::string in_name, const TextureCreateInfos& params)
         break;
     }
 
-    glTexParameteri(texture_type(), GL_TEXTURE_MIN_FILTER, min_filter);
-    glTexParameteri(texture_type(), GL_TEXTURE_MAG_FILTER, mag_filter);
+    glTexParameteri(texture_type, GL_TEXTURE_MIN_FILTER, min_filter);
+    glTexParameteri(texture_type, GL_TEXTURE_MAG_FILTER, mag_filter);
 
-    glTexParameteri(texture_type(), GL_TEXTURE_WRAP_S, wrapping);
-    glTexParameteri(texture_type(), GL_TEXTURE_WRAP_T, wrapping);
-    glTexParameteri(texture_type(), GL_TEXTURE_WRAP_R, wrapping);
+    glTexParameteri(texture_type, GL_TEXTURE_WRAP_S, wrapping);
+    glTexParameteri(texture_type, GL_TEXTURE_WRAP_T, wrapping);
+    glTexParameteri(texture_type, GL_TEXTURE_WRAP_R, wrapping);
     GL_CHECK_ERROR();
 }
 
@@ -144,7 +135,7 @@ std::shared_ptr<Texture2D> Texture2D::create(const std::string& name, const std:
     const auto& texture = texture_registry.find(file);
     if (texture != texture_registry.end())
         return texture->second;
-    
+
     return texture_registry[file] = std::shared_ptr<Texture2D>(new Texture2D(name, file, params));
 }
 
@@ -158,11 +149,11 @@ void Texture2D::set_data(uint32_t w, uint32_t h, ImageFormat in_image_format, co
     GL_CHECK_ERROR();
     bind();
     GL_CHECK_ERROR();
-    glTexImage2D(texture_type(), 0, data_ptr ? (parameters.srgb ? GL_SRGB : static_cast<int>(in_image_format)) : static_cast<int>(image_format), w, h, 0, external_format,
+    glTexImage2D(texture_type, 0, data_ptr ? (parameters.srgb ? GL_SRGB : static_cast<int>(in_image_format)) : static_cast<int>(image_format), w, h, 0, external_format,
                  data_format,
                  (w * h > 0) ? data_ptr : nullptr);
     GL_CHECK_ERROR();
-    glBindTexture(texture_type(), 0);
+    glBindTexture(texture_type, 0);
 
     GL_CHECK_ERROR();
 }
@@ -192,8 +183,8 @@ uint32_t Texture2D::id() {
         }
 
         bind();
-        glGenerateMipmap(texture_type());
-        glBindTexture(texture_type(), 0);
+        glGenerateMipmap(texture_type);
+        glBindTexture(texture_type, 0);
 
         GL_CHECK_ERROR();
         delete image;
@@ -204,7 +195,7 @@ uint32_t Texture2D::id() {
 }
 
 Texture2D::Texture2D(std::string name, const TextureCreateInfos& params)
-    : TextureBase(name, params) {
+    : TextureBase(name, GL_TEXTURE_2D, params) {
     Engine::get().get_asset_manager().textures.emplace_back(this);
 
 }

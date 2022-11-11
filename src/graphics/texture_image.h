@@ -59,20 +59,17 @@ class TextureBase {
 public:
     virtual ~TextureBase();
 
-    static std::shared_ptr<TextureBase> create(const std::string& name, const TextureCreateInfos& params = {});
-
     [[nodiscard]] virtual uint32_t width() const { return image_width; }
     [[nodiscard]] virtual uint32_t height() const { return image_height; }
     [[nodiscard]] virtual uint32_t depth() const { return image_depth; }
     [[nodiscard]] virtual uint32_t id() { return texture_id; }
     [[nodiscard]] ImageFormat      internal_format() const { return image_format; }
-    [[nodiscard]] virtual uint32_t texture_type() const;
     virtual void                   bind(uint32_t unit = 0);
 
     const std::string        name;
     const TextureCreateInfos parameters;
 protected:
-    TextureBase(std::string name, const TextureCreateInfos& params = {});
+    TextureBase(std::string name, int32_t in_texture_type, const TextureCreateInfos& params = {});
     uint32_t    image_width;
     uint32_t    image_height;
     uint32_t    image_depth;
@@ -80,6 +77,7 @@ protected:
     ImageFormat image_format;
     uint32_t    external_format;
     uint32_t    data_format;
+    int32_t     texture_type = -1;
 };
 
 class Texture2D : public TextureBase {

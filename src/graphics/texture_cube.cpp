@@ -15,19 +15,6 @@ TextureCube::~TextureCube() {
             delete static_cast<EZCOGL::GLImage*>(ptr);
 }
 
-uint32_t TextureCube::texture_type() const {
-    return GL_TEXTURE_CUBE_MAP;
-}
-
-void TextureCube::bind(uint32_t unit) {
-    if (id() != 0) {
-        GL_CHECK_ERROR();
-        glBindTexture(GL_TEXTURE_CUBE_MAP, id());
-        while (glGetError()); // Skip error messages
-    }
-    GL_CHECK_ERROR();
-}
-
 void TextureCube::from_file(const std::string& file_top, const std::string&  file_bottom, const std::string& file_right,
                             const std::string& file_left, const std::string& file_front, const std::string&  file_back,
                             int                force_nb_channel) {
@@ -58,12 +45,9 @@ void TextureCube::set_data(int32_t w, int32_t h, ImageFormat in_image_format, ui
     image_height    = h;
     data_format     = tf.second;
     GL_CHECK_ERROR();
-    glGenTextures(1, &texture_id);
-    GL_CHECK_ERROR();
-    glActiveTexture(GL_TEXTURE0);
-    GL_CHECK_ERROR();
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
     GL_CHECK_ERROR();
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_SRGB, w, h, 0, external_format, data_format,
                  (w * h > 0) ? image_data : nullptr);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -95,10 +79,13 @@ uint32_t TextureCube::id() {
             if (complete == 0b111111) {
                 STAT_ACTION("Rebuild cubemap mipmaps : [" + name + "]");
                 GL_CHECK_ERROR();
-                glBindTexture(texture_type(), TextureBase::id());
+                glBindTexture(GL_TEXTURE_CUBE_MAP, TextureBase::id());
                 GL_CHECK_ERROR();
-                glGenerateMipmap(texture_type());
-                glBindTexture(texture_type(), 0);
+                // glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+                // Generating mipmaps on cubemaps doesn't works i don't know why ???
+                GL_CHECK_ERROR();
+                glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+                GL_CHECK_ERROR();
             }
             GL_CHECK_ERROR();
         }
@@ -114,5 +101,5 @@ static TextureCreateInfos cubemap_params(TextureCreateInfos params) {
 }
 
 TextureCube::TextureCube(std::string name, const TextureCreateInfos& params)
-    : TextureBase(name, cubemap_params(params)) {
+    : TextureBase(name, GL_TEXTURE_CUBE_MAP, cubemap_params(params)) {
 }

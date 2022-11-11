@@ -17,8 +17,6 @@ public:
                    const std::string& file_back, int               force_nb_channel = 0);
 
     [[nodiscard]] uint32_t depth() const override { return 6; }
-    [[nodiscard]] uint32_t texture_type() const override;
-    void                   bind(uint32_t unit = 0) override;
     uint32_t               id() override;
 protected:
     TextureCube(std::string name, const TextureCreateInfos& params = {});
