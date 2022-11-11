@@ -129,4 +129,28 @@ vec3 pbr_lighting(vec3 pixel_color, vec3 normal, vec3 light_direction, vec3 pixe
     return color;
 }
 
+
+vec3 surface_shading(int in_shading, vec3 albedo, vec3 normal, vec3 mrao, vec3 light_dir, vec3 world_direction) {
+    switch (in_shading) {
+    case 0:
+        return albedo;
+    case 1:
+        PhongParams phong_params;
+        phong_params.ambiant_strength = 0.001;
+        phong_params.specular_strength = (mrao.r) * 32;
+        phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
+        return phong_lighting(albedo, normal, light_dir, -world_direction, phong_params);
+    case 2:
+        PhongParams blinn_phong_params;
+        blinn_phong_params.ambiant_strength = 0.001;
+        blinn_phong_params.specular_strength = (mrao.r) * 32;
+        blinn_phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
+        return blinn_phong_lighting(albedo, normal, light_dir, -world_direction, blinn_phong_params);
+    case 3:
+        vec3 ambient = vec3(mix(0.0, 0.01, clamp(dot(normal, light_dir) + 0.3, 0, 1)));
+        return pbr_lighting(albedo, normal, light_dir, -world_direction, mrao, ambient);
+    }
+}
+
+
 #endif // LIGHTING_H_

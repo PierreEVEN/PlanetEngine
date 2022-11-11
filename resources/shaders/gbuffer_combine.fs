@@ -9,6 +9,8 @@ layout(location = 2) uniform sampler2D Input_normal;
 layout(location = 3) uniform sampler2D Input_mrao;
 layout(location = 5) uniform sampler2D Input_Depth;
 layout(location = 6) uniform samplerCube WORLD_Cubemap;
+layout(location = 11) uniform samplerCube ENV_cubemap;
+layout(location = 12) uniform sampler2D Input_SSR_Color;
 
 out vec4 oFragmentColor;
 
@@ -64,6 +66,81 @@ vec3 getSceneWorldDirection() {
     return normalize(worldSpacePosition.xyz);
 }
 
+struct AtmosphereSettings {
+    vec3 center;
+    float radius;
+};
+
+
+vec3 add_sun(vec3 base_color, vec3 sun_location, float sun_radius, vec3 pixel_direction, vec3 camera_location, float scene_depth) {
+	// Trace sun disc
+    RaySphereTraceResult sunInfos = raySphereIntersection(sun_location, sun_radius, pixel_direction, camera_location);
+    float distanceThroughSun = max(0.0, sunInfos.atmosphereDistanceOut - sunInfos.atmosphereDistanceIn);
+
+	// Draw sun disc
+    if (scene_depth > length(camera_location - sun_location) - sun_radius) {
+        base_color += distanceThroughSun / 2000;
+        base_color += texture(WORLD_Cubemap, Rx(-PI / 2) * pixel_direction).xyz * 10.2;
+    }
+    return base_color;
+}
+
+vec3 add_atmosphere(vec3 base_color, AtmosphereSettings atmosphere, vec3 pixel_direction, vec3 view_pos, float scene_depth) {
+
+    RaySphereTraceResult hitInfo = raySphereIntersection(atmosphere.center, atmosphere.radius, pixel_direction, view_pos);
+
+    float outMax = min(hitInfo.atmosphereDistanceOut, scene_depth);
+	float distance_to_atmosphere = hitInfo.atmosphereDistanceIn;
+    float distanceThroughAtmosphere = outMax - hitInfo.atmosphereDistanceIn;
+
+    if (distanceThroughAtmosphere > 0.0) {
+        vec3 pointInAtmosphere = view_pos + pixel_direction * (distance_to_atmosphere - epsilon);
+        return computeLight(pointInAtmosphere, pixel_direction, distanceThroughAtmosphere - epsilon, base_color);
+	}
+
+    return base_color;
+}
+
+vec3 surface_reflection(vec3 normal, vec3 camera_dir, vec3 camera_pos, vec3 world_position, vec3 light_direction) {
+
+    vec3 reflect_dir = reflect(camera_dir, normal);
+
+    vec3 reflect_color = vec3(0);
+    float reflect_depth = 100000000000000.0;
+
+    // Get SSR Uvs    
+    vec4 ssr_uv = texture(Input_SSR_Color, uv);
+    if (ssr_uv.b > 0.0) {
+		vec3 col = texture(Input_color, ssr_uv.xy).rgb;
+		vec3 norm = normalize(texture(Input_normal, ssr_uv.xy).rgb);
+		vec3 mrao = texture(Input_mrao, ssr_uv.xy).rgb;
+        reflect_color = surface_shading(1, col, norm, mrao, light_direction, camera_dir);
+        reflect_depth = z_near / texture(Input_Depth, ssr_uv.xy).x;
+    }
+    
+    reflect_color = add_sun(
+        reflect_color,
+        light_dir * 10000000000.0,
+        100000000.0,
+        reflect_dir,
+        world_position,
+        reflect_depth
+    );
+
+    AtmosphereSettings atmosphere;
+    atmosphere.center = planetCenter;
+    atmosphere.radius = atmosphereRadius;
+    vec3 reflect_atmosphere = add_atmosphere(
+        reflect_color, 
+        atmosphere,
+        reflect_dir, 
+        world_position + camera_pos,
+        reflect_depth);
+    
+    return reflect_atmosphere;
+}
+
+
 void main()
 {
     NumScatterPoints = atmosphere_quality;
@@ -72,61 +149,37 @@ void main()
 	float linear_depth = z_near / depth;
 	oFragmentColor = vec4(0);
 
+    vec3 cameraDirection = getSceneWorldDirection();
+
 	if (depth > 0) {
 		vec3 col = texture(Input_color, uv).rgb;
 		vec3 norm = normalize(texture(Input_normal, uv).rgb);
 		vec3 mrao = texture(Input_mrao, uv).rgb;
-
-        switch (shading) {
-        case 0:
-            oFragmentColor = vec4(col, 1);
-            break;
-        case 1:
-            PhongParams phong_params;
-            phong_params.ambiant_strength = 0.001;
-            phong_params.specular_strength = (mrao.r) * 32;
-            phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
-            oFragmentColor = vec4(phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), phong_params), 1);
-            break;
-        case 2:
-            PhongParams blinn_phong_params;
-            blinn_phong_params.ambiant_strength = 0.001;
-            blinn_phong_params.specular_strength = (mrao.r) * 32;
-            blinn_phong_params.specular_shininess = (1 - mrao.g) * 16 + 1;
-            oFragmentColor = vec4(blinn_phong_lighting(col, norm, light_dir, -getSceneWorldDirection(), blinn_phong_params), 1);
-            break;
-        case 3:
-            vec3 ambient = vec3(mix(0.0, 0.01, clamp(dot(norm, light_dir) + 0.3, 0, 1)));
-            oFragmentColor = vec4(pbr_lighting(col, norm, light_dir, -getSceneWorldDirection(), mrao, ambient), 1);
-            break;
-        }
+        if (mrao.g < 0.2)
+            oFragmentColor = vec4(surface_reflection(norm, cameraDirection, camera_pos, getSceneWorldPosition(depth), light_dir), 1);
+        else
+            oFragmentColor = vec4(surface_shading(shading, col, norm, mrao, light_dir, cameraDirection), 1);
 	}
 
-    vec3 cameraDirection = normalize(getSceneWorldDirection());
+    oFragmentColor.xyz += add_sun(
+        oFragmentColor.xyz,
+        light_dir * 10000000000.0,
+        100000000.0,
+        cameraDirection,
+        camera_pos,
+        linear_depth
+    );
 
-	// Trace atmosphere sphere
-    RaySphereTraceResult hitInfo = raySphereIntersection(planetCenter, atmosphereRadius, cameraDirection, camera_pos);
-
-	// Trace sun disc
-    vec3 sunPosition = light_dir * 10000000000.0;
-    RaySphereTraceResult sunInfos = raySphereIntersection(sunPosition, 100000000.0, cameraDirection, camera_pos);
-    float distanceThroughSun = max(0.0, sunInfos.atmosphereDistanceOut - sunInfos.atmosphereDistanceIn);
-
-
-    float outMax = min(hitInfo.atmosphereDistanceOut, linear_depth);
-	float distance_to_atmosphere = hitInfo.atmosphereDistanceIn;
-    float distanceThroughAtmosphere = outMax - hitInfo.atmosphereDistanceIn;
-
-	// Draw sun disc
-    if (depth <= 0) {
-        oFragmentColor += vec4(1.0, 1, 1, 1.0) * distanceThroughSun / 2000;
-        oFragmentColor += texture(WORLD_Cubemap, Rx(-PI / 2) * cameraDirection) * 10.2;
+    if (enable_atmosphere != 0) {
+        AtmosphereSettings atmosphere;
+        atmosphere.center = planetCenter;
+        atmosphere.radius = atmosphereRadius;
+        oFragmentColor.xyz = add_atmosphere(
+            oFragmentColor.xyz,
+            atmosphere,
+            cameraDirection,
+            camera_pos,
+            linear_depth
+        );
     }
-
-    if (distanceThroughAtmosphere > 0.0 && enable_atmosphere != 0) {
-        vec3 pointInAtmosphere = camera_pos + cameraDirection * (distance_to_atmosphere - epsilon);
-        vec3 light = computeLight(pointInAtmosphere, cameraDirection, distanceThroughAtmosphere - epsilon, oFragmentColor.xyz);
-        oFragmentColor = vec4(light, 1);
-	}
-	
 }

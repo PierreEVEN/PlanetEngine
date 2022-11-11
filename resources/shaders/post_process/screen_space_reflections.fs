@@ -40,7 +40,7 @@ void main() {
     }
 
     /* PARAMS */
-    float maxDistance = 100000;
+    float maxDistance = 1000000;
     int max_iterations = int(500 * (resolution + 0.1));
 
     /* World infos */
