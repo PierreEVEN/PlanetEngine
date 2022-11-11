@@ -17,7 +17,7 @@ layout(location = 5) uniform float radius;
 layout(location = 6) uniform int cell_count;
 layout(location = 7) uniform sampler2D height_map;
 layout(location = 8) uniform sampler2D normal_map;
-
+layout(location = 21) uniform int ground_displacement;
 layout(location = 20) uniform vec4 debug_vector;
 
 // Outputs
@@ -110,10 +110,9 @@ struct LocalData {
     float absolute_altitude;
 };
 
-LocalData compute_local_space_data() {
-    ivec2 coords = ivec2(pos.xz + cell_count * 2 + 2);
-
+LocalData compute_local_space_data(int enable) {
     LocalData result;
+    ivec2 coords = ivec2(pos.xz + cell_count * 2 + 2);
 
     result.pos2D = clamp((mesh_transform_cs * vec4(pos, 1)).xz, -radius * PI / 2, radius * PI / 2);
 
@@ -124,8 +123,16 @@ LocalData compute_local_space_data() {
 
     // Load chunk heightmap
     vec2 altitudes = texelFetch(height_map, coords, 0).rg;
-    result.vertex_altitude = altitudes.r;
     result.absolute_altitude = altitudes.g;
+
+    if (enable != 0) {
+        result.vertex_altitude = altitudes.r;
+    }
+    else {
+        result.vertex_altitude = 0;
+        result.normal = vec3(0,0,1);
+    }
+
     return result;
 }
 
@@ -136,14 +143,12 @@ void fix_tbn(inout vec3 tang, inout vec3 bitang, vec3 normal) {
 
     vec3 temp_tang = cross(bitang, normal);
     bitang = cross(normal, temp_tang);
-
-
 }
 
 
 void main()
 {
-    LocalData local_space_data = compute_local_space_data();                                //OK
+    LocalData local_space_data = compute_local_space_data(ground_displacement);             //OK
 	vec3 sphere_pos_local_offset = grid_to_sphere(local_space_data.pos2D, radius);          //OK
     vec3 sphere_pos_local = sphere_pos_local_offset + vec3(radius, 0, 0);                   //OK
     vec3 local_sphere_normal = normalize(sphere_pos_local);                                 //OK

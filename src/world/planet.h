@@ -101,6 +101,7 @@ private:
 
     // GPU Objects
     std::shared_ptr<Material>      landscape_material            = nullptr;
+    std::shared_ptr<Material>      landscape_water_material      = nullptr;
     std::shared_ptr<Material>      debug_normal_display_material = nullptr;
     std::shared_ptr<ComputeShader> compute_positions             = nullptr;
     std::shared_ptr<ComputeShader> compute_normals               = nullptr;

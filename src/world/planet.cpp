@@ -31,6 +31,7 @@ Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& i
     compute_normals->on_reload.add_object(root.get(), &PlanetChunk::force_rebuild_maps);
 
     landscape_material            = Material::create("planet material", "resources/shaders/planet_material.vs", "resources/shaders/planet_material.fs");
+    landscape_water_material      = Material::create("planet water material", "resources/shaders/planet_material.vs", "resources/shaders/landscape_water_material.fs");
     debug_normal_display_material = Material::create("planet material normals", "resources/shaders/planet_material.vs", "resources/shaders/planet_material_normal_display.fs",
                                                      "resources/shaders/planet_material_normal_display.gs");
 
@@ -54,6 +55,7 @@ Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& i
 std::shared_ptr<Planet> Planet::create(const std::string& name, const std::shared_ptr<SceneComponent>& player) {
     return std::shared_ptr<Planet>(new Planet(name, player));
 }
+
 void Planet::draw_ui() {
     SceneComponent::draw_ui();
     ImGui::Text("Mesh");
@@ -264,6 +266,7 @@ void Planet::render(Camera& camera) {
     SceneComponent::render(camera);
 
     if (landscape_material->bind()) {
+        landscape_material->set_int("ground_displacement", 1);
         landscape_material->set_transform("mesh_transform_ws", mesh_transform_ws);
         landscape_material->set_float("radius", radius);
         landscape_material->set_int("cell_count", cell_count);
@@ -283,8 +286,22 @@ void Planet::render(Camera& camera) {
         landscape_material->set_texture("water_displacement", water_displacement);
         root->render(camera, landscape_material);
     }
+    
+    if (landscape_water_material->bind()) {
+        landscape_water_material->set_int("ground_displacement", 0);
+        landscape_water_material->set_transform("mesh_transform_ws", mesh_transform_ws);
+        landscape_water_material->set_float("radius", radius);
+        landscape_water_material->set_int("cell_count", cell_count);
+        landscape_water_material->set_vec4("debug_vector", debug_vector);
+        landscape_water_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
+        landscape_water_material->set_rotation("scene_rotation", get_world_rotation());
+        landscape_water_material->set_texture("water_normal", water_normal);
+        landscape_water_material->set_texture("water_displacement", water_displacement);
+        root->render(camera, landscape_water_material);
+    }
 
     if (display_normals && debug_normal_display_material->bind()) {
+        debug_normal_display_material->set_int("ground_displacement", 1);
         debug_normal_display_material->set_transform("mesh_transform_ws", mesh_transform_ws);
         debug_normal_display_material->set_float("radius", radius);
         debug_normal_display_material->set_int("cell_count", cell_count);

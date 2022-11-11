@@ -81,9 +81,8 @@ uint32_t TextureCube::id() {
                 glBindTexture(GL_TEXTURE_CUBE_MAP, TextureBase::id());
                 GL_CHECK_ERROR();
                 glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-                glGetError();
-                // Mipmaps with cubemaps generate errors, but is required to work.. Why ????
-                GL_CHECK_ERROR();
+                glGetError(); // GL_CHECK_ERROR();
+                //@TODO Mipmaps with cubemaps cause errors, but are required to work.. Why ????
                 glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
                 GL_CHECK_ERROR();
             }

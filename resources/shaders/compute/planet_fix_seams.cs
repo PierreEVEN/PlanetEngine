@@ -44,9 +44,9 @@ void main() {
     }
     weight *= clamp((max(float(abs(vertex_pos_2D.x) - Chunk_CellCount - 1), float(abs(vertex_pos_2D.y) - Chunk_CellCount - 1)) - 1) / (Chunk_CellCount - 2), 0, 1);
 
-    float hl = max(0, imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) + ivec2(forward)).x);
-    float hr = max(0, imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) - ivec2(forward)).x);
-    float hc = max(0, h_base);
+    float hl = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) + ivec2(forward)).x;
+    float hr = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy) - ivec2(forward)).x;
+    float hc = h_base;
 
     float h0 = mix(hc, (hl + hr) / 2, weight);
 

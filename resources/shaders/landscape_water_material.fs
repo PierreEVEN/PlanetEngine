@@ -133,6 +133,10 @@ vec3 water_color() {
 
 void main()
 {
+    if (altitude > 0)
+        discard;
+
+
 	mat3 TBN = mat3(g_Tangent, g_BiTangent, g_Normal);
 	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) - 0.0001, 64);
 	float camera_distance = length(position);
@@ -147,19 +151,23 @@ void main()
 
 	// Create materials
 	float textures_scale = 400;
-	LandData rock = make_ld_tex(rock_color, rock_normal, rock_mrao, coordinates * textures_scale);
-	rock.mrao = make_mrao(0, 0.9, 0);
-	LandData grass = make_ld_tex(grass_color, grass_normal, grass_mrao, coordinates * textures_scale);
-	grass.mrao = make_mrao(0, 0.7, 0);
-	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
-	sand.mrao = make_mrao(0.2, 0.7, 0);
 
-	LandData ground = mix_ld(grass, rock, slope); // Grass rock
-	ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
-	LandData result = ground;
+	LandData water = make_ld_col(water_color() / 256);
+	water.mrao = make_mrao(0.5, 0.05, 0);
+	LandData water_deep = make_ld_col(water_color() / 750);
+	water_deep.mrao = make_mrao(1, 0.05, 0);
 
-	gNormal = TBN * result.normal;
-	gColor = result.color;
-	gMrao = vec4(result.mrao, 1);
-	gDebugTarget = vec3(0, 1 - ground.normal.z , 0);//g_DebugScalar;
+	LandData ocean = mix_ld(water, water_deep, pow(-altitude / 200000, 0.5)); // Ocean
+
+	ocean.normal = load_normal(water_normal, coordinates * 5 + vec2(world_time * -0.005)).rgb;
+	ocean.normal += load_normal(water_normal, coordinates * 5 + vec2(-world_time * 0.004, world_time * 0.006));
+
+	ocean.normal += load_normal(water_normal, coordinates * 40 + vec2(world_time * -0.03));
+	ocean.normal += load_normal(water_normal, coordinates * 40 + vec2(-world_time * 0.03, world_time * 0.024));
+	ocean.normal = normalize(ocean.normal * vec3(1, 1, 3));
+
+	gNormal = TBN * ocean.normal;
+	gColor = ocean.color;
+	gMrao = vec4(ocean.mrao, 1);
+	gDebugTarget = vec3(0, 1 - ocean.normal.z , 0);//g_DebugScalar;
 }
