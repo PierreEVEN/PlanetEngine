@@ -207,7 +207,7 @@ protected:
      * \brief Called each time this object have to be rendered
      * \param camera Desired point of view
      */
-    virtual void render(Camera& camera) {
+    virtual void render(Camera& camera, const DrawGroup& draw_group) {
     }
 
     /**

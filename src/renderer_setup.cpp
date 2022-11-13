@@ -28,7 +28,17 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         main_camera->use();
         Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera);
     });
+
     
+    const auto water_depth = RenderPass::create("Water_Depth", 1, 1);
+    water_depth->add_attachment("water_depth", ImageFormat::R_F16, {.filtering_min = TextureMinFilter::Nearest});
+    water_depth->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
+    water_depth->on_draw.add_lambda([main_camera, g_buffer_pass] {
+        main_camera->viewport_res() = {g_buffer_pass->get_width(), g_buffer_pass->get_height()};
+        main_camera->use();
+        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_WaterMask>(), main_camera);
+    });
+
     /*
      * REFLECTIONS
      */
@@ -50,6 +60,7 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/post_process/lighting.fs");
     lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
     lighting->link_dependency(ssr_pass);
+    lighting->link_dependency(water_depth, {"Input_WaterDepth", "Input_WaterSceneDepth"});
     lighting->on_bind_material.add_lambda([cubemap, main_camera](std::shared_ptr<Material> material) {
         material->set_float("z_near", static_cast<float>(main_camera->z_near()));
         material->set_int("enable_atmosphere", GameSettings::get().enable_atmosphere ? 1 : 0);

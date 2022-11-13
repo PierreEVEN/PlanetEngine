@@ -11,27 +11,25 @@
 #include "graphics/material.h"
 #include "utils/game_settings.h"
 
-void MeshComponent::render(Camera& camera)
-{
-	SceneComponent::render(camera);
+void MeshComponent::render(Camera& camera, const DrawGroup& draw_group) {
+    SceneComponent::render(camera, draw_group);
 
-	if (!mesh || !material)
-		return;
+    if (!mesh || !material)
+        return;
 
-	if (GameSettings::get().wireframe)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if (GameSettings::get().wireframe)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	material->bind();
-	auto transform = get_world_transform();
-	transform.translate(-camera.get_world_position());
-	material->set_model_transform(transform);
-	mesh->draw();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    material->bind();
+    auto transform = get_world_transform();
+    transform.translate(-camera.get_world_position());
+    material->set_model_transform(transform);
+    mesh->draw();
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void MeshComponent::draw_ui()
-{
-	SceneComponent::draw_ui();
-	ImGui::Text("mesh : %s", mesh ? mesh->name.c_str() : "none");
-	ImGui::Text("material : %s", material ? material->name.c_str() : "none");
+void MeshComponent::draw_ui() {
+    SceneComponent::draw_ui();
+    ImGui::Text("mesh : %s", mesh ? mesh->name.c_str() : "none");
+    ImGui::Text("material : %s", material ? material->name.c_str() : "none");
 }

@@ -60,7 +60,7 @@ public:
 
 protected:
     void tick(double delta_time) override;
-    void render(Camera& camera) override;
+  void render(Camera& camera, const DrawGroup& draw_group) override;
 
 private:
     Planet(const std::string& name, const std::shared_ptr<SceneComponent>& player);

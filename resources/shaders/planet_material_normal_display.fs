@@ -8,5 +8,5 @@ void main()
 {
 	gNormal = vec3(1, 0, 0);
 	gColor = color;//vec3(1, 1, 0);
-	gMrao = vec4(0, 1, 1, 0);
+	gMrao = vec3(0, 1, 1);
 }

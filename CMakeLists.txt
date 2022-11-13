@@ -50,11 +50,11 @@ find_package(assimp CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 
 # Find or build easycppogl
-find_package(easycppogl QUIET)
+#find_package(easycppogl QUIET) # Disabled because we use a modified version of easycppogl
 if (easycppogl_FOUND)
 	message("-- easycppogl is already installed")
 else()
-	message("-- easycppogl was not found on the current device. Using local version instead")
+	# message("-- easycppogl was not found on the current device. Using local version instead")
 	set(EASY_CPP_OGL_INSTALL_DIR "${INTERMEDIATES_DIR}/easycppogl/easycppogl_src/easycppogl")
 	get_filename_component(_fullpath ${EASY_CPP_OGL_INSTALL_DIR} REALPATH)
 	if(NOT EXISTS "${_fullpath}")

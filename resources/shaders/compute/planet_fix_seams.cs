@@ -11,7 +11,7 @@ void main() {
     float h_base = imageLoad(img_input, ivec2(gl_GlobalInvocationID.xy)).x;
   // Don't compute on borders
     if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.y == 0 || gl_GlobalInvocationID.x == Chunk_CellCount * 4 + 4 || gl_GlobalInvocationID.y == Chunk_CellCount * 4 + 4) {
-        imageStore(img_input, ivec2(gl_GlobalInvocationID.xy), vec4(max(h_base, 0), h_base, 0, 1));
+        imageStore(img_input, ivec2(gl_GlobalInvocationID.xy), vec4(h_base, h_base, 0, 1));
         return;
     }
 

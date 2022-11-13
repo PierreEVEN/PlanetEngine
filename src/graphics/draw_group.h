@@ -45,5 +45,5 @@ class DrawGroup_Reflections {
 class DrawGroup_Shadows {
 };
 
-class DrawGroup_Translucency {
+class DrawGroup_WaterMask {
 };

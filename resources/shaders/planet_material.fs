@@ -134,7 +134,7 @@ vec3 water_color() {
 void main()
 {
 	mat3 TBN = mat3(g_Tangent, g_BiTangent, g_Normal);
-	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) - 0.0001, 64);
+	float slope = 1 - pow(dot(g_LocalNormal, vec3(0,0,1)) + 0.2001, 64);
 	float camera_distance = length(position);
 
 	// Compute UVs
@@ -160,6 +160,6 @@ void main()
 
 	gNormal = TBN * result.normal;
 	gColor = result.color;
-	gMrao = vec4(result.mrao, 1);
+	gMrao = result.mrao;
 	gDebugTarget = vec3(0, 1 - ground.normal.z , 0);//g_DebugScalar;
 }

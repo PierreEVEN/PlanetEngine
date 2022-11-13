@@ -77,7 +77,7 @@ void SceneComponent::tick_internal(double delta_time, TickGroup new_group) {
 
 void SceneComponent::render_internal(Camera& camera, const DrawGroup& in_draw_group) {
     if (draw_group.contains(in_draw_group))
-        render(camera);
+        render(camera, in_draw_group);
 
     for (const auto& child : children)
         child->render_internal(camera, in_draw_group);
