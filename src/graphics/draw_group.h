@@ -47,3 +47,6 @@ class DrawGroup_Shadows {
 
 class DrawGroup_WaterMask {
 };
+
+class DrawGroup_Translucency {
+};

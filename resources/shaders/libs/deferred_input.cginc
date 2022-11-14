@@ -1,4 +1,0 @@
-#ifndef DEFERRED_INPUT_H_
-#define DEFERRED_INPUT_H_
-
-#endif // DEFERRED_INPUT_H_

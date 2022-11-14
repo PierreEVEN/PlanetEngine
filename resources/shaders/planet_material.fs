@@ -161,5 +161,5 @@ void main()
 	gNormal = TBN * result.normal;
 	gColor = result.color;
 	gMrao = result.mrao;
-	gDebugTarget = vec3(0, 1 - ground.normal.z , 0);//g_DebugScalar;
+	//gDebugTarget = vec3(0, 1 - ground.normal.z , 0);//g_DebugScalar;
 }

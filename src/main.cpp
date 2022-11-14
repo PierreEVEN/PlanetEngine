@@ -64,6 +64,7 @@ int main() {
     const auto earth_ocean             = std::make_shared<MeshComponent>("earth ocean");
     earth_ocean->set_material(water_material);
     earth_ocean->set_mesh(primitives::grid_plane(1024, 1024));
+    earth_ocean->set_draw_group(DrawGroup::from<DrawGroup_Translucency>());
     earth->add_child(earth_ocean);
 
     main_initialization = nullptr;

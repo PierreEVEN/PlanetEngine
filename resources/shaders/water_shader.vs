@@ -7,7 +7,12 @@ layout(location = 0) in vec3 pos;
 
 layout(location = 0) out vec3 out_norm;
 layout(location = 1) out vec3 out_pos;
-layout(location = 2) out vec3 out_col;
+layout(location = 2) out vec4 out_col;
+
+layout(location = 1) uniform sampler2D Scene_color;
+layout(location = 2) uniform sampler2D Scene_normal;
+layout(location = 3) uniform sampler2D Scene_mrao;
+layout(location = 4) uniform sampler2D Scene_depth;
 
 vec3 getSceneWorldDirection(vec2 clipSpacePosition) {
 
@@ -194,10 +199,20 @@ void main()
 	world_pos = v1 + vec3(-camera_pos.xy,world_pos.z);
 
 
-
-	
 	gl_Position = pv_matrix * vec4(world_pos, 1);
-	out_col = vec3(0.3, 0.5, 1);
+
+
+	vec2 final_screen_pos = (gl_Position.xy / gl_Position.w + 1) / 2;
+	
+	float z_near = 0.2;
+	float background_depth = texture(Scene_depth, final_screen_pos).r;
+
+	float water_depth = background_depth - distance;
+
+
+
+	out_col = vec4(0.3, 0.5, 1, 0.8);
+
 	out_norm = wave_norm;
 
 

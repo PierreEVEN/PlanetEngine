@@ -4,20 +4,25 @@ precision highp float;
 #include "../libs/world_data.cginc"
 #include "../libs/lighting.cginc"
 
-layout(location = 1) uniform sampler2D Input_color;
-layout(location = 2) uniform sampler2D Input_normal;
-layout(location = 3) uniform sampler2D Input_mrao;
-layout(location = 5) uniform sampler2D Input_Depth;
-layout(location = 6) uniform samplerCube WORLD_Cubemap;
-layout(location = 7) uniform sampler2D Input_SSR_Color;
-layout(location = 12) uniform sampler2D Input_WaterDepth;
-layout(location = 13) uniform sampler2D Input_WaterSceneDepth;
+layout(location = 1) uniform sampler2D Scene_color;
+layout(location = 2) uniform sampler2D Scene_normal;
+layout(location = 3) uniform sampler2D Scene_mrao;
+layout(location = 4) uniform sampler2D Scene_depth;
+
+layout(location = 5) uniform sampler2D Translucency_color;
+layout(location = 6) uniform sampler2D Translucency_normal;
+layout(location = 7) uniform sampler2D Translucency_mrao;
+layout(location = 8) uniform sampler2D Translucency_depth;
+
+layout(location = 9) uniform float z_near;
+layout(location = 10) uniform int enable_atmosphere;
+layout(location = 11) uniform int atmosphere_quality;
+layout(location = 12) uniform int shading;
+
+layout(location = 13) uniform samplerCube WORLD_Cubemap;
+layout(location = 14) uniform sampler2D Input_SSR_Color;
 
 layout(location = 0) in vec2 uv;
-layout(location = 8) uniform float z_near;
-layout(location = 9) uniform int enable_atmosphere;
-layout(location = 10) uniform int atmosphere_quality;
-layout(location = 11) uniform int shading;
 
 out vec4 oFragmentColor;
 
@@ -35,7 +40,7 @@ vec3 light_dir = normalize(vec3(1, 0, 0));
 #include "../libs/atmosphere.cginc"
 
 float get_linear_depth(vec2 uvs) {    
-	float scene_depth = texture(Input_Depth, uvs).r;
+	float scene_depth = texture(Scene_depth, uvs).r;
 	return z_near / scene_depth;
 }
 
@@ -90,15 +95,10 @@ vec3 add_atmosphere(vec3 base_color, AtmosphereSettings atmosphere, vec3 pixel_d
 
 
 
-vec3 ground_color_shading(float water_depth, int in_shading, vec3 albedo, vec3 normal, vec3 mrao, vec3 light_dir, vec3 camera_pos, vec3 world_direction, float linear_depth) {
+vec3 ground_color_shading(int in_shading, vec3 albedo, vec3 normal, vec3 mrao, vec3 light_dir, vec3 camera_pos, vec3 world_direction, float linear_depth) {
 
     vec3 ground_albedo = surface_shading(in_shading, albedo, normal, mrao, light_dir, world_direction);
         return ground_albedo;
-    if (water_depth > 0)
-        return vec3(0,0,1);
-
-
-    return ground_albedo;
 }
 
 
@@ -113,11 +113,10 @@ vec3 surface_reflection(int shading_mode, vec3 normal, vec3 camera_dir, vec3 cam
     // If found screen space hit, compute screen space reflections result
     vec4 ssr_uv = texture(Input_SSR_Color, uv);
     if (ssr_uv.b > 0.0) {
-		vec3 col = texture(Input_color, ssr_uv.xy).rgb;
-		vec3 norm = normalize(texture(Input_normal, ssr_uv.xy).rgb);
-		vec3 mrao = texture(Input_mrao, ssr_uv.xy).rgb;
-		float water_depth = texture(Input_WaterDepth, ssr_uv.xy).r;
-        reflect_color = ground_color_shading(water_depth, shading_mode, col, norm, mrao, light_direction, camera_pos, camera_dir, linear_depth);
+		vec3 col = texture(Scene_color, ssr_uv.xy).rgb;
+		vec3 norm = normalize(texture(Scene_normal, ssr_uv.xy).rgb);
+		vec3 mrao = texture(Scene_mrao, ssr_uv.xy).rgb;
+        reflect_color = ground_color_shading(shading_mode, col, norm, mrao, light_direction, camera_pos, camera_dir, linear_depth);
         reflect_depth = get_linear_depth(ssr_uv.xy).r;
     }
     
@@ -147,43 +146,37 @@ vec3 surface_reflection(int shading_mode, vec3 normal, vec3 camera_dir, vec3 cam
 
 void main()
 {
-	float linear_depth = get_linear_depth(uv);
-	oFragmentColor = vec4(0);
     NumScatterPoints = atmosphere_quality;
     NumOpticalDepthPoints = atmosphere_quality;
 
-    vec3 cameraDirection = getSceneWorldDirection();
+    vec3 world_direction = getSceneWorldDirection();
 
-	if (linear_depth > 0) {
-        vec3 mrao = texture(Input_mrao, uv).rgb;
-		vec3 norm = normalize(texture(Input_normal, uv).rgb);
-        if (mrao.g < 0.2)
-            oFragmentColor = vec4(surface_reflection(shading, norm, cameraDirection, camera_pos, light_dir, linear_depth), 1);
-        else {
-            vec3 col = texture(Input_color, uv).rgb;
-		    float water_depth = texture(Input_WaterDepth, uv).r;
-            oFragmentColor = vec4(ground_color_shading(water_depth, shading, col, norm, mrao, light_dir, camera_pos, cameraDirection, linear_depth), 1);
-        }
-	}
-    oFragmentColor.xyz += add_space(
-        oFragmentColor.xyz,
+    vec3 translucent_color = texture(Translucency_color, uv).rgb;
+    float translucent_depth = z_near / texture(Translucency_depth, uv).r;
+
+    oFragmentColor = texture(Translucency_color, uv);
+
+    vec3 space = add_space(
+        translucent_color,
         light_dir * 10000000000.0,
         100000000.0,
-        cameraDirection,
+        world_direction,
         camera_pos,
-        linear_depth
+        translucent_depth
     );
+
+    oFragmentColor = vec4(space, 1);
 
     if (enable_atmosphere != 0) {
         AtmosphereSettings atmosphere;
         atmosphere.center = planetCenter;
         atmosphere.radius = atmosphereRadius;
         oFragmentColor.xyz = add_atmosphere(
-            oFragmentColor.xyz,
+            space,
             atmosphere,
-            cameraDirection,
+            world_direction,
             camera_pos,
-            linear_depth
+            translucent_depth
         );
     }
 }

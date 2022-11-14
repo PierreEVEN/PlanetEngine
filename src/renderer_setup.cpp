@@ -18,29 +18,44 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
      * DRAW SCENE
      */
     const auto g_buffer_pass = RenderPass::create("G-Buffers", 1, 1);
-    g_buffer_pass->add_attachment("color", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->add_attachment("normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->add_attachment("mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->add_attachment("debug", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
-    g_buffer_pass->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
+    g_buffer_pass->add_attachment("Scene_color", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
+    g_buffer_pass->add_attachment("Scene_normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
+    g_buffer_pass->add_attachment("Scene_mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
+    g_buffer_pass->add_attachment("Scene_depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->on_draw.add_lambda([main_camera, g_buffer_pass] {
         main_camera->viewport_res() = {g_buffer_pass->get_width(), g_buffer_pass->get_height()};
         main_camera->use();
         Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera);
     });
 
-    
-    const auto water_depth = RenderPass::create("Water_Depth", 1, 1);
-    water_depth->add_attachment("water_depth", ImageFormat::R_F16, {.filtering_min = TextureMinFilter::Nearest});
-    water_depth->add_attachment("depths", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
-    water_depth->on_draw.add_lambda([main_camera, g_buffer_pass] {
-        main_camera->viewport_res() = {g_buffer_pass->get_width(), g_buffer_pass->get_height()};
-        main_camera->use();
-        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_WaterMask>(), main_camera);
+    /*
+     * DRAW TRANSLUCENCY
+     */
+    // Translucency pass (@TODO : reuse framebuffer to make multiple translucency pass possible)
+    const auto translucency = RenderPass::create("DeferredTranslucency", 1, 1);
+    translucency->add_attachment("Translucency_color", ImageFormat::RGBA_F16, {.filtering_min = TextureMinFilter::Nearest});
+    translucency->add_attachment("Translucency_normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
+    translucency->add_attachment("Translucency_mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
+    translucency->add_attachment("Translucency_depth", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
+    translucency->link_dependency(g_buffer_pass, {"Scene_color", "Scene_normal", "Scene_mrao", "Scene_depth"});
+    translucency->on_draw.add_lambda([main_camera] {
+        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_Translucency>(), main_camera);
+    });
+
+    // Combine translucency with scene
+    const auto translucency_combine = PostProcessPass::create("Translucency_combine", 1, 1, "resources/shaders/post_process/translucency_combine.fs");
+    translucency_combine->add_attachment("Translucency_normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
+    translucency_combine->add_attachment("Translucency_mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
+    translucency_combine->add_attachment("Translucency_depth", ImageFormat::R_F32, {.filtering_min = TextureMinFilter::Nearest});
+    translucency_combine->link_dependency(g_buffer_pass, {"Scene_color", "Scene_normal", "Scene_mrao", "Scene_depth"});
+    translucency_combine->link_dependency(translucency, {"Translucency_color", "Translucency_normal", "Translucency_mrao", "Translucency_depth"});
+    translucency_combine->on_bind_material.add_lambda([main_camera](std::shared_ptr<Material> material) {
+        material->set_float("z_near", static_cast<float>(main_camera->z_near()));
+        material->set_int("shading", static_cast<int>(GameSettings::get().shading));
     });
 
     /*
-     * REFLECTIONS
+     * REFLECTIONS (only using last combined translucency surfaces)
      */
     const auto ssr_pass = PostProcessPass::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
     ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
@@ -48,7 +63,7 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_int("enabled", GameSettings::get().screen_space_reflections ? 1 : 0);
         material->set_float("resolution", GameSettings::get().ssr_quality);
     });
-
+    
     /*
      * LIGHTING
      */
@@ -56,11 +71,10 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     cubemap->from_file("resources/textures/skybox/py.png", "resources/textures/skybox/ny.png",
                        "resources/textures/skybox/px.png", "resources/textures/skybox/nx.png",
                        "resources/textures/skybox/pz.png", "resources/textures/skybox/nz.png");
-    
+
     const auto lighting = PostProcessPass::create("lighting", 1, 1, "resources/shaders/post_process/lighting.fs");
-    lighting->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
-    lighting->link_dependency(ssr_pass);
-    lighting->link_dependency(water_depth, {"Input_WaterDepth", "Input_WaterSceneDepth"});
+    lighting->link_dependency(g_buffer_pass, {"Scene_color", "Scene_normal", "Scene_mrao", "Scene_depth"});
+    lighting->link_dependency(translucency_combine, {"Translucency_color", "Translucency_normal","Translucency_mrao", "Translucency_depth"});
     lighting->on_bind_material.add_lambda([cubemap, main_camera](std::shared_ptr<Material> material) {
         material->set_float("z_near", static_cast<float>(main_camera->z_near()));
         material->set_int("enable_atmosphere", GameSettings::get().enable_atmosphere ? 1 : 0);
