@@ -9,8 +9,9 @@ layout(location = 0) out vec3 out_norm;
 layout(location = 1) out vec3 out_pos;
 layout(location = 2) out vec4 out_col;
 layout(location = 3) uniform sampler2D Scene_depth;
+layout(location = 4) uniform sampler2D Scene_color;
 
-layout(location = 4) uniform float z_near;
+layout(location = 5) uniform float z_near;
 
 vec3 getSceneWorldDirection(vec2 clipSpacePosition) {
 
