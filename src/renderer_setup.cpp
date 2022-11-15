@@ -17,7 +17,7 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     /*
      * DRAW SCENE
      */
-    const auto g_buffer_pass = RenderPass::create("G-Buffers", 1, 1);
+    const auto g_buffer_pass = RenderPass::create("DeferredScene", 1, 1);
     g_buffer_pass->add_attachment("Scene_color", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("Scene_normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
     g_buffer_pass->add_attachment("Scene_mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
@@ -25,21 +25,21 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     g_buffer_pass->on_draw.add_lambda([main_camera, g_buffer_pass] {
         main_camera->viewport_res() = {g_buffer_pass->get_width(), g_buffer_pass->get_height()};
         main_camera->use();
-        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera);
+        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_View>(), main_camera, g_buffer_pass);
     });
 
     /*
      * DRAW TRANSLUCENCY
      */
-    // Translucency pass (@TODO : reuse framebuffer to make multiple translucency pass possible)
+    // Translucency pass (//@TODO : reuse framebuffer to make multiple translucency pass possible)
     const auto translucency = RenderPass::create("DeferredTranslucency", 1, 1);
     translucency->add_attachment("Translucency_color", ImageFormat::RGBA_F16, {.filtering_min = TextureMinFilter::Nearest});
     translucency->add_attachment("Translucency_normal", ImageFormat::RGB_F16, {.filtering_min = TextureMinFilter::Nearest});
     translucency->add_attachment("Translucency_mrao", ImageFormat::RGB_U8, {.filtering_min = TextureMinFilter::Nearest});
     translucency->add_attachment("Translucency_depth", ImageFormat::Depth_F32, {.filtering_min = TextureMinFilter::Nearest});
     translucency->link_dependency(g_buffer_pass, {"Scene_color", "Scene_normal", "Scene_mrao", "Scene_depth"});
-    translucency->on_draw.add_lambda([main_camera] {
-        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_Translucency>(), main_camera);
+    translucency->on_draw.add_lambda([main_camera, translucency] {
+        Engine::get().get_world().render_world(DrawGroup::from<DrawGroup_Translucency>(), main_camera, translucency);
     });
 
     // Combine translucency with scene

@@ -32,18 +32,8 @@ void PostProcessPass::render(bool to_back_buffer) {
     GL_CHECK_ERROR();
     pass_material->bind();
 
-    for (const auto& dep : dependencies) {
-        const auto& bp = bind_point_names(dep);
-        const auto& rt = dep->get_all_render_targets();
-        for (size_t i = 0; i < rt.size(); ++i) {
-            if (const int res_binding = material()->binding(bp[i] + "_Res"); res_binding >= 0)
-                glUniform2i(res_binding, dep->get_width(), dep->get_height());
-            GL_CHECK_ERROR();
-            material()->set_texture(bp[i], rt[i]);
-        }
-
-    }
     GL_CHECK_ERROR();
+    bind_dependencies_to_material(pass_material);
     on_bind_material.execute(pass_material);
 
     GL_CHECK_ERROR();

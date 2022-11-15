@@ -143,7 +143,6 @@ vec3 surface_reflection(int shading_mode, vec3 normal, vec3 camera_dir, vec3 cam
     return reflect_atmosphere;
 }
 
-
 void main()
 {
     NumScatterPoints = atmosphere_quality;

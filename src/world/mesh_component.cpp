@@ -11,8 +11,8 @@
 #include "graphics/material.h"
 #include "utils/game_settings.h"
 
-void MeshComponent::render(Camera& camera, const DrawGroup& draw_group) {
-    SceneComponent::render(camera, draw_group);
+void MeshComponent::render(Camera& camera, const DrawGroup& draw_group, const std::shared_ptr<RenderPass>& render_pass) {
+    SceneComponent::render(camera, draw_group, render_pass);
 
     if (!mesh || !material)
         return;

@@ -60,7 +60,7 @@ public:
 
 protected:
     void tick(double delta_time) override;
-  void render(Camera& camera, const DrawGroup& draw_group) override;
+  void render(Camera& camera, const DrawGroup& draw_group, const std::shared_ptr<RenderPass>& render_pass) override;
 
 private:
     Planet(const std::string& name, const std::shared_ptr<SceneComponent>& player);
@@ -101,7 +101,6 @@ private:
 
     // GPU Objects
     std::shared_ptr<Material>      landscape_material            = nullptr;
-    std::shared_ptr<Material>      landscape_water_material      = nullptr;
     std::shared_ptr<Material>      debug_normal_display_material = nullptr;
     std::shared_ptr<ComputeShader> compute_positions             = nullptr;
     std::shared_ptr<ComputeShader> compute_normals               = nullptr;

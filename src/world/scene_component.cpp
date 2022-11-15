@@ -75,10 +75,10 @@ void SceneComponent::tick_internal(double delta_time, TickGroup new_group) {
         child->tick_internal(delta_time, new_group);
 }
 
-void SceneComponent::render_internal(Camera& camera, const DrawGroup& in_draw_group) {
+void SceneComponent::render_internal(Camera& camera, const DrawGroup& in_draw_group, const std::shared_ptr<RenderPass>& render_pass) {
     if (draw_group.contains(in_draw_group))
-        render(camera, in_draw_group);
+        render(camera, in_draw_group, render_pass);
 
     for (const auto& child : children)
-        child->render_internal(camera, in_draw_group);
+        child->render_internal(camera, in_draw_group, render_pass);
 }

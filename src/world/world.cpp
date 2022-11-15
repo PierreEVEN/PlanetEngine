@@ -43,7 +43,7 @@ void World::tick_world() {
 
 }
 
-void World::render_world(const DrawGroup& draw_group, const std::shared_ptr<Camera>& render_camera) const {
+void World::render_world(const DrawGroup& draw_group, const std::shared_ptr<Camera>& render_camera, const std::shared_ptr<RenderPass>& render_pass) const {
     STAT_FRAME("World render");
-    root_component->render_internal(*render_camera, draw_group);
+    root_component->render_internal(*render_camera, draw_group, render_pass);
 }

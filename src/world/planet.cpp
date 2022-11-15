@@ -19,9 +19,6 @@
 
 Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& in_player)
     : SceneComponent(name), player(in_player) {
-
-    draw_group = DrawGroup::from<DrawGroup_View, DrawGroup_WaterMask>();
-
     root  = std::make_shared<PlanetChunk>(*this, 16, 0);
     dirty = true;
 
@@ -34,7 +31,6 @@ Planet::Planet(const std::string& name, const std::shared_ptr<SceneComponent>& i
     compute_normals->on_reload.add_object(root.get(), &PlanetChunk::force_rebuild_maps);
 
     landscape_material            = Material::create("planet material", "resources/shaders/planet_material.vs", "resources/shaders/planet_material.fs");
-    landscape_water_material      = Material::create("planet water material", "resources/shaders/planet_material.vs", "resources/shaders/landscape_water_material.fs");
     debug_normal_display_material = Material::create("planet material normals", "resources/shaders/planet_material.vs", "resources/shaders/planet_material_normal_display.fs",
                                                      "resources/shaders/planet_material_normal_display.gs");
 
@@ -264,55 +260,40 @@ void Planet::tick(double delta_time) {
 }
 
 
-void Planet::render(Camera& camera, const DrawGroup& draw_group) {
+void Planet::render(Camera& camera, const DrawGroup& draw_group, const std::shared_ptr<RenderPass>& render_pass) {
     STAT_FRAME("Render Planet");
-    SceneComponent::render(camera, draw_group);
+    SceneComponent::render(camera, draw_group, render_pass);
 
-    if (draw_group.contains(DrawGroup::from<DrawGroup_View>())) {
-        if (landscape_material->bind()) {
-            landscape_material->set_int("ground_displacement", 1);
-            landscape_material->set_transform("mesh_transform_ws", mesh_transform_ws);
-            landscape_material->set_float("radius", radius);
-            landscape_material->set_int("cell_count", cell_count);
-            landscape_material->set_vec4("debug_vector", debug_vector);
-            landscape_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
-            landscape_material->set_rotation("scene_rotation", get_world_rotation());
-            landscape_material->set_texture("grass_color", grass_albedo);
-            landscape_material->set_texture("rock_color", rock_albedo);
-            landscape_material->set_texture("sand_color", sand_albedo);
-            landscape_material->set_texture("grass_normal", grass_normal);
-            landscape_material->set_texture("rock_normal", rock_normal);
-            landscape_material->set_texture("sand_normal", sand_normal);
-            landscape_material->set_texture("grass_mrao", grass_mrao);
-            landscape_material->set_texture("rock_mrao", rock_mrao);
-            landscape_material->set_texture("sand_mrao", sand_mrao);
-            landscape_material->set_texture("water_normal", water_normal);
-            landscape_material->set_texture("water_displacement", water_displacement);
-            root->render(camera, landscape_material);
-        }
+    if (landscape_material->bind()) {
+        landscape_material->set_int("ground_displacement", 1);
+        landscape_material->set_transform("mesh_transform_ws", mesh_transform_ws);
+        landscape_material->set_float("radius", radius);
+        landscape_material->set_int("cell_count", cell_count);
+        landscape_material->set_vec4("debug_vector", debug_vector);
+        landscape_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
+        landscape_material->set_rotation("scene_rotation", get_world_rotation());
+        landscape_material->set_texture("grass_color", grass_albedo);
+        landscape_material->set_texture("rock_color", rock_albedo);
+        landscape_material->set_texture("sand_color", sand_albedo);
+        landscape_material->set_texture("grass_normal", grass_normal);
+        landscape_material->set_texture("rock_normal", rock_normal);
+        landscape_material->set_texture("sand_normal", sand_normal);
+        landscape_material->set_texture("grass_mrao", grass_mrao);
+        landscape_material->set_texture("rock_mrao", rock_mrao);
+        landscape_material->set_texture("sand_mrao", sand_mrao);
+        landscape_material->set_texture("water_normal", water_normal);
+        landscape_material->set_texture("water_displacement", water_displacement);
+        root->render(camera, landscape_material);
+    }
 
-        if (display_normals && debug_normal_display_material->bind()) {
-            debug_normal_display_material->set_int("ground_displacement", 1);
-            debug_normal_display_material->set_transform("mesh_transform_ws", mesh_transform_ws);
-            debug_normal_display_material->set_float("radius", radius);
-            debug_normal_display_material->set_int("cell_count", cell_count);
-            debug_normal_display_material->set_vec4("debug_vector", debug_vector);
-            debug_normal_display_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
-            debug_normal_display_material->set_rotation("scene_rotation", get_world_rotation());
-            root->render(camera, debug_normal_display_material);
-        }
-    } else if (draw_group.contains(DrawGroup::from<DrawGroup_WaterMask>())) {
-        if (landscape_water_material->bind()) {
-            landscape_water_material->set_int("ground_displacement", 0);
-            landscape_water_material->set_transform("mesh_transform_ws", mesh_transform_ws);
-            landscape_water_material->set_float("radius", radius);
-            landscape_water_material->set_int("cell_count", cell_count);
-            landscape_water_material->set_vec4("debug_vector", debug_vector);
-            landscape_water_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
-            landscape_water_material->set_rotation("scene_rotation", get_world_rotation());
-            landscape_water_material->set_texture("water_normal", water_normal);
-            landscape_water_material->set_texture("water_displacement", water_displacement);
-            root->render(camera, landscape_water_material);
-        }
+    if (display_normals && debug_normal_display_material->bind()) {
+        debug_normal_display_material->set_int("ground_displacement", 1);
+        debug_normal_display_material->set_transform("mesh_transform_ws", mesh_transform_ws);
+        debug_normal_display_material->set_float("radius", radius);
+        debug_normal_display_material->set_int("cell_count", cell_count);
+        debug_normal_display_material->set_vec4("debug_vector", debug_vector);
+        debug_normal_display_material->set_rotation("mesh_rotation_ps", mesh_rotation_ps);
+        debug_normal_display_material->set_rotation("scene_rotation", get_world_rotation());
+        root->render(camera, debug_normal_display_material);
     }
 }

@@ -29,7 +29,7 @@ public:
 		return material;
 	}
 
-	virtual void  render(Camera& camera, const DrawGroup& draw_group) override;
+	virtual void  render(Camera& camera, const DrawGroup& draw_group, const std::shared_ptr<RenderPass>& render_pass) override;
 	virtual Class get_class() override { return Class(this); }
 	void draw_ui() override;
 private:

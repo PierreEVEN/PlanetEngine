@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+class RenderPass;
 class Camera;
 
 enum class TickGroup {
@@ -209,7 +210,7 @@ protected:
      * \brief Called each time this object have to be rendered
      * \param camera Desired point of view
      */
-    virtual void render(Camera& camera, const DrawGroup& draw_group) {
+    virtual void render(Camera& camera, const DrawGroup& draw_group, const std::shared_ptr<RenderPass>& render_pass) {
     }
 
     /**
@@ -225,7 +226,7 @@ protected:
 
 private:
     void tick_internal(double delta_time, TickGroup new_group);
-    void render_internal(Camera& camera, const DrawGroup& draw_group);
+    void render_internal(Camera& camera, const DrawGroup& draw_group, const std::shared_ptr<RenderPass>& render_pass);
 
     std::vector<std::shared_ptr<SceneComponent>> children;
     SceneComponent*                              parent = nullptr;

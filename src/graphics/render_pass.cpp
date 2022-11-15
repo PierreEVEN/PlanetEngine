@@ -1,5 +1,7 @@
 #include "render_pass.h"
 
+#include "material.h"
+
 #include <string>
 #include <utility>
 #include <GL/gl3w.h>
@@ -66,6 +68,26 @@ std::vector<std::string> RenderPass::bind_point_names(const std::shared_ptr<Rend
         names.emplace_back("Input_" + dep_name + att_name);
     }
     return names;
+}
+
+std::shared_ptr<RenderPass> RenderPass::find_dependency(const std::string& name) const {
+    for (const auto& dep : dependencies)
+        if (dep->name == name)
+            return dep;
+    return nullptr;
+}
+
+void RenderPass::bind_dependencies_to_material(const std::shared_ptr<Material>& in_material) {
+    for (const auto& dep : dependencies) {
+        const auto& bp = bind_point_names(dep);
+        const auto& rt = dep->get_all_render_targets();
+        for (size_t i = 0; i < rt.size(); ++i) {
+            if (const int res_binding = in_material->binding(bp[i] + "_Res"); res_binding >= 0)
+                glUniform2i(res_binding, dep->get_width(), dep->get_height());
+            GL_CHECK_ERROR();
+            in_material->set_texture(bp[i], rt[i]);
+        }
+    }
 }
 
 bool RenderPass::pre_render() {

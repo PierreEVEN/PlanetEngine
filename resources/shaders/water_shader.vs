@@ -8,11 +8,9 @@ layout(location = 0) in vec3 pos;
 layout(location = 0) out vec3 out_norm;
 layout(location = 1) out vec3 out_pos;
 layout(location = 2) out vec4 out_col;
+layout(location = 3) uniform sampler2D Scene_depth;
 
-layout(location = 1) uniform sampler2D Scene_color;
-layout(location = 2) uniform sampler2D Scene_normal;
-layout(location = 3) uniform sampler2D Scene_mrao;
-layout(location = 4) uniform sampler2D Scene_depth;
+layout(location = 4) uniform float z_near;
 
 vec3 getSceneWorldDirection(vec2 clipSpacePosition) {
 
@@ -160,6 +158,23 @@ void uv_from_sphere_pos(vec3 world_norm, out vec3 tang, out vec3 bitang) {
     bitang = vec3(0, ya, zy);
 }
 
+vec3 getSceneWorldPosition(float linear_depth, vec2 uv) {
+    // Get z depth
+    float zDepth = linear_depth;
+
+    // compute clip space depth
+    vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, zDepth, 1.0);
+
+    // Transform local space to view space
+    vec4 viewSpacePosition = proj_matrix_inv * clipSpacePosition;
+
+    viewSpacePosition /= viewSpacePosition.w;
+
+    // Transform view space to world space
+    vec4 worldSpacePosition = view_matrix_inv * viewSpacePosition;
+    return worldSpacePosition.xyz;
+}
+
 void main()
 {
 	int res = 1024;
@@ -184,8 +199,8 @@ void main()
 		return;
 	}
 	
-	float distance = sunInfos.atmosphereDistanceIn;
-	vec3 world_pos = distance * world_direction;
+	float world_distance = sunInfos.atmosphereDistanceIn;
+	vec3 world_pos = world_distance * world_direction;
 	out_norm = normalize(world_pos + camera_pos);
 
 	vec2 coords_2d = (world_pos + camera_pos).xy ;
@@ -204,15 +219,16 @@ void main()
 
 	vec2 final_screen_pos = (gl_Position.xy / gl_Position.w + 1) / 2;
 	
-	float z_near = 0.2;
 	float background_depth = texture(Scene_depth, final_screen_pos).r;
 
-	float water_depth = background_depth - distance;
+	float background_distance = length(getSceneWorldPosition(background_depth, final_screen_pos));
+	
+	float water_depth = background_distance - world_distance;
 
+	float opacity = clamp_01(water_depth / 10000);
+	out_col = vec4(0.1, 0.3, 1, mix(0.2, 0.99, opacity));
 
-
-	out_col = vec4(0.3, 0.5, 1, 0.8);
-
+	//out_col = vec4(final_screen_pos, 0, 1);
 	out_norm = wave_norm;
 
 

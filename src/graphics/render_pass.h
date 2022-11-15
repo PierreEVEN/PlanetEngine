@@ -85,6 +85,10 @@ public:
     EventDraw         on_draw;
     const std::string name;
 
+    [[nodiscard]] std::shared_ptr<RenderPass> find_dependency(const std::string& name) const;
+
+    void bind_dependencies_to_material(const std::shared_ptr<Material>& material);
+
 protected:
     bool pre_render();
     void bind(bool back_buffer);

@@ -17,6 +17,7 @@
 #include "utils/profiler.h"
 #include "world/mesh_component.h"
 #include "world/planet.h"
+#include "world/planet_ocean.h"
 #include "world/world.h"
 
 #include <iostream>
@@ -44,6 +45,9 @@ int main() {
     earth->set_max_lods(19);
     earth->set_cell_count(30);
 
+    const auto earth_ocean    = std::make_shared<PlanetOcean>(earth);
+    earth->add_child(earth_ocean);
+
     const auto moon = Planet::create("moon", main_camera);
     Engine::get().get_world().get_scene_root().add_child(moon);
     moon->set_radius(1700000);
@@ -58,14 +62,6 @@ int main() {
     camera_controller->add_child(main_camera);
     camera_controller->teleport_to({0, 0, earth->get_radius() + 2});
     earth->add_child(camera_controller);
-
-    //const auto default_material = Material::create("standard_material", "resources/shaders/standard_material.vs", "resources/shaders/standard_material.fs");
-    const auto water_material = Material::create("water shader", "resources/shaders/water_shader.vs", "resources/shaders/water_shader.fs");
-    const auto earth_ocean             = std::make_shared<MeshComponent>("earth ocean");
-    earth_ocean->set_material(water_material);
-    earth_ocean->set_mesh(primitives::grid_plane(1024, 1024));
-    earth_ocean->set_draw_group(DrawGroup::from<DrawGroup_Translucency>());
-    earth->add_child(earth_ocean);
 
     main_initialization = nullptr;
     while (!Engine::get().get_renderer().should_close()) {

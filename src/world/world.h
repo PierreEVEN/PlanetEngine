@@ -3,6 +3,8 @@
 
 #include "world/scene_component.h"
 
+class RenderPass;
+
 class World final
 {
 public:
@@ -10,7 +12,7 @@ public:
 
 	void tick_world();
 
-	void render_world(const DrawGroup& draw_group, const std::shared_ptr<Camera>& camera) const;
+	void render_world(const DrawGroup& draw_group, const std::shared_ptr<Camera>& camera, const std::shared_ptr<RenderPass>& render_pass) const;
 	
 	[[nodiscard]] SceneComponent& get_scene_root() const
 	{
