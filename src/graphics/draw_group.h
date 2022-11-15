@@ -27,7 +27,7 @@ public:
     }
 
     [[nodiscard]] bool                            contains(const DrawGroup& other) const { return draw_groups & other.draw_groups; }
-    [[nodiscard]] const std::vector<const char*>& group_names() { return names; }
+    [[nodiscard]] const std::vector<const char*>& group_names() const { return names; }
 
 private:
     size_t                   draw_groups = 0;

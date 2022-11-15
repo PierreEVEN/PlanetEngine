@@ -39,11 +39,6 @@ vec3 light_dir = normalize(vec3(1, 0, 0));
 
 #include "../libs/atmosphere.cginc"
 
-float get_linear_depth(vec2 uvs) {    
-	float scene_depth = texture(Scene_depth, uvs).r;
-	return z_near / scene_depth;
-}
-
 vec3 getSceneWorldDirection() {
     // compute clip space direction
     vec4 clipSpacePosition = vec4(uv * 2.0 - 1.0, 1.0, 1.0);
@@ -91,56 +86,6 @@ vec3 add_atmosphere(vec3 base_color, AtmosphereSettings atmosphere, vec3 pixel_d
 	}
 
     return base_color;
-}
-
-
-
-vec3 ground_color_shading(int in_shading, vec3 albedo, vec3 normal, vec3 mrao, vec3 light_dir, vec3 camera_pos, vec3 world_direction, float linear_depth) {
-
-    vec3 ground_albedo = surface_shading(in_shading, albedo, normal, mrao, light_dir, world_direction);
-        return ground_albedo;
-}
-
-
-vec3 surface_reflection(int shading_mode, vec3 normal, vec3 camera_dir, vec3 camera_pos, vec3 light_direction, float linear_depth) {
-
-    // Compute reflected ray dir
-    vec3 reflect_dir = reflect(camera_dir, normal);
-    vec3 world_position = camera_dir * linear_depth;
-    vec3 reflect_color = vec3(0);
-    float reflect_depth = 100000000000000.0;
-
-    // If found screen space hit, compute screen space reflections result
-    vec4 ssr_uv = texture(Input_SSR_Color, uv);
-    if (ssr_uv.b > 0.0) {
-		vec3 col = texture(Scene_color, ssr_uv.xy).rgb;
-		vec3 norm = normalize(texture(Scene_normal, ssr_uv.xy).rgb);
-		vec3 mrao = texture(Scene_mrao, ssr_uv.xy).rgb;
-        reflect_color = ground_color_shading(shading_mode, col, norm, mrao, light_direction, camera_pos, camera_dir, linear_depth);
-        reflect_depth = get_linear_depth(ssr_uv.xy).r;
-    }
-    
-    // Add sun and atmosphere to reflections
-    reflect_color += add_space(
-        reflect_color,
-        light_dir * 10000000000.0,
-        100000000.0,
-        reflect_dir,
-        world_position,
-        reflect_depth
-    );
-
-    AtmosphereSettings atmosphere;
-    atmosphere.center = planetCenter;
-    atmosphere.radius = atmosphereRadius;
-    vec3 reflect_atmosphere = add_atmosphere(
-        reflect_color, 
-        atmosphere,
-        reflect_dir, 
-        world_position + camera_pos,
-        reflect_depth);
-    
-    return reflect_atmosphere;
 }
 
 void main()
