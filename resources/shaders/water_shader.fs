@@ -13,5 +13,5 @@ void main()
 {
 	gColor = col;
 	gNormal = normal;
-	gMrao = vec3(0, 0, 0);
+	gMrao = vec3(0.7, 0.3, 0);
 }

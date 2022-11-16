@@ -143,6 +143,11 @@ vec2 screen_space_reflection(vec2 uv_start, sampler2D depth_map, vec3 initial_po
             break;
         }
     }
+    
+    float visibility = 
+            (finished + (pixel_depth <= 0 ? 1 : 0))
+            * (out_uv.x <= 0 || out_uv.x >= 1 ? 0 : 1)
+            * (out_uv.y <= 0 || out_uv.y >= 1 ? 0 : 1);
 
     return out_uv;
 }
@@ -175,7 +180,7 @@ void main()
     if (trans_depth > scene_depth) {
 
         vec3 ground_color = ground_color;
-        vec2 refracted_uvs = screen_space_refraction(uv, Scene_depth, getSceneWorldPosition(uv, trans_depth), getSceneWorldDirection(), trans_normal, 0.9);
+        vec2 refracted_uvs = screen_space_refraction(uv, Scene_depth, getSceneWorldPosition(uv, trans_depth), getSceneWorldDirection(), trans_normal, 1.03);
 
         vec3 refracted_albedo = texture(Scene_color, refracted_uvs).rgb;
         vec3 refracted_normal = normalize(texture(Scene_normal, refracted_uvs).rgb);

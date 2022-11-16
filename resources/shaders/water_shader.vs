@@ -38,36 +38,35 @@ struct Wave {
 	vec3 N;
 };
 
-Wave single_wave(vec2 pos, float A, float w, vec2 d, float Q, float phi_t) {
+Wave single_wave(vec2 pos, vec2 dir, float A, float w,  float Q, float time_offset) {
 	Wave wave;
-
 	float QA = Q * A;
 
 	wave.P = vec3(
-		QA * d.x * cos(w * dot(d, pos) + phi_t),
-		QA * d.y * cos(w * dot(d, pos) + phi_t),
-		A * sin(w * dot(d, pos) + phi_t)
+		QA * dir.x * cos(w * dot(dir, pos) + time_offset),
+		QA * dir.y * cos(w * dot(dir, pos) + time_offset),
+		A * sin(w * dot(dir, pos) + time_offset)
 	);
 
 	float WA = w * A;
-	float C = cos(w * dot(d, wave.P.xy + pos) + phi_t);
-	float S = sin(w * dot(d, wave.P.xy + pos) + phi_t);
+	float C = cos(w * dot(dir, wave.P.xy + pos) + time_offset);
+	float S = sin(w * dot(dir, wave.P.xy + pos) + time_offset);
 
 	wave.B = vec3(
-		Q * d.x * d.x * WA * S,
-		Q * d.x * d.y * WA * S,
-		d.x * WA * C
+		Q * dir.x * dir.x * WA * S,
+		Q * dir.x * dir.y * WA * S,
+		dir.x * WA * C
 	);
 
 	wave.T = vec3(
-		Q * d.x * d.y * WA * S,
-		Q * d.y * d.y * WA * S,
-		d.y * WA * C
+		Q * dir.x * dir.y * WA * S,
+		Q * dir.y * dir.y * WA * S,
+		dir.y * WA * C
 	);
 
 	wave.N = vec3(
-		d.x * WA * C,
-		d.y * WA * C,
+		dir.x * WA * C,
+		dir.y * WA * C,
 		Q * WA * S
 	);
 
@@ -115,27 +114,29 @@ Wave compute(Wave w, vec2 pos) {
 
 vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float Amplitude) {
 
-	vec2 d = normalize(vec2(1, 1));
-	float phi = 0.2;
-
+	float phi = 1;
 	float gravity = 9.81;
-	float L = 200000;
+	float L = 20000000;
 
 	// wi
 	float scale_w = sqrt(gravity * 2 * PI / L);
 
-	float q = 0.9; // Stepness
-
-	Wave w0 = single_wave(base_position, Amplitude, scale_w, d, q, phi * time);
-	int octaves = 10;
+	float q = 8; // Stepness
+	Amplitude = 20;
+	Wave w0;
+	w0.P = vec3(0);
+	w0.T = vec3(0);
+	w0.B = vec3(0);
+	w0.N = vec3(0);
+	int octaves = 15;
 	for (int i = 0; i < octaves; ++i) {
-		Amplitude *= 0.8;
-		phi *= 1.2;
-		scale_w *= 1.2;
-		q *= 1;
-		float dir_value = d.x * 891.37 - d.y * 79.549865489;
-		d = vec2(cos(dir_value), sin(dir_value));
-		w0 = add(w0, single_wave(base_position, Amplitude, scale_w, d, q, phi * time));
+		Amplitude = mix(Amplitude, 0.0, 0.2);
+		float iter = i * 20.2;
+		vec2 dir = vec2(sin(iter), cos(iter));
+		q /= 1.18;
+		phi *= 1.06;
+		scale_w *= 1.15;
+		w0 = add(w0, single_wave(base_position, dir, Amplitude, scale_w, q, phi * time));
 	}
 
 	Wave final_wave = compute(w0, base_position);
@@ -227,7 +228,12 @@ void main()
 	float water_depth = background_distance - world_distance;
 
 	float opacity = clamp_01(water_depth / 10000);
-	out_col = vec4(0.1, 0.3, 1, mix(0.2, 0.99, opacity));
+
+
+    float fresnel = (0.04 + (1.0-0.04)*(pow(1.0 - max(0.0, dot(-wave_norm, world_direction)), 5.0)));
+
+
+	out_col = vec4(0.0293, 0.0698, 0.1717, mix(0.2, 0.99, opacity));
 
 	//out_col = vec4(final_screen_pos, 0, 1);
 	out_norm = wave_norm;
