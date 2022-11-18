@@ -51,10 +51,10 @@ int main() {
 
     const auto moon = Planet::create("moon", main_camera);
     Engine::get().get_world().get_scene_root().add_child(moon);
-    moon->set_radius(1700000);
-    moon->set_max_lods(18);
+    moon->set_radius(170000);
+    moon->set_max_lods(14);
     moon->set_cell_count(30);
-    moon->set_orbit_distance(30000000.f);
+    moon->set_orbit_distance(3000000.f);
     moon->set_orbit_speed(0.02f);
     moon->set_rotation_speed(0.05f);
 
