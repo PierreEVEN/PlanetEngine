@@ -7,11 +7,16 @@ layout(location = 0) in vec3 pos;
 
 layout(location = 0) out vec3 out_norm;
 layout(location = 1) out vec3 out_pos;
-layout(location = 2) out vec4 out_col;
-layout(location = 3) uniform sampler2D Scene_depth;
-layout(location = 4) uniform sampler2D Scene_color;
+layout(location = 2) out vec3 scene_normal;
+layout(location = 3) out float depth;
+layout(location = 4) out vec2 uvs;
+layout(location = 5) out vec3 world_direction;
 
-layout(location = 5) uniform float z_near;
+layout(location = 1) uniform sampler2D Scene_depth;
+layout(location = 2) uniform sampler2D Scene_color;
+layout(location = 3) uniform float z_near;
+layout(location = 4) uniform mat4 model;
+
 
 vec3 getSceneWorldDirection(vec2 clipSpacePosition) {
 
@@ -116,13 +121,13 @@ vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float
 
 	float phi = 1;
 	float gravity = 9.81;
-	float L = 20000000;
+	float L = 10000;
 
 	// wi
 	float scale_w = sqrt(gravity * 2 * PI / L);
 
-	float q = 8; // Stepness
-	Amplitude = 20;
+	float q = 1; // Stepness
+	Amplitude = 2;
 	Wave w0;
 	w0.P = vec3(0);
 	w0.T = vec3(0);
@@ -133,7 +138,6 @@ vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float
 		Amplitude = mix(Amplitude, 0.0, 0.2);
 		float iter = i * 20.2;
 		vec2 dir = vec2(sin(iter), cos(iter));
-		q /= 1.18;
 		phi *= 1.06;
 		scale_w *= 1.15;
 		w0 = add(w0, single_wave(base_position, dir, Amplitude, scale_w, q, phi * time));
@@ -160,6 +164,30 @@ void uv_from_sphere_pos(vec3 world_norm, out vec3 tang, out vec3 bitang) {
     bitang = vec3(0, ya, zy);
 }
 
+vec2 wave_dx(vec2 pos, vec2 dir, float time, float amplitude, float frequency) {
+	float x = dot(pos, dir) * frequency + time;
+	float height = exp(sin(x) - 1);
+	float dx = height * cos(x);
+	return vec2(height, -dx);
+}
+
+float wave_height(vec2 pos, int details) {
+
+	float time = world_time * 2;
+	float amplitude = 1;
+	float frequency = 1;
+
+
+
+	for (int i = 0; i < details; ++i) {
+		float iter = i * 12.2;
+		vec2 dir = vec2(sin(iter), cos(iter));
+		vec2 wave = wave_dx(pos, dir, amplitude, frequency, time);
+
+	}
+	return 0;
+}
+
 vec3 getSceneWorldPosition(float linear_depth, vec2 uv) {
     // Get z depth
     float zDepth = linear_depth;
@@ -181,13 +209,12 @@ void main()
 {
 	int res = 1024;
 	vec3 screen_pos = Rz(-PI / 2) * pos;
-	screen_pos = vec3(screen_pos.x, -screen_pos.y, 0) / (res - 1) * 2 + vec3(-1, 1, 0);
+	screen_pos = (vec3(screen_pos.x, -screen_pos.y, 0) / (res - 1) * 2 + vec3(-1, 1, 0)) * 1.2;
 
-	vec3 world_direction = getSceneWorldDirection(screen_pos.xy);
-
-
+	world_direction = getSceneWorldDirection(screen_pos.xy);
+	
 	vec3 planet_pos = vec3(0);
-	float planet_radius = 6000000;
+	float planet_radius = 600000;
 
     RaySphereTraceResult sunInfos = raySphereIntersection(planet_pos, planet_radius, world_direction, camera_pos);
 
@@ -205,7 +232,7 @@ void main()
 	vec3 world_pos = world_distance * world_direction;
 	out_norm = normalize(world_pos + camera_pos);
 
-	vec2 coords_2d = (world_pos + camera_pos).xy ;
+	vec2 coords_2d = (world_pos + camera_pos).xy;
 	
 	vec3 wave_norm = vec3(0,0,1);
 
@@ -227,15 +254,9 @@ void main()
 	
 	float water_depth = background_distance - world_distance;
 
-	float opacity = clamp_01(water_depth / 10000);
+	depth = water_depth;
+	uvs = coords_2d;
 
-
-    float fresnel = (0.04 + (1.0-0.04)*(pow(1.0 - max(0.0, dot(-wave_norm, world_direction)), 5.0)));
-
-
-	out_col = vec4(0.0293, 0.0698, 0.1717, mix(0.2, 0.99, opacity));
-
-	//out_col = vec4(final_screen_pos, 0, 1);
 	out_norm = wave_norm;
 
 
@@ -243,7 +264,7 @@ void main()
 	vec3 bitang = vec3(0);
 	vec3 world_norm = normalize(world_pos + camera_pos - planet_pos);
 	uv_from_sphere_pos(world_norm, tang, bitang);
-
+	scene_normal = world_norm;
 	mat3 TBN = mat3(tang, bitang, world_norm);
 
 	out_norm = TBN * out_norm;

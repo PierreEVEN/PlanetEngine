@@ -41,9 +41,10 @@ int main() {
     // Create planet
     const auto earth = Planet::create("earth", main_camera);
     Engine::get().get_world().get_scene_root().add_child(earth);
-    earth->set_radius(6000000);
-    earth->set_max_lods(19);
+    earth->set_radius(600000);
+    earth->set_max_lods(15);
     earth->set_cell_count(30);
+    earth->set_rotation_speed(0);
 
     const auto earth_ocean    = std::make_shared<PlanetOcean>(earth);
     earth->add_child(earth_ocean);

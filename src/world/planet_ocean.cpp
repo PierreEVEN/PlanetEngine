@@ -31,6 +31,9 @@ void PlanetOcean::render(Camera& camera, const DrawGroup& draw_group, const std:
     ocean_material->bind();
     render_pass->bind_dependencies_to_material(ocean_material);
     ocean_material->set_float("z_near", static_cast<float>(camera.z_near()));
+    auto transform = get_world_transform();
+    transform.translate(-camera.get_world_position());
+    ocean_material->set_model_transform(transform);
     grid_mesh->draw();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
