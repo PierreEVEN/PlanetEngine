@@ -141,25 +141,45 @@ void main()
 	
     vec3 sphere_bitangent = vec3(0);
     vec3 sphere_tangent = vec3(0);
-    vec2 coordinates = vec2(0);//uv_from_sphere_pos(g_Normal_PS);
+    vec2 coordinates = vec2(0);
 	coordinates = g_Coordinates;
 
 
 	// Create materials
-	float textures_scale = 40;
-	LandData rock = make_ld_tex(rock_color, rock_normal, rock_mrao, coordinates * textures_scale);
-	rock.mrao = make_mrao(0, 0.9, 0);
-	LandData grass = make_ld_tex(grass_color, grass_normal, grass_mrao, coordinates * textures_scale);
-	grass.mrao = make_mrao(0, 0.7, 0);
-	LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
-	sand.mrao = make_mrao(0.2, 0.7, 0);
 
-	LandData ground = mix_ld(grass, rock, slope); // Grass rock
-	ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
-	LandData result = ground;
+    // Earth suface
+    if (planet_radius > 200000) {
+        float textures_scale = 40;
+        LandData rock = make_ld_tex(rock_color, rock_normal, rock_mrao, coordinates * textures_scale);
+        rock.mrao = make_mrao(0, 0.9, 0);
+        LandData grass = make_ld_tex(grass_color, grass_normal, grass_mrao, coordinates * textures_scale);
+        grass.mrao = make_mrao(0, 0.7, 0);
+        LandData sand = make_ld_tex(sand_color, sand_normal, sand_mrao, coordinates * textures_scale);
+        sand.mrao = make_mrao(0.2, 0.7, 0);
 
-	gNormal = TBN * result.normal;
-	gColor = result.color;
-	gMrao = result.mrao;
-	//gDebugTarget = vec3(0, 1 - ground.normal.z , 0);//g_DebugScalar;
+        LandData ground = mix_ld(grass, rock, slope); // Grass rock
+        ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
+        LandData result = ground;
+
+        gNormal = TBN * result.normal;
+        gColor = result.color;
+        gMrao = result.mrao;
+    }
+    else {
+        float textures_scale = 40;
+        LandData rock = make_ld_col(vec3(0.1));
+        rock.mrao = make_mrao(0, 0.9, 0);
+        LandData grass = make_ld_col(vec3(0.5));
+        grass.mrao = make_mrao(0, 0.7, 0);
+        LandData sand = make_ld_col(vec3(0.4, 0.4, 0.3));
+        sand.mrao = make_mrao(0.2, 0.7, 0);
+
+        LandData ground = make_ld_col(vec3(0.2)); // Grass rock
+        ground = mix_ld(ground, sand, (-altitude + 10) / 2); // Add beach
+        LandData result = ground;
+
+        gNormal = TBN * result.normal;
+        gColor = result.color;
+        gMrao = result.mrao;
+    }
 }

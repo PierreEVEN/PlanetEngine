@@ -2,6 +2,7 @@
 
 #include "libs/world_data.cginc"
 #include "libs/maths.cginc"
+#include "libs/random.cginc"
 
 layout(location = 0) in vec3 pos;
 
@@ -122,13 +123,13 @@ vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float
 
 	float phi = 1;
 	float gravity = 9.81;
-	float L = 10000;
+	float L = 10000 ;
 
 	// wi
 	float scale_w = sqrt(gravity * 2 * PI / L);
 
-	float q = 1; // Stepness
-	float Amplitude = 2 * multiplier;
+	float q = 0.7; // Stepness
+	float Amplitude = 2 * multiplier * (simplex_noise(base_position * 0.008) * 0.7 + 1);
 	Wave w0;
 	w0.P = vec3(0);
 	w0.T = vec3(0);
