@@ -55,7 +55,7 @@ float get_height_at_location_v1(vec3 pos) {
 float get_height_at_location_v2(vec3 pos) {
 
 
-    return simplex_noise(pos, 17, 0.65, 1.75) * 10000;
+    return simplex_noise(pos + vec3(1, 1.005, 0), 17, 0.65, 1.75) * 10000;
 
 
 

@@ -32,9 +32,9 @@ vec3 computeLight(vec3 cameraPosition, vec3 rayDir, float raylength, vec3 origin
     float viewRayOpticalDepth = -0.0;
 
     for (int i = 0; i < NumScatterPoints; ++i) {
-        RaySphereTraceResult rsResult = raySphereIntersection(planetCenter, atmosphereRadius, light_dir, inScatterPoint);
+        RaySphereTraceResult rsResult = raySphereIntersection(planetCenter, atmosphereRadius, sun_direction, inScatterPoint);
         float sunRayLength = max(0.0, rsResult.atmosphereDistanceOut - rsResult.atmosphereDistanceIn);
-        float sunRayOpticalDepth = opticalDepth(inScatterPoint, light_dir, sunRayLength);
+        float sunRayOpticalDepth = opticalDepth(inScatterPoint, sun_direction, sunRayLength);
         float viewRayOpticalDepth = opticalDepth(inScatterPoint, -rayDir, step_size * float(i));
         vec3 transmittance = exp(-(sunRayOpticalDepth + viewRayOpticalDepth) * scatterCoefficients);
         float localDensity = getAtmosphereDensityAtLocation(inScatterPoint);

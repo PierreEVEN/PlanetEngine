@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Eigen/Dense>
+
 enum class Shading {
     Diffuse = 0,
     Phong = 1,
@@ -32,4 +34,6 @@ public:
     // Screen Space Reflection
     bool  screen_space_reflections = true;
     float ssr_quality              = 0.3f;
+
+    Eigen::Quaterniond sun_direction = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(1, 0, 1).normalized());
 };

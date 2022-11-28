@@ -21,6 +21,7 @@ layout(location = 12) uniform int shading;
 
 layout(location = 13) uniform samplerCube WORLD_Cubemap;
 layout(location = 14) uniform sampler2D Input_SSR_Color;
+layout(location = 15) uniform vec3 sun_direction;
 
 layout(location = 0) in vec2 uv;
 
@@ -35,7 +36,6 @@ float atmosphereDensityFalloff = 6;
 float scatter_strength = 2;
 vec3 scatterCoefficients = pow(400 / vec3(700, 550, 460), vec3(4)) * scatter_strength;
 const float epsilon = 1;
-vec3 light_dir = normalize(vec3(1, 0, 0));
 
 #include "../libs/atmosphere.cginc"
 
@@ -102,7 +102,7 @@ void main()
 
     vec3 space = add_space(
         translucent_color,
-        light_dir * 10000000000.0,
+        sun_direction * 10000000000.0,
         100000000.0,
         world_direction,
         camera_pos,

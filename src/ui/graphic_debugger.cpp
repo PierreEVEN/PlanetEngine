@@ -1,5 +1,6 @@
 #include "graphic_debugger.h"
 
+#include "widgets.h"
 #include "graphics/framegraph.h"
 #include "graphics/render_pass.h"
 #include "graphics/texture_image.h"
@@ -103,6 +104,9 @@ void GraphicDebugger::draw() {
             if (GameSettings::get().max_fps < 0)
                 GameSettings::get().max_fps = 0;
             ImGui::Checkbox("fullscreen (F11)", &GameSettings::get().fullscreen);
+            
+            ui::rotation_edit(GameSettings::get().sun_direction, "sun direction");
+
             ImGui::Separator();
 
             // Bloom

@@ -11,9 +11,9 @@ layout(location = 1) in vec3 pos;
 layout(location = 3) in float depth;
 layout(location = 4) in vec2 uvs;
 layout(location = 5) in vec3 world_direction;
+layout(location = 6) in float wave_level;
 
 #include "libs/random.cginc"
-
 
 void main()
 {
@@ -23,12 +23,16 @@ void main()
 
 	float foam_noise = simplex_noise(uvs * 0.4, 2, 0.65, 1.75) + 0.6;
 	
-	float m = clamp_01(1 - depth / 10);
-	gColor = mix(gColor, vec4(1,1,1,clamp_01(foam_noise)), m);
+	float foam_level = 1 - clamp_01(length(pos) / 5000);
+
+	float m = clamp_01(clamp_01(1 - depth / 10) + clamp_01(wave_level / 3 - 1));
+	
+	float foam_mask =  m * foam_level;
+	gColor = mix(gColor, vec4(1,1,1,clamp_01(foam_noise)), foam_mask);
 
 	gNormal = normal;
 
 	gNormal = mix(gNormal, vec3(1, 0,0), m);
 
-	gMrao = vec3(0.7, 0.3, 0);
+	gMrao = mix(vec3(0.7, 0.2, 0), vec3(0.2, 0.7, 0), foam_mask * foam_noise);
 }

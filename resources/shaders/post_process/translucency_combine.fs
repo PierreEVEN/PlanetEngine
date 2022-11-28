@@ -23,8 +23,7 @@ layout(location = 9) uniform ivec2 Translucency_depth_Res;
 
 layout(location = 10) uniform float z_near;
 layout(location = 11) uniform int shading;
-
-vec3 light_dir = normalize(vec3(1, 0, 0));
+layout(location = 12) uniform vec3 sun_direction;
 
 vec3 getSceneWorldDirection() {
     // compute clip space direction
@@ -167,9 +166,9 @@ void main()
     vec3 trans_mrao = texture(Translucency_mrao, uv).rgb;
 	float trans_depth = texture(Translucency_depth, uv).r;
 
-    vec3 ground_color = surface_shading(shading, scene_albedo, scene_normal, scene_mrao, light_dir, getSceneWorldDirection());
+    vec3 ground_color = surface_shading(shading, scene_albedo, scene_normal, scene_mrao, sun_direction, getSceneWorldDirection());
 
-    vec3 trans_color = surface_shading(shading, trans_albedo.rgb, trans_normal, trans_mrao, light_dir, getSceneWorldDirection());
+    vec3 trans_color = surface_shading(shading, trans_albedo.rgb, trans_normal, trans_mrao, sun_direction, getSceneWorldDirection());
 
     
 	oFragmentColor = vec4(ground_color, 1);
@@ -182,10 +181,10 @@ void main()
         vec3 ground_color = ground_color;
         vec2 refracted_uvs = screen_space_refraction(uv, Scene_depth, getSceneWorldPosition(uv, trans_depth), getSceneWorldDirection(), trans_normal, 1.03);
 
-        vec3 refracted_albedo = texture(Scene_color, refracted_uvs).rgb;
+        vec3 refracted_albedo = texture(Scene_color, refracted_uvs).rgb * mix(vec3(1), vec3(0.1, 0.55,1), pow(trans_albedo.a, 0.2));
         vec3 refracted_normal = normalize(texture(Scene_normal, refracted_uvs).rgb);
         vec3 refracted_mrao = texture(Scene_mrao, refracted_uvs).rgb;
-        vec3 refracted_color = surface_shading(shading, refracted_albedo, refracted_normal, refracted_mrao, light_dir, getSceneWorldDirection());
+        vec3 refracted_color = surface_shading(shading, refracted_albedo, refracted_normal, refracted_mrao, sun_direction, getSceneWorldDirection());
 
         oFragmentColor = vec4(mix(refracted_color, trans_color, trans_albedo.a), 1);
         oNormal = trans_normal;
@@ -200,7 +199,7 @@ void main()
         vec3 reflected_normal = normalize(texture(Scene_normal, reflected_uvs).rgb);
         vec3 reflected_mrao = texture(Scene_mrao, reflected_uvs).rgb;
         
-        vec3 reflected_color = surface_shading(shading, reflected_albedo, reflected_normal, reflected_mrao, light_dir, getSceneWorldDirection());
+        vec3 reflected_color = surface_shading(shading, reflected_albedo, reflected_normal, reflected_mrao, sun_direction, getSceneWorldDirection());
         
         oFragmentColor = vec4(mix(reflected_color, oFragmentColor.rgb, 0.5), 1);
     }

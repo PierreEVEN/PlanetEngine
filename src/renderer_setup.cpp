@@ -52,18 +52,9 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
     translucency_combine->on_bind_material.add_lambda([main_camera](std::shared_ptr<Material> material) {
         material->set_float("z_near", static_cast<float>(main_camera->z_near()));
         material->set_int("shading", static_cast<int>(GameSettings::get().shading));
+        material->set_vec3("sun_direction", Eigen::Vector3f((GameSettings::get().sun_direction * Eigen::Vector3d(1, 0, 0)).cast<float>()));
     });
 
-    /*
-     * REFLECTIONS (only using last combined translucency surfaces)
-     */
-    const auto ssr_pass = PostProcessPass::create("SSR", 1, 1, "resources/shaders/post_process/screen_space_reflections.fs");
-    ssr_pass->link_dependency(g_buffer_pass, {"Input_color", "Input_normal", "Input_mrao", "", "Input_Depth"});
-    ssr_pass->on_bind_material.add_lambda([](std::shared_ptr<Material> material) {
-        material->set_int("enabled", GameSettings::get().screen_space_reflections ? 1 : 0);
-        material->set_float("resolution", GameSettings::get().ssr_quality);
-    });
-    
     /*
      * LIGHTING
      */
@@ -81,6 +72,7 @@ std::shared_ptr<FrameGraph> setup_renderer(const std::shared_ptr<Camera>& main_c
         material->set_int("atmosphere_quality", GameSettings::get().atmosphere_quality);
         material->set_int("shading", static_cast<int>(GameSettings::get().shading));
         material->set_texture("WORLD_Cubemap", cubemap);
+        material->set_vec3("sun_direction", Eigen::Vector3f((GameSettings::get().sun_direction * Eigen::Vector3d(1, 0, 0)).cast<float>()));
     });
 
     /*

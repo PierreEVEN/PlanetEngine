@@ -11,6 +11,7 @@ layout(location = 2) out vec3 scene_normal;
 layout(location = 3) out float depth;
 layout(location = 4) out vec2 uvs;
 layout(location = 5) out vec3 world_direction;
+layout(location = 6) out float wave_level;
 
 layout(location = 1) uniform sampler2D Scene_depth;
 layout(location = 2) uniform sampler2D Scene_color;
@@ -117,7 +118,7 @@ Wave compute(Wave w, vec2 pos) {
 	return result;
 }
 
-vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float Amplitude) {
+vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float multiplier) {
 
 	float phi = 1;
 	float gravity = 9.81;
@@ -127,7 +128,7 @@ vec3 gerstner_waves(vec2 base_position, float time, out vec3 local_normal, float
 	float scale_w = sqrt(gravity * 2 * PI / L);
 
 	float q = 1; // Stepness
-	Amplitude = 2;
+	float Amplitude = 2 * multiplier;
 	Wave w0;
 	w0.P = vec3(0);
 	w0.T = vec3(0);
@@ -183,7 +184,6 @@ float wave_height(vec2 pos, int details) {
 		float iter = i * 12.2;
 		vec2 dir = vec2(sin(iter), cos(iter));
 		vec2 wave = wave_dx(pos, dir, amplitude, frequency, time);
-
 	}
 	return 0;
 }
@@ -230,17 +230,17 @@ void main()
 	
 	float world_distance = sunInfos.atmosphereDistanceIn;
 	vec3 world_pos = world_distance * world_direction;
+	out_pos = world_pos;
 	out_norm = normalize(world_pos + camera_pos);
 
 	vec2 coords_2d = (world_pos + camera_pos).xy;
 	
 	vec3 wave_norm = vec3(0,0,1);
+	vec3 v1 = gerstner_waves(coords_2d, world_time, wave_norm, 0.8 * clamp_01(1 + (1000 - length(world_pos)) * 0.0001));
 
+	wave_level = v1.z;
 
-
-	vec3 v1 = gerstner_waves(coords_2d, world_time, wave_norm, 4 * clamp_01(1 + (1000 - length(world_pos)) * 0.00002));
-
-	world_pos = v1 + vec3(-camera_pos.xy,world_pos.z);
+	world_pos = v1 + vec3(-camera_pos.xy, world_pos.z);
 
 
 	gl_Position = pv_matrix * vec4(world_pos, 1);
@@ -250,6 +250,9 @@ void main()
 	
 	float background_depth = texture(Scene_depth, final_screen_pos).r;
 
+	if (background_depth <= 0)
+		background_depth = 0.0000001;
+
 	float background_distance = length(getSceneWorldPosition(background_depth, final_screen_pos));
 	
 	float water_depth = background_distance - world_distance;
@@ -258,7 +261,6 @@ void main()
 	uvs = coords_2d;
 
 	out_norm = wave_norm;
-
 
 	vec3 tang = vec3(0);
 	vec3 bitang = vec3(0);

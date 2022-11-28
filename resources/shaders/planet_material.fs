@@ -146,7 +146,7 @@ void main()
 
 
 	// Create materials
-	float textures_scale = 400;
+	float textures_scale = 40;
 	LandData rock = make_ld_tex(rock_color, rock_normal, rock_mrao, coordinates * textures_scale);
 	rock.mrao = make_mrao(0, 0.9, 0);
 	LandData grass = make_ld_tex(grass_color, grass_normal, grass_mrao, coordinates * textures_scale);
