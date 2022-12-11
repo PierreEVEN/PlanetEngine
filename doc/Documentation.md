@@ -32,26 +32,36 @@ Texturer une sphère proprement est très compliqué. Il n'est pas possible de p
 
 # Fonctionnement du moteur de rendu
 
-Pour ce projet, se limiter à easycppogl aurait été fastidieux, et peu pratique. J'ai remplacé peu à peu les différentes composantes de la librairie par mes propres éléments graphiques (pour au final ne garder presque rien de la librairie originale)
+Pour ce projet, se limiter à easycppogl aurait été fastidieux, et peu pratique. J'ai remplacé peu à peu les différentes composantes de la librairie par mes propres éléments graphiques afin de rendre la maintenance et les expérimentations plus simples.
 
 Repartir de presque zéro n'était pas obligatoire, mais cela m'a permis d'avoir un bien meilleur controle sur mon code et m'a fait gagné beaucoup de temps par la suite notament en me permettant de créer des outils intégrés facilitant le débugage. (profileurs, graphes des passes de rendu, visualisation en temps réelle des framebuffers, informations sur les shaders, le système etc...).
 Le hot-reload des shaders m'a aussi fait gagné énormément de temps dans leur mise au point.
 
-## Système de matériaux
+## Système de matériaux 
+
+[material.h](../src/graphics/material.h), [material.cpp](../src/graphics/material.cpp)
 
 - Rechargement automatiquement du shader sans avoir à relancer le programme.
 - Gestion des directives #include, et gestion des erreurs de compilations avec la ligne et le fichier en cause.
 
-## Scene graph
+## Scene graph 
+
+[scene_component.h](../src/world/scene_component.h), [scene_component.cpp](../src/world/scene_component.cpp)
 
 - Implémentation naïve et simple à manipuler des éléments de la scène.
 
-## Render Pass
+## Render Pass 
 
-- Assamblage simplifié des différentes passes de rendu et automatisation de la création du graph de rendu.
+[render_pass.h](../src/graphics/render_pass.h), [render_pass.cpp](../src/graphics/render_pass.cpp)
+
+- Assemblage simplifié des différentes passes de rendu et automatisation de la création du graph de rendu.
 - Permet un débuguage avancé et une visualisation détaillée des différentes dépendances.
 
+> Le framegraph pour ce projet est implémenté dans [renderer_setup.cpp](../src/renderer_setup.cpp)
+
 ## Textures
+
+[texture_image.h](../src/graphics/texture_image.h), [texture_image.cpp](../src/graphics/texture_image.cpp)
 
 - Simplification de la création de textures, et permet l'intégration plus facile au reste du moteur de rendu.
 
@@ -107,7 +117,81 @@ Ces reflections permettent de capturer une bonne partie de la scène avec une ex
 
 # Interface de l'application
 
-//@TODO
+## Session Frontend
+
+Outil permettant de mesurer les temps d'exécution d'un bloc de code
+
+- Mesure d'un évenement arrivant à chaque image : `STAT_FRAME("FrameEvent");`
+- Mesure d'un évenement singulier : `STAT_ACTION("OneTimeAction");`
+
+Affichage des résultats en direct dans l'outil "Session Frontend"
+
+![SessionFrontend](SessionFrontend.png)
+
+## Debugueur Graphique
+
+- Onglet "Framegraph Visualizer"
+
+```
+Affichage en live de chaque pass du frame graph
+Affichage des dépendances entre les passse.
+Affiche du nom des bindings correspondant à l'image fournie par la passe précédente.
+Zoom et déplacements avec la molette.
+```
+
+![GraphicDebugger](GraphicDebugger.png)
+
+- Onglet "Settings"
+
+```
+Réglages : 
+
+Mode Wireframe (F1)
+Mode plein-écran (F11)
+Direction du soleil
+Intensité du bloom
+Exposition / Gamma
+Modèle d'éclairage (PBR / FLAT / Phong)
+Qualité de l'atmosphère
+Qualité des réflexions
+```
+
+![GraphicSettings](GraphicSettings.png)
+
+## World Outliner
+
+Visualisation du graph de scène.
+
+Double cliquer sur un noeud pour dérouler les enfants.
+
+Drag&drop des noeuds pour réorganiser la hierarchie. (ex : attacher la caméra à un autre objet)
+
+Onglet customisable en overridant la fonction `void draw_ui()` de la class [SceneComponent](../src/world/scene_component.h).
+
+![WorldOutliner](WorldOutliner.png)
+
+## Material Manager
+
+Liste des shaders chargés dans le moteur.
+
+Cocher "auto-reload" pour activer le rechargement automatique des shaders lorsque le fichier source est modifié.
+
+En cas d'erreur de compilation, l'erreur est affiché dans la colonne "status". Cliquer sur le bouton d'erreur ouvre directement visual studio à la ligne de l'erreur.
+
+Permet également d'ouvrir les shaders dans vscode et de visualiser l'arbre des includes.
+
+![MaterialManager](MaterialManager.png)
+
+## Autre
+
+`Window/Mesh View` : Affichage de la liste des mesh chargés dans le moteur.
+
+`Window/Texture View` : Affichage et visualisation de la liste des textures chargées dans le moteur. 
+
+`Help/System Information` : statistiques et information sur le matériel hote.
+
+`Help/Demo Window` : Fenêtre Demo d'ImGui
+
 
 # Conclusion
 
