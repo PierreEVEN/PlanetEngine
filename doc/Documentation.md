@@ -2,7 +2,9 @@
 
 Au cours de mes précédents projets, j'ai pu traiter la génération procédurale de terrain à de nombreuses reprises sous différents moteurs et architectures. (Unreal Engine 4, [Unity](https://github.com/PierreEVEN/Scuffly), [OpenGL](https://github.com/PierreEVEN/GLEngine), [Three.JS](https://github.com/PierreEVEN/ThreeFlightSimulator) )
 
-Aillant aussi les notions de base sur les shaders et algorithmes vus dans ce cours, j'ai voulu pousser le projet plus loins afin de travailler sur de nouvelles problématiques que je n'avais jusque là alors jamais abordé.
+Aillant aussi les notions de base sur les shaders et algorithmes vus dans ce 
+cours, j'ai voulu pousser le projet plus loins afin de travailler sur de 
+nouvelles problématiques que je n'avais jusque-là encore jamais abordé.
 
 Pour ce projet, j'ai donc établis comme objectifs :
 - Modélisation d'une planète, et d'un système solaire, du sol jusqu'à l'espace, avec possibilité de naviguer entre différents astres sans transitions.
@@ -15,7 +17,7 @@ On gardera bien entendu les objectifs de base du projet initial qui seront trait
 
 ## Précisions en virgule flottante.
 
-Au dessus de quelques km de distance, l'affichage d'une scène pose quelques problème de précision dûs au fonctionnement des nombres à virgule flottante, et commence à générer des artéfacts de rendu comme le montre cette [animation](https://www.shadertoy.com/view/4tVyDK).
+Au-dessus de quelques km de distance, l'affichage d'une scène pose quelques problèmes de précision dûs au fonctionnement des nombres à virgule flottante, et commence à générer des artéfacts de rendu comme le montre cette [animation](https://www.shadertoy.com/view/4tVyDK).
 En pratique, au bout d'à peine 2km de l'origine le phénomène commence à être perceptible, et devient particulièrement problèmatique dès les premières dizaines de km. C'est largement insuffisant pour un système solaire entier même réduit.
 
 La solution la plus simple est d'utiliser des doubles sur 64 bits (fp64) au lieu des float sur 32 bits (fp32). Grace à ça, les problèmes de précision commencent à apparaitre bien plus loins et permettent sans trop de problèmes d'implémenter un système solaire presque complet. (pour les dernières planètes du système solaire, c'est encore un peu léger mais ce sera suffisant dans un premier temps.)
@@ -44,12 +46,18 @@ Le hot-reload des shaders m'a aussi fait gagné énormément de temps dans leur 
 
 ## Scene graph
 
-- Implémentation naïve et simple à manipuler des éléments de la scène.
+- Graph de scène on ne peut plus classique.
+- Certaines fonctionnalités ne sont pas au point, notamment attacher des 
+  objets à d'autre pose problème dans certains cas. Comme je n'en ai pas eu 
+  l'usage, j'ai laissé tel quel. Mais il est possible que certaines 
+  transformations soient erronées si on sort des cas présentés par la scène 
+  d'exemple.
 
 ## Render Pass
 
-- Assamblage simplifié des différentes passes de rendu et automatisation de la création du graph de rendu.
-- Permet un débuguage avancé et une visualisation détaillée des différentes dépendances.
+- Assemblage simplifié des différentes passes de rendu et automatisation de la création du graph de rendu.
+- Permet un débogage avancé et une visualisation détaillée des différentes 
+  dépendances entre passes.
 
 ## Textures
 
@@ -57,13 +65,13 @@ Le hot-reload des shaders m'a aussi fait gagné énormément de temps dans leur 
 
 # Planètes procédurales
 
-## Caméra et système de coordonées
+## Caméra et système de coordonnés
 
 Pour contrer les problèmes de précision, la scène sera centrée autour de la caméra avant d'être transmise au GPU afin que la précision soit maximale autour du point de vue. Il faudra donc additionner la translation de la caméra à la matrice "model" de tous les éléments de la scène au lieu de la traiter dans la matrice "vue".
 
 Le calcul de la profondeur dans le depth-buffer sera réalisé en virgule flottante afin d'avoir une distance d'affichage infinie. Pour éviter les problèmes de précision on l'inversera pour avoir les plus petites valeurs au premier plan. [Reversed Depth Buffer](https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/)
 
-## Planetes
+## Planètes
 
 ### ClipMap
 
@@ -79,9 +87,9 @@ Pour permettre une transition douce entre les différentes couches, 2 des cotés
 
 Cette approche est loins d'être exempt de défauts : 
 - La rotation doit être corrigée et ajoute quelques calculs pour retrouver la position exacte de chaque point.
-- Avoir un unique maillage pour chaque section empèche de faire du frustum colling efficacement.
+- Avoir un unique maillage pour chaque section empêche de faire du frustum colling efficacement.
 
-L'idéal aurait été de découper chaque sections en rectangles de différentes tailles qu'il suffirait d'intervertir. Je me suis rendu compte de ce défaut trop tard, c'est un aspect à améliorer dans le futur.
+L'idéal aurait été de découper chaque section en rectangles de différentes tailles qu'il suffirait d'intervertir. Je me suis rendu compte de ce défaut trop tard, c'est un aspect à améliorer dans le futur.
 
 ### Sphères et planète
 
@@ -91,7 +99,7 @@ Pour le moment, on a un terrain plat infini. Il ne reste plus qu'à le courber e
 
 On oriente ensuite cette demi-sphère vers la caméra et le tour est joué.
 Pour éviter des phénomènes de glissement du terrain, cette demi-sphere est réorientée à intervalles réguliers.
-Cet intervalle est définit par la taille d'une unité du dernier LOD. Cette restriction permet de faire en sorte que la réorientation soit imperceptible au niveau du sol près de la caméra.
+Cet intervalle est défini par la taille d'une unité du dernier LOD. Cette restriction permet de faire en sorte que la réorientation soit imperceptible au niveau du sol près de la caméra.
 
 > Il y a un défaut à cette approche : comme j'ai fait le choix arbitraire d'utiliser des coordonées sphériques, les angles ne sont plus conservés et le maillage n'est plus une grille 2D régulière. Il est donc possible de distinguer quelques effets de clipping sur les cotés de la sphère. Ce n'est pas non plus très génant, mais ce sera à améliorer par la suite. Au sol cette déformation reste négligeable.
 
@@ -99,15 +107,29 @@ Cet intervalle est définit par la taille d'une unité du dernier LOD. Cette res
 
 Pour l'atmosphère, j'ai repris et amélioré ce que j'avais réalisé sur [un précédent projet](https://github.com/PierreEVEN/ThreeFlightSimulator). Je m'étais basé à l'époque sur [l'excellente vidéo](https://www.youtube.com/watch?v=DxfEbulyFcY) de Sebastian Lague à ce sujet qui vulgarise très bien le principe et l'implémentation. C'est une approche simple mais qui a plusieurs défauts, notament au niveau de la fidélité du rendu et au niveau du coût en performances. Pour l'instant je n'ai pas eu le temps de me repencher là dessus, mais je compte à l'avenir essayer une approche un peu plus poussée ([Precomputed Atmospheric Scattering](https://ebruneton.github.io/precomputed_atmospheric_scattering/))
 
-### Reflexions
+### Réflexions et Réfraction
 
-Etant sur une planète, une simple réflexion plannaire avec une 2e caméra n'aurait pas donné de bons résultats (sur une sphère, ca marche pas très bien). j'ai donc décidé dà la place implémenter des [reflexions en Screen Space (SSR)](https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-reflection.html)
+Etant sur une planète, une simple réflexion planaire avec une 2e caméra 
+n'aurait pas donné de bons résultats (sur une sphère, ça ne marche pas très 
+bien). J'ai donc décidé d'à la place implémenter des [reflexions en Screen Space (SSR)](https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-reflection.html)
 
 Ces reflections permettent de capturer une bonne partie de la scène avec une excellente fidélité, mais certains angles ne sont pas accessibles et seront donc à compléter avec d'autres techniques (cubemap).
 
+La même méthode est appliquée pour la réfraction.
+
 # Interface de l'application
 
-//@TODO
+## Raccourcis
+
+- `Esc` : Active / Désactive la navigation du Viewport.
+- `F1` : Active / Désactive le mode wireframe.
+- `F11` : Active / Désactive le mode plein écran.
+- `Z,Q,S,D,Space,Shift` : Navigation
+- `F` : Se téléporter au sol sur la planète 
+
+## Outils
+
+
 
 # Conclusion
 
