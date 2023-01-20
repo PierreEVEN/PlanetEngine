@@ -17,6 +17,10 @@ layout(location = 6) in float wave_level;
 
 void main()
 {
+	// Discard under ground
+	if (depth < 0)
+		discard;
+
 	float opacity = clamp_01(depth / 1000);
     float fresnel = (0.04 + (1.0 - 0.04) * (pow(1.0 - max(0.0, dot(-normal, world_direction)), 5.0)));
 	gColor = vec4(0.0293, 0.0698, 0.1717, mix(0.2, 0.99, opacity));
@@ -28,5 +32,6 @@ void main()
 	float foam_mask =  clamp_01(m * foam_level * foam_noise);
 	gColor = mix(gColor, vec4(vec3(1), 1), foam_mask);
 	gNormal = mix(normal, vec3(1, 0, 0), m);
-	gMrao = mix(vec3(0.2, 0.2, 0), vec3(0.2, 0.2, 0), foam_mask * foam_noise);
+	//gNormal = vec3(0,0,1);
+	gMrao = mix(vec3(0.2, 0.1, 0), vec3(0.2, 0.1, 0), foam_mask * foam_noise);
 }

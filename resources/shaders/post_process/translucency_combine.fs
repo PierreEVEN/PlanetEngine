@@ -79,7 +79,7 @@ vec2 screen_space_refraction(vec2 uv_start, sampler2D depth_map, vec3 initial_po
     int sp_steps = min(max_iterations, int(delta * clamp_01(resolution)));
 
     vec2 out_uv = uv;
-    int finished = 0;
+    bool finished = true;
     float pixel_depth = 0;
     
     for (float i = 1; i <= sp_steps; ++i) {
@@ -92,7 +92,7 @@ vec2 screen_space_refraction(vec2 uv_start, sampler2D depth_map, vec3 initial_po
         pixel_depth = length(getSceneWorldPosition(out_uv, texture(Scene_depth, out_uv).r));
 
         if (pixel_depth > 0 && pixel_depth < expected_depth) {
-            finished = 1;
+            finished = true;
             break;
         }
     }
@@ -100,7 +100,7 @@ vec2 screen_space_refraction(vec2 uv_start, sampler2D depth_map, vec3 initial_po
     return out_uv;
 }
 
-vec2 screen_space_reflection(vec2 uv_start, sampler2D depth_map, vec3 initial_pos, vec3 initial_dir, vec3 normal) {
+vec2 screen_space_reflection(vec2 uv_start, sampler2D depth_map, vec3 initial_pos, vec3 initial_dir, vec3 normal, out bool valid_hit) {
     const float maxDistance = 10000;
     const vec2 Input_normal_Res = Translucency_depth_Res;
     const int max_iterations = 100;
@@ -147,11 +147,13 @@ vec2 screen_space_reflection(vec2 uv_start, sampler2D depth_map, vec3 initial_po
             (finished + (pixel_depth <= 0 ? 1 : 0))
             * (out_uv.x <= 0 || out_uv.x >= 1 ? 0 : 1)
             * (out_uv.y <= 0 || out_uv.y >= 1 ? 0 : 1);
+    valid_hit = visibility == 0 ? false : true;
+
+    if (!valid_hit)
+        return uv;
 
     return out_uv;
 }
-
-
 
 void main()
 {
@@ -170,7 +172,6 @@ void main()
 
     vec3 trans_color = surface_shading(shading, trans_albedo.rgb, trans_normal, trans_mrao, sun_direction, getSceneWorldDirection());
 
-    
 	oFragmentColor = vec4(ground_color, 1);
     oNormal = scene_normal;
     oMrao = scene_mrao;
@@ -193,7 +194,11 @@ void main()
     }
 
     if (oMrao.g < 0.2) {
-        vec2 reflected_uvs = screen_space_reflection(uv, Scene_depth, getSceneWorldPosition(uv, oDepth), getSceneWorldDirection(), oNormal);
+        bool valid_reflections = false;
+        vec2 reflected_uvs = screen_space_reflection(uv, Scene_depth, getSceneWorldPosition(uv, oDepth), getSceneWorldDirection(), oNormal, valid_reflections);
+
+        if (!valid_reflections)
+            return;
 
         vec3 reflected_albedo = texture(Scene_color, reflected_uvs).rgb;
         vec3 reflected_normal = normalize(texture(Scene_normal, reflected_uvs).rgb);
@@ -203,5 +208,4 @@ void main()
         
         oFragmentColor = vec4(mix(reflected_color, oFragmentColor.rgb, 0.5), 1);
     }
-
 }

@@ -46,7 +46,7 @@ int main() {
     earth->set_cell_count(30);
     earth->set_rotation_speed(0);
 
-    const auto earth_ocean    = std::make_shared<PlanetOcean>(earth);
+    const auto earth_ocean = std::make_shared<PlanetOcean>(earth);
     earth->add_child(earth_ocean);
 
     const auto moon = Planet::create("moon", main_camera);
