@@ -270,10 +270,16 @@ Cependant, les améliorations apportées par cette ancienne version n'étaient p
 
 Je pensais initiallement aller beaucoup plus loin dans ce projet et commencer à ajouter un peu de végétation, cependant la charge de travail causée par les autres projets + les cours m'ont malheureusement forcé à lever le pied sur celui-ci (Je n'ai pas eu le temps d'y faire d'autres ajouts majeurs depuis début décembre).
 
-En pistes de recherche, il me reste :
-- Simplifier la réduction 
-
-
-Je compte tout de même poursuivre mes expérimentations à l'avenir sur mon projet de moteur que je développe en Rust sous Vulkan.
-
 ![https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/final.png?raw=true](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/final.png?raw=true)
+
+En améliorations futures, j'ai pensé à plusieurs fonctionnalités interessantes pour terminer mon démonstrateur :
+- Simplifier la réduction des passes de bloom en faisant tout en une seule passe de compute shader
+- Optimiser le fetch de la profondeur pour les algorithmes en screen space en générant des LOD de la scene depth via un compute shader (Hierarchical Z-Buffer)
+- Améliorer le terrain pour permettre le frustum culling.
+- Permettre d'utiliser une heightmap globale pour définir manuellement la forme des continents (les détails sont laissés au noise)
+- Implémenter une passe de capture en basse définition de la scène à 360° pour améliorer la qualité des reflections et compléter les algorithmes en Screen Space.
+- Implémenter des Cascaded Shadow Maps (Migrer l'algorithme déjà implémenter sur mon précédent projet Coffee3D)
+- Ajouter de la végétation, et des impostors pour les arbres (octahedral impostors) : déjà implémentés sur mon précédent projet ThreeFlightSimulator.
+- Mettre au point un système qui compile un shader GPU et un code CPU en parallèle pour disposer de l'altitude du terrain des deux cotés. (GPU et CPU)
+
+Je poursuivrai certainement ces expérimentations plus tard sur mon projet principal de moteur de rendu, sous Vulkan et écrit en Rust.
