@@ -1,3 +1,10 @@
+# Projet de programmation graphique
+
+*Par Pierre EVEN*
+
+Lien du repos github : [https://github.com/PierreEVEN/PlanetEngine](https://github.com/PierreEVEN/PlanetEngine)
+
+
 # Objectif
 
 Au cours de mes précédents projets, j'ai pu traiter la génération procédurale de terrain à de nombreuses reprises sous différents moteurs et architectures. (Unreal Engine 4, [Unity](https://github.com/PierreEVEN/Scuffly), [OpenGL](https://github.com/PierreEVEN/GLEngine), [Three.JS](https://github.com/PierreEVEN/ThreeFlightSimulator) )
@@ -214,8 +221,19 @@ Permet également d'ouvrir les shaders dans vscode et de visualiser l'arbre des 
 # Conclusion
 
 Ce projet m'a permis de pousser mes connaissances et ma maitrise de nombreux aspect du rendu 3D. 
+En matière de programmation graphique, j'ai pu expérimenter l'utilisation de compute shaders avec openGL, ainsi que de geometry shaders. J'en ai aussi profité pour faire des expérimentation afin de mieux comprendre le fonctionnement des noises, de l'atmospheric scattering, et des modèles d'éclairages tels que le PBR. J'ai aussi pu faire quelques expérimentations sur les reflections et réfractions en screen-space.
 
-Futur : 
-Je compte utiliser ce moteur de rendu pour de futures expérimentations et la mise au point de shaders avancées. (une sorte de mini-shadertoy maison).
-Ce projet me permettra aussi de faire des tests d'architecture pour d'autres projets, et est un sandbox pour mes différentes expérimentations.
-A terme je compte reproduire au moins une grande partie des fonctionnalitées implémentées ici dans un projet de moteur sur lequel je travail depuis quelques temps, écris en Rust sous Vulkan.
+L'objectif initial est globallement atteint : même si la scène de démonstration ne le montre pas, il est possible de créer un système solaire complet à l'échelle 1:1 dans lequel on peut naviguer sans temps de chargements. Il reste tout de même quelques bugs et cas problématique qui font que ce cas de figure n'est pas encore totallement stable. Le maillage du terrain au sol approche les 1m/cell, ce qui était assez compliqué, à obtenir au vu des contraintes techniques (précision f32, taille de la planète etc...)
+
+Texturer une planète de cette taille est un sujet très complexe, et il reste encore de nombreux cas à traiter. Il est donc normal que le shading ait quelques incohérence lorsqu'on s'éloigne de l'origine de la planète. Les normales ont aussi tendance à se décaller progressivement lorsqu'on navigue sur la planète. C'est un bug que j'ai indentifié depuis longtemps, mais qui est assez complexe à résoudre et j'ai du me concentrer sur d'autres priorités.
+
+Le maillage de l'eau n'a pas été optimisé non plus pour des planètes de cette taille, d'où la présence d'un bruit à la surface lorsqu'on s'en rapproche. (toujours le même problème de précision)
+
+Les reflections ne sont pas dans leur état le plus avancé. Celles dans cette version sont légèrement simplifiées.
+Elles étaient plus poussées dans ce précédent commit : [https://github.com/PierreEVEN/PlanetEngine/tree/2e939be794f8174d244882255c618e0e70ea6c61](https://github.com/PierreEVEN/PlanetEngine/tree/2e939be794f8174d244882255c618e0e70ea6c61)
+(Reflexion de l'atmosphère et skybox par défaut lorsque le rayon tombait en dehors de l'écran).
+Cependant, les améliorations apportées par cette ancienne version n'étaient pas assez bénéfiques visuellement pour que je les réimplémentes dans la version actuelle.
+
+Je pensais initiallement aller beaucoup plus loin dans ce projet et commencer à ajouter un peu de végétation, cependant la charge de travail causée par les autres projets + les cours m'ont malheureusement forcé à lever le pied sur celui-ci (Je n'ai pas eu le temps d'y faire d'autres ajouts majeurs depuis début décembre).
+
+Je compte tout de même poursuivre mes expérimentations à l'avenir sur mon projet de moteur que je développe en Rust sous Vulkan.

@@ -6,7 +6,6 @@
 #include "graphics/camera.h"
 #include "graphics/framegraph.h"
 #include "graphics/material.h"
-#include "graphics/primitives.h"
 #include "graphics/render_pass.h"
 #include "ui/asset_manager_ui.h"
 #include "ui/graphic_debugger.h"
@@ -15,13 +14,9 @@
 #include "ui/world_outliner.h"
 #include "utils/game_settings.h"
 #include "utils/profiler.h"
-#include "world/mesh_component.h"
 #include "world/planet.h"
 #include "world/planet_ocean.h"
 #include "world/world.h"
-
-#include <iostream>
-
 
 int main() {
     std::unique_ptr<ActionRecord> main_initialization = std::make_unique<ActionRecord>("main initialization");
