@@ -97,7 +97,7 @@ Comme méthodes de subdivision, j'ai retenu celle de la [Clipmap](https://develo
 ![clipmap](https://media.discordapp.net/attachments/895350121213095977/1024378182591328296/unknown.png?width=1270&height=702)
 Le terrain est un emboitement de plusieurs sections ayant à chaque LOD suivant une densité de vertex divisée par 2.
 
-![wireframe](./wireframe.png)
+![wireframe](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/wireframe.png?raw=true)
 Pour permettre une transition douce entre les différentes couches, 2 des cotés interieurs de chaque section sont plus grands d'une unité. Ainsi il suffit de faire tourner le mesh de 90°, 180° ou 270° pour que le maillage au centre puisse être déplacé d'une unité vers la caméra. En additionnant ce mécanisme sur toutes les couches, il est possible de toujours garder le centre au niveau de la caméra.
 
 Cette approche est loins d'être exempt de défauts : 
@@ -106,11 +106,13 @@ Cette approche est loins d'être exempt de défauts :
 
 L'idéal aurait été de découper chaque section en rectangles de différentes tailles qu'il suffirait d'intervertir. Je me suis rendu compte de ce défaut trop tard, c'est un aspect à améliorer dans le futur.
 
+![https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/Landscape.png?raw=true](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/Landscape.png?raw=true)
+
 ### Sphères et planète
 
 Pour le moment, on a un terrain plat infini. Il ne reste plus qu'à le courber en transformant les coordonées XY en coordonées sphériques. On limite ces coordonées à une demi sphère pour éviter au maillage de faire plusieurs fois le "tour" de la planète. Ce placage est réalisé sur GPU dans le vertex shader.
 
-![HalfSphere](./HalfSphere.png)
+![HalfSphere](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/HalfSphere.png?raw=true)
 
 On oriente ensuite cette demi-sphère vers la caméra et le tour est joué.
 Pour éviter des phénomènes de glissement du terrain, cette demi-sphere est réorientée à intervalles réguliers.
@@ -120,7 +122,22 @@ Cet intervalle est défini par la taille d'une unité du dernier LOD. Cette rest
 
 ### Shader d'atmosphère
 
-Pour l'atmosphère, j'ai repris et amélioré ce que j'avais réalisé sur [un précédent projet](https://github.com/PierreEVEN/ThreeFlightSimulator). Je m'étais basé à l'époque sur [l'excellente vidéo](https://www.youtube.com/watch?v=DxfEbulyFcY) de Sebastian Lague à ce sujet qui vulgarise très bien le principe et l'implémentation. C'est une approche simple mais qui a plusieurs défauts, notament au niveau de la fidélité du rendu et au niveau du coût en performances. Pour l'instant je n'ai pas eu le temps de me repencher là dessus, mais je compte à l'avenir essayer une approche un peu plus poussée ([Precomputed Atmospheric Scattering](https://ebruneton.github.io/precomputed_atmospheric_scattering/))
+Pour l'atmosphère, j'ai repris et amélioré ce que j'avais réalisé sur [un précédent projet](https://github.com/PierreEVEN/ThreeFlightSimulator). 
+Je m'étais basé à l'époque sur [l'excellente vidéo](https://www.youtube.com/watch?v=DxfEbulyFcY) de Sebastian Lague à ce sujet qui vulgarise très bien 
+le principe et l'implémentation.
+C'est une approche simple mais qui a plusieurs défauts, notament au niveau de la fidélité du rendu et au niveau du coût en performances. 
+Pour l'instant je n'ai pas eu le temps de me repencher là dessus, mais je compte à l'avenir essayer une approche un peu plus poussée ([Precomputed Atmospheric Scattering](https://ebruneton.github.io/precomputed_atmospheric_scattering/))
+
+![https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/Atmosphere.png?raw=true](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/Atmosphere.png?raw=true)
+
+Plusieures passes de post-processing sont appliquées.
+Les premières concernent l'effet de bloom :
+
+![https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/Bloom.png?raw=true](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/Bloom.png?raw=true)
+
+Le framebuffer est d'abord downsamplé, puis ré-upsamplé en supperposant le framebuffer de base avec sa version downsamplée afin de donner un effet de Blur sur les parties brillantes. (Les framebuffers sont en espace de couleur linéaires)
+
+Enfin, on profite de la dernière passe pour faire un léger tonemaping (aces) ainsi qu'une correction de l'exposure et Gamma.
 
 ### Réflexions et Réfraction
 
@@ -131,6 +148,23 @@ bien). J'ai donc décidé d'à la place implémenter des [reflexions en Screen S
 Ces reflections permettent de capturer une bonne partie de la scène avec une excellente fidélité, mais certains angles ne sont pas accessibles et seront donc à compléter avec d'autres techniques (cubemap).
 
 La même méthode est appliquée pour la réfraction.
+
+### Rendu de l'eau
+
+Une passe de rendu est dédié au rendu de la transparence, elle aussi en Deferred. Le terrain et l'eau sont rendus dans 2 passes de Deferred séparées, puis combinées en utilisant
+la Scene Depth. Un dégradé est appliqué pour que les zones plus profondes se retrouvent plus sombres et moins transparentes. (Delta de Depth plus élevé).
+De l'écume est ajoutée à partir de textures de noise au sommet des vagues les plus hautes, ainsi que dans les régions où l'eau est très peu profonde.
+
+L'océan est rendu en utilisant un maillage faisant la moitié de la résolution de l'écran. Cet maillage couvre l'ensemble du viewport, puis est plaqué sur la sphère de la planète.
+L'algorithme de vagues de Gerstner est ensuite appliqué pour donner des ondulations approximatives d'un océan. (on est loin d'un rendu vraiment réaliste, cependant j'ai trouvé le résultat suffisament "interessant" pour ce projet en l'état).
+Les problèmes de précision impactent également le rendu de ce maillage, et il y a quelques imprécisions dans le plaquage. En se rapprochant on peut voir que le maillage présente beaucoup d'artefacts.
+![https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/wave_imprecision.png?raw=true](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/wave_imprecision.png?raw=true)
+
+Pour corriger ce problème, il faudrait appliquer le même principe que pour le maillage du sol, cependant je n'ai pas eu assez de temps pour m'en occuper.
+
+Une fois les deux passes (surface et transparence) rendues, les deux passes sont combinées :
+- Si du sol est caché par de l'eau, on applique de la réfraction lors de la lecture des UV (screen space).
+- De même, on en profite pour calculer une réfléction basique selon la même méthode.
 
 # Interface de l'application
 
@@ -151,7 +185,7 @@ Outil permettant de mesurer les temps d'exécution d'un bloc de code
 
 Affichage des résultats en direct dans l'outil "Session Frontend"
 
-![SessionFrontend](SessionFrontend.png)
+![SessionFrontend](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/SessionFrontend.png?raw=true)
 
 ## Debugueur Graphique
 
@@ -164,7 +198,7 @@ Affiche du nom des bindings correspondant à l'image fournie par la passe préc�
 Zoom et déplacements avec la molette.
 ```
 
-![GraphicDebugger](GraphicDebugger.png)
+![GraphicDebugger](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/GraphicDebugger.png?raw=true)
 
 - Onglet "Settings"
 
@@ -181,7 +215,7 @@ Qualité de l'atmosphère
 Qualité des réflexions
 ```
 
-![GraphicSettings](GraphicSettings.png)
+![GraphicSettings](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/GraphicSettings.png?raw=true)
 
 ## World Outliner
 
@@ -193,7 +227,7 @@ Drag&drop des noeuds pour réorganiser la hierarchie. (ex : attacher la caméra 
 
 Onglet customisable en overridant la fonction `void draw_ui()` de la class [SceneComponent](../src/world/scene_component.h).
 
-![WorldOutliner](WorldOutliner.png)
+![WorldOutliner](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/WorldOutliner.png?raw=true)
 
 ## Material Manager
 
@@ -205,7 +239,7 @@ En cas d'erreur de compilation, l'erreur est affiché dans la colonne "status". 
 
 Permet également d'ouvrir les shaders dans vscode et de visualiser l'arbre des includes.
 
-![MaterialManager](MaterialManager.png)
+![MaterialManager](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/MaterialManager.png?raw=true)
 
 ## Autre
 
@@ -236,4 +270,10 @@ Cependant, les améliorations apportées par cette ancienne version n'étaient p
 
 Je pensais initiallement aller beaucoup plus loin dans ce projet et commencer à ajouter un peu de végétation, cependant la charge de travail causée par les autres projets + les cours m'ont malheureusement forcé à lever le pied sur celui-ci (Je n'ai pas eu le temps d'y faire d'autres ajouts majeurs depuis début décembre).
 
+En pistes de recherche, il me reste :
+- Simplifier la réduction 
+
+
 Je compte tout de même poursuivre mes expérimentations à l'avenir sur mon projet de moteur que je développe en Rust sous Vulkan.
+
+![https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/final.png?raw=true](https://github.com/PierreEVEN/PlanetEngine/blob/main/doc/final.png?raw=true)
